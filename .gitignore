@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+coverage/
+
+# environment — NEVER commit API keys
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# logs
+*.log
+npm-debug.log*
+
+# editor
+.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+
+# vite cache
+.vite/

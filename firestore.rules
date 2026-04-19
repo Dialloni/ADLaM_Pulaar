@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // TEMPORARY: Allow all authenticated users to read/write everything
+    // This is for troubleshooting the "Missing or insufficient permissions" error.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Health check
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

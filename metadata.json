@@ -1,0 +1,5 @@
+{
+  "name": "Gando AI",
+  "description": "An African-language-first AI app builder. Describe your app in your language, and we build it for you.",
+  "requestFramePermissions": ["microphone"]
+}
