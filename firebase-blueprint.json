@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Gando AI platform.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique ID of the user." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "description": "The user's profile picture URL." },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "The user's role." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created." }
+      },
+      "required": ["uid", "email"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "An AI-generated application project.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique ID of the project." },
+        "userId": { "type": "string", "description": "The ID of the user who owns the project." },
+        "name": { "type": "string", "description": "The name of the project." },
+        "code": { "type": "string", "description": "The generated HTML/CSS/JS code." },
+        "explanation": { "type": "string", "description": "The AI-generated explanation of the project." },
+        "language": { "type": "string", "description": "The language used to generate the project." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the project was created." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "When the project was last updated." }
+      },
+      "required": ["id", "userId", "name", "code", "explanation", "language"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "AI-generated project documents."
+    }
+  }
+}
