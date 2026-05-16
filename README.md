@@ -1,3 +1,5 @@
+> 🚀 **[Try it live → gando-ai.vercel.app](https://gando-ai.vercel.app)**
+
 # 𞤘𞤢𞤲𞤣𞤮 AI — Gando AI
 
 ## African-Language-First App Builder
