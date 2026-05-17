@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bamako Sound</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d0d14;color:#fff}
+nav{display:flex;justify-content:space-between;align-items:center;padding:18px 40px}
+.logo{font-weight:900;font-size:20px;background:linear-gradient(90deg,#ff6b35,#f7c59f);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.links{display:flex;gap:28px;list-style:none;font-size:12px;color:#666}
+.btn{background:linear-gradient(135deg,#ff6b35,#f7c59f);color:#0d0d14;padding:9px 22px;border-radius:22px;font-weight:700;font-size:12px;border:none;cursor:pointer}
+.hero{text-align:center;padding:64px 40px 48px}
+.tag{display:inline-block;padding:5px 14px;background:rgba(255,107,53,.15);color:#ff6b35;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.1em;margin-bottom:20px}
+h1{font-size:52px;font-weight:900;line-height:1.1;margin-bottom:12px}
+h1 span{background:linear-gradient(90deg,#ff6b35,#f7c59f);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+p.sub{color:#555;font-size:15px;margin-bottom:32px}
+.search{max-width:480px;margin:0 auto;display:flex;background:#1a1a24;border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden}
+.search input{flex:1;padding:14px 18px;background:none;border:none;color:#fff;font-size:13px;outline:none}
+.search button{padding:10px 20px;background:linear-gradient(135deg,#ff6b35,#f7c59f);border:none;color:#0d0d14;font-weight:700;cursor:pointer;border-radius:10px;margin:3px}
+.sec{padding:32px 40px}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.sh h2{font-size:18px;font-weight:800}
+.sh a{font-size:11px;color:#ff6b35;text-decoration:none}
+.tracks{display:flex;flex-direction:column;gap:6px}
+.track{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:background .15s}
+.track:hover{background:rgba(255,255,255,.04)}
+.tn{width:18px;color:#444;font-size:12px;text-align:center}
+.ta{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.ti{flex:1}
+.tname{font-size:13px;font-weight:600}
+.tartist{font-size:11px;color:#555}
+.dur{font-size:11px;color:#444}
+.genres{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.gc{padding:8px 18px;border-radius:22px;border:1px solid rgba(255,255,255,.1);font-size:12px;font-weight:600;cursor:pointer}
+.player{position:fixed;bottom:0;left:0;right:0;background:#111118;border-top:1px solid rgba(255,255,255,.06);padding:12px 40px;display:flex;align-items:center;justify-content:space-between}
+.now{display:flex;align-items:center;gap:12px}
+.na{width:36px;height:36px;border-radius:6px;background:linear-gradient(135deg,#ff6b35,#f7c59f);display:flex;align-items:center;justify-content:center;font-size:16px}
+.ni{font-size:12px;font-weight:700}
+.ns{font-size:10px;color:#555}
+.ctrl{display:flex;align-items:center;gap:20px;font-size:20px;color:#888;cursor:pointer}
+.play{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff6b35,#f7c59f);display:flex;align-items:center;justify-content:center;color:#0d0d14;font-size:14px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">♪ Bamako Sound</div>
+  <ul class="links"><li>Découvrir</li><li>Charts</li><li>Artistes</li><li>Radio</li></ul>
+  <button class="btn">Connexion</button>
+</nav>
+<div class="hero">
+  <div class="tag">🎵 Musique d'Afrique de l'Ouest</div>
+  <h1>Découvre la<br>musique <span>malienne</span></h1>
+  <p class="sub">Mandé, Afrobeat, Wassoulou, Kora — tout en un endroit.</p>
+  <div class="search"><input placeholder="Artiste, titre, album..."><button>Rechercher</button></div>
+</div>
+<div class="sec">
+  <div class="sh"><h2>🔥 Tendances</h2><a href="#">Voir tout →</a></div>
+  <div class="tracks">
+    <div class="track"><span class="tn">1</span><div class="ta" style="background:#ff6b3520">🥁</div><div class="ti"><div class="tname">Djourou</div><div class="tartist">Salif Keïta</div></div><span class="dur">4:32</span></div>
+    <div class="track"><span class="tn">2</span><div class="ta" style="background:#f7c59f20">🎸</div><div class="ti"><div class="tname">Bamako Night</div><div class="tartist">Oumou Sangaré</div></div><span class="dur">3:58</span></div>
+    <div class="track"><span class="tn">3</span><div class="ta" style="background:#7c3aed20">🪘</div><div class="ti"><div class="tname">Wassoulou Blues</div><div class="tartist">Toumani Diabaté</div></div><span class="dur">5:14</span></div>
+    <div class="track"><span class="tn">4</span><div class="ta" style="background:#10b98120">🎺</div><div class="ti"><div class="tname">Jeliya</div><div class="tartist">Rokia Traoré</div></div><span class="dur">4:07</span></div>
+  </div>
+</div>
+<div class="sec">
+  <div class="sh"><h2>Genres</h2></div>
+  <div class="genres">
+    <div class="gc" style="color:#ff6b35;border-color:#ff6b3540">Mandé</div>
+    <div class="gc" style="color:#f7c59f;border-color:#f7c59f40">Afrobeat</div>
+    <div class="gc" style="color:#60a5fa;border-color:#60a5fa40">Wassoulou</div>
+    <div class="gc" style="color:#34d399;border-color:#34d39940">Griot</div>
+    <div class="gc" style="color:#a78bfa;border-color:#a78bfa40">Kora Jazz</div>
+    <div class="gc" style="color:#fb7185;border-color:#fb718540">Highlife</div>
+  </div>
+</div>
+<div class="player">
+  <div class="now"><div class="na">🥁</div><div><div class="ni">Djourou</div><div class="ns">Salif Keïta</div></div></div>
+  <div class="ctrl"><span>⏮</span><div class="play">▶</div><span>⏭</span></div>
+  <div style="font-size:11px;color:#444">0:34 / 4:32</div>
+</div>
+</body>
+</html>
