@@ -477,8 +477,8 @@ export default function App() {
       </AnimatePresence>
 
       {/* ════════ HEADER ════════ */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-8 border-b border-white/5 backdrop-blur-xl flex-shrink-0"
-        style={{ background: 'rgba(14,14,14,0.92)' }}>
+      <header className="fixed top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-8 flex-shrink-0"
+        style={{ background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--line-1)' }}>
         {/* brand + nav */}
         <div className="flex items-center gap-8">
           <GandoLogo size={28} />
@@ -684,10 +684,15 @@ export default function App() {
               const active = pg && page === pg && !currentProject;
               return (
                 <button key={label} onClick={() => { if (pg) { setPage(pg); setCurrentProject(null); } }}
-                  className={cn('w-full flex items-center gap-4 py-4 text-sm font-bold transition-all duration-200', isAdlam && 'font-adlam')}
-                  style={active
-                    ? { background: `linear-gradient(to right,${P}18,transparent)`, borderLeft: `4px solid ${P}`, color: '#fff', paddingLeft: '28px', paddingRight: '24px' }
-                    : { color: '#767575', borderLeft: '4px solid transparent', paddingLeft: '28px', paddingRight: '24px' }}>
+                  className={cn('w-full flex items-center gap-4 py-4 text-sm font-bold', isAdlam && 'font-adlam')}
+                  style={{
+                    color: active ? 'var(--fg-1)' : 'var(--fg-3)',
+                    background: active ? 'linear-gradient(to right, rgba(255,139,155,0.12), transparent)' : 'transparent',
+                    border: 'none',
+                    borderLeft: active ? '4px solid var(--color-primary)' : '4px solid transparent',
+                    transition: 'all 150ms cubic-bezier(0.16,1,0.3,1)',
+                    paddingLeft: '28px', paddingRight: '24px',
+                  }}>
                   <Icon className="w-4 h-4 flex-shrink-0" />
                   <span style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
                 </button>
@@ -832,8 +837,7 @@ export default function App() {
                     <motion.div key={p.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                       className="group relative rounded-2xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
                       style={{ background: '#131313' }}>
-                      {/* color accent bar */}
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(to right,${P},${S})` }} />
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-4">
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${P}18`, color: P }}>
@@ -887,7 +891,8 @@ export default function App() {
                 [t.docsSection2Title, t.docsSection2Body, S],
                 [t.docsSection3Title, t.docsSection3Body, T],
               ] as [string, string, string][]).map(([title, body, accent], i) => (
-                <div key={i} className="rounded-2xl p-8 border border-white/8" style={{ background: '#131313' }}>
+                <div key={i} className="rounded-2xl p-8 border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-black" style={{ background: accent }}>
                       {i + 1}
@@ -899,7 +904,8 @@ export default function App() {
               ))}
 
               {/* quick tips */}
-              <div className="rounded-2xl p-8 border border-white/8" style={{ background: '#131313' }}>
+              <div className="rounded-2xl p-8 border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                 <h2 className={cn('text-lg font-black text-white mb-6', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
                   💡 Quick Tips
                 </h2>
@@ -944,7 +950,8 @@ export default function App() {
                 { label: t.statusAI,       status: sysStatus.ai,      detail: sysStatus.aiMs ? `${sysStatus.aiMs}ms latency` : '' },
                 { label: t.statusFirebase, status: sysStatus.db,      detail: user ? 'Authenticated' : 'Not connected' },
               ] as { label: string; status: 'ok'|'degraded'|'down'|'checking'; detail: string }[]).map(({ label, status, detail }) => (
-                <div key={label} className="flex items-center justify-between p-6 rounded-2xl border border-white/8" style={{ background: '#131313' }}>
+                <div key={label} className="flex items-center justify-between p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="flex items-center gap-4">
                     <StatusDot status={status} />
                     <div>
@@ -963,7 +970,8 @@ export default function App() {
               ))}
 
               {/* model info */}
-              <div className="p-6 rounded-2xl border border-white/8" style={{ background: '#131313' }}>
+              <div className="p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                 <h3 className={cn('font-black text-white mb-4', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.statusModel}</h3>
                 <div className="flex items-center justify-between">
                   <div>
@@ -1033,6 +1041,7 @@ export default function App() {
                 {/* completion donut */}
                 <div className="lg:col-span-7 rounded-2xl p-6 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xl"
                   style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="adinkra-mask absolute inset-0 opacity-[0.025]" />
                   <div className="relative z-10 flex-1">
                     <h2 className={cn('text-2xl font-black text-white tracking-tight mb-1', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
@@ -1059,7 +1068,8 @@ export default function App() {
 
                 {/* gauges */}
                 <div className="lg:col-span-5 flex flex-col gap-4">
-                  <div className="flex-1 rounded-2xl p-6 shadow-xl" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="flex-1 rounded-2xl p-6 shadow-xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                     <div className="flex justify-between items-center mb-4">
                       <h3 className={cn('font-black text-white text-sm', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.tokenUsageLabel}</h3>
                       <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: `${P}15`, color: P }}>
@@ -1071,7 +1081,8 @@ export default function App() {
                       {t.tokenResetHint} <span style={{ color: S, fontWeight: 700 }}>{t.healthyLabel}.</span>
                     </p>
                   </div>
-                  <div className="flex-1 rounded-2xl p-6 shadow-xl" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="flex-1 rounded-2xl p-6 shadow-xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                     <div className="flex justify-between items-center mb-4">
                       <h3 className={cn('font-black text-white text-sm', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.appPerformanceLabel}</h3>
                       <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: `${T}15`, color: T }}>{t.excellentLabel}</span>
@@ -1116,7 +1127,7 @@ export default function App() {
                       <motion.div key={p.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         className="group relative cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
                         style={{ background: '#131313' }} onClick={() => openProject(p)}>
-                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(to right,${P},${S})` }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                         <div className="p-6">
                           <div className="flex justify-between items-start mb-4">
                             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${P}18`, color: P }}>
