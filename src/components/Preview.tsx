@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, RotateCcw, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { Globe, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PreviewProps {
   code: string;
@@ -12,30 +12,30 @@ export const Preview: React.FC<PreviewProps> = ({ code }) => {
 
   return (
     <div className="w-full h-full flex flex-col bg-[#0e0e0e] p-4 md:p-6 lg:p-8">
-      <div className="flex-1 flex flex-col bg-white rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] border border-white/5">
-        <div className="h-14 bg-zinc-50 border-b border-zinc-200 flex items-center px-6 gap-6">
-          <div className="flex gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#ff5f57] border border-black/5" />
-            <div className="w-3 h-3 rounded-full bg-[#febc2e] border border-black/5" />
-            <div className="w-3 h-3 rounded-full bg-[#28c840] border border-black/5" />
+      <div className="flex-1 flex flex-col rounded-2xl overflow-hidden" style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 40px 100px -20px rgba(0,0,0,0.8)' }}>
+        <div style={{ height: 46, background: 'rgba(19,19,19,0.9)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', paddingLeft: 16, paddingRight: 16, gap: 12 }}>
+          <div className="flex gap-1.5">
+            <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#ff5f57' }} />
+            <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#febc2e' }} />
+            <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#28c840' }} />
           </div>
 
-          <div className="flex items-center gap-4 text-zinc-400">
+          <div className="flex items-center gap-3" style={{ color: '#52525b' }}>
             <ChevronLeft className="w-4 h-4 cursor-not-allowed opacity-30" />
             <ChevronRight className="w-4 h-4 cursor-not-allowed opacity-30" />
             <RotateCcw
-              className="w-4 h-4 hover:text-zinc-900 transition-colors cursor-pointer active:rotate-180 duration-500"
+              className="w-4 h-4 cursor-pointer hover:text-zinc-300 transition-colors active:rotate-180 duration-500"
               onClick={handleRefresh}
             />
           </div>
 
-          <div className="flex-1 max-w-2xl mx-auto h-9 bg-white rounded-xl border border-zinc-200 flex items-center px-4 gap-2 text-zinc-500 shadow-sm group focus-within:border-zinc-400 transition-all ring-offset-2 focus-within:ring-2 ring-zinc-200">
-            <Lock className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="text-[11px] font-medium truncate select-none tracking-tight">gando-preview.app</span>
+          <div style={{ flex: 1, maxWidth: 400, margin: '0 auto', height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', paddingLeft: 10, paddingRight: 10, gap: 6 }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#28c840', flexShrink: 0 }} />
+            <span style={{ fontSize: 11, color: '#767575', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>gando-preview.app</span>
           </div>
 
-          <div className="flex items-center gap-4 text-zinc-400">
-            <Globe className="w-4 h-4 hover:text-zinc-900 transition-colors cursor-pointer" />
+          <div className="flex items-center gap-3" style={{ color: '#52525b' }}>
+            <Globe className="w-4 h-4 hover:text-zinc-300 transition-colors cursor-pointer" />
           </div>
         </div>
 
