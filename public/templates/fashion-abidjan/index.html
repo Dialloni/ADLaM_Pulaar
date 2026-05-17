@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Abidjan Mode</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Georgia',serif;background:#0a0a0a;color:#f5f0e8}
+nav{display:flex;justify-content:space-between;align-items:center;padding:20px 48px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.logo{font-size:16px;letter-spacing:.45em;text-transform:uppercase;color:#d4af37}
+.links{display:flex;gap:32px;list-style:none;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.links a{color:#888;text-decoration:none}
+.hero{display:grid;grid-template-columns:1fr 1fr;min-height:80vh}
+.hl{display:flex;flex-direction:column;justify-content:center;padding:80px 60px}
+.eyebrow{font-size:9px;letter-spacing:.45em;text-transform:uppercase;color:#d4af37;margin-bottom:24px}
+h1{font-size:64px;font-weight:300;line-height:1;margin-bottom:28px}
+h1 em{font-style:italic;color:#d4af37}
+p.sub{font-size:14px;color:#777;line-height:1.8;margin-bottom:36px;max-width:340px}
+.btns{display:flex;gap:12px}
+.btn{padding:14px 36px;border:1px solid #d4af37;color:#d4af37;font-size:10px;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;background:none}
+.btnf{background:#d4af37;color:#0a0a0a;border:none}
+.hr{background:linear-gradient(160deg,#1a0a00,#2d1510);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.hr svg{opacity:.15}
+.grid{padding:60px 48px}
+.gl{font-size:9px;letter-spacing:.4em;text-transform:uppercase;color:#d4af37;margin-bottom:40px}
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.pc{cursor:pointer}
+.pi{height:280px;background:linear-gradient(160deg,#1a1410,#2a2010);margin-bottom:14px;display:flex;align-items:center;justify-content:center;font-size:48px}
+.pn{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.pp{font-size:12px;color:#d4af37}
+footer{padding:40px 48px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center}
+footer p{font-size:10px;color:#444;letter-spacing:.2em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">Abidjan Mode</div>
+  <ul class="links"><li><a href="#">Femme</a></li><li><a href="#">Homme</a></li><li><a href="#">Couture</a></li><li><a href="#">Boutique</a></li></ul>
+</nav>
+<section class="hero">
+  <div class="hl">
+    <p class="eyebrow">Collection Printemps 2025</p>
+    <h1>Mode<br><em>Africaine</em><br>Moderne</h1>
+    <p class="sub">Créations contemporaines inspirées des tissus kente, bogolan et wax d'Afrique de l'Ouest.</p>
+    <div class="btns"><button class="btn">Découvrir</button><button class="btn btnf">Boutique</button></div>
+  </div>
+  <div class="hr">
+    <svg width="300" height="400" viewBox="0 0 300 400"><ellipse cx="150" cy="200" rx="100" ry="180" fill="#d4af37"/><text x="150" y="210" text-anchor="middle" font-size="120" fill="#0a0a0a">✦</text></svg>
+  </div>
+</section>
+<section class="grid">
+  <p class="gl">Nouveautés</p>
+  <div class="pg">
+    <div class="pc"><div class="pi">👗</div><div class="pn">Robe Kente</div><div class="pp">85 000 XOF</div></div>
+    <div class="pc"><div class="pi">🧣</div><div class="pn">Écharpe Bogolan</div><div class="pp">24 000 XOF</div></div>
+    <div class="pc"><div class="pi">👘</div><div class="pn">Boubou Festif</div><div class="pp">120 000 XOF</div></div>
+    <div class="pc"><div class="pi">👒</div><div class="pn">Chapeau Wax</div><div class="pp">18 000 XOF</div></div>
+  </div>
+</section>
+<footer><p>Abidjan Mode — Maison fondée en 2019</p><p>Côte d'Ivoire</p></footer>
+</body>
+</html>
