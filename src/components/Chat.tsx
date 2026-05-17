@@ -250,10 +250,17 @@ export const Chat: React.FC<ChatProps> = ({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isGenerating, generationStatus]);
 
+  const handleInput = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  };
+
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 300)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [input]);
 
@@ -521,112 +528,95 @@ export const Chat: React.FC<ChatProps> = ({
           animate={{ opacity: 1, y: 0 }}
           style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,10,10,0.7)', flexShrink: 0 }}
         >
-          <div className="relative">
-            <div style={{ padding: '10px 14px', borderRadius: 14, background: '#131313', border: '1.5px solid rgba(255,139,155,0.2)', boxShadow: '0 0 0 3px rgba(255,139,155,0.04)' }}>
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value.slice(0, maxChars))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    onSend();
-                  }
-                }}
-                placeholder={t.chatPlaceholder.replace('{language}', selectedLanguage)}
-                className={cn(
-                  "gando-input w-full bg-transparent border-none rounded-xl px-0 py-2 text-sm focus:outline-none focus:ring-0 transition-all resize-none min-h-[80px] text-zinc-100 placeholder:text-zinc-500 font-medium leading-relaxed scroll-smooth",
-                  languageCode === 'ff-adlm' && "font-adlam"
-                )}
-              />
-
-              <div className="flex items-center justify-between mt-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Mic Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={toggleListening}
-                    className={cn(
-                      "p-2 rounded-lg transition-all",
-                      isListening
-                        ? "bg-red-500/30 text-red-400 border border-red-500/40 animate-pulse"
-                        : isTranscribing
-                        ? "bg-[#ff8b9b]/30 text-[#ff8b9b] border border-[#ff8b9b]/40 animate-spin"
-                        : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/10"
-                    )}
-                    title={isListening ? "Stop recording" : "Start voice input"}
-                  >
-                    {isTranscribing ? <Loader2 className="w-4 h-4" /> : isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  </motion.button>
-
-                  {/* Character Counter */}
-                  <motion.div
-                    animate={{ backgroundColor: charCount > maxChars * 0.9 ? "rgb(239, 68, 68, 0.1)" : "transparent" }}
-                    transition={{ duration: 0.2 }}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0",
-                      charCount > maxChars * 0.8
-                        ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
-                        : charCount > maxChars * 0.9
-                        ? "bg-red-500/10 border-red-500/30 text-red-400"
-                        : "bg-white/5 border-white/10 text-zinc-500"
-                    )}
-                  >
-                    <span className="font-mono">{charCount}</span>
-                    <span className="text-zinc-600">/</span>
-                    <span className="font-mono text-zinc-600">{maxChars}</span>
-                  </motion.div>
-
-                  {/* Language Badge */}
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-default"
-                  >
-                    <Globe className="w-3 h-3 text-blue-400" />
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{selectedLanguage}</span>
-                  </motion.div>
-                </div>
-
-                {/* Send Button */}
-                <motion.button
-                  whileHover={input.trim() && !isGenerating ? { scale: 1.05 } : {}}
-                  whileTap={input.trim() && !isGenerating ? { scale: 0.95 } : {}}
-                  onClick={onSend}
-                  disabled={!input.trim() || isGenerating}
-                  style={{
-                    width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                    background: input.trim() && !isGenerating ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
-                    color: input.trim() && !isGenerating ? '#0a0a0a' : '#52525b',
-                    border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                  title={isGenerating ? "Generating..." : input.trim() ? "Send message" : "Type a message first"}
-                >
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </motion.button>
-              </div>
-
-              {/* Tips */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="mt-2 pt-2 flex flex-wrap items-center gap-2 border-t border-white/5"
-              >
-                <div className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest flex items-center gap-1.5">
-                  <Sparkles className="w-3 h-3 text-[#ff8b9b]" />
-                  {t.tips}
-                </div>
-                <div className="flex flex-wrap gap-2 text-[10px] text-zinc-600">
-                  <span className="hover:text-zinc-400 transition-colors cursor-help">Shift+Enter</span>
-                  <span className="text-zinc-700">•</span>
-                  <span className="hover:text-zinc-400 transition-colors cursor-help">Voice input 🎤</span>
-                  <span className="hidden sm:inline text-zinc-700">•</span>
-                  <span className="hidden sm:inline hover:text-zinc-400 transition-colors cursor-help">Press Esc to clear</span>
-                </div>
-              </motion.div>
-            </div>
+          <div style={{ position: 'relative', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 0 }}>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value.slice(0, maxChars))}
+              onInput={handleInput}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onSend();
+                }
+              }}
+              placeholder={t.chatPlaceholder.replace('{language}', selectedLanguage)}
+              style={{
+                width: '100%',
+                minHeight: 52,
+                maxHeight: 200,
+                padding: '14px 48px 14px 16px',
+                fontSize: 15,
+                lineHeight: 1.6,
+                color: '#e5e5e5',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                resize: 'none',
+                fontFamily: languageCode === 'ff-adlm' ? 'Noto Sans Adlam, sans-serif' : 'Manrope, sans-serif',
+                overflowY: 'auto',
+                display: 'block',
+                boxSizing: 'border-box',
+              }}
+            />
+            <motion.button
+              whileHover={input.trim() && !isGenerating ? { scale: 1.05 } : {}}
+              whileTap={input.trim() && !isGenerating ? { scale: 0.95 } : {}}
+              onClick={onSend}
+              disabled={!input.trim() || isGenerating}
+              style={{
+                position: 'absolute', bottom: 10, right: 10,
+                width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                background: input.trim() && !isGenerating ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
+                color: input.trim() && !isGenerating ? '#0a0a0a' : '#52525b',
+                border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+              title={isGenerating ? "Generating..." : input.trim() ? "Send message" : "Type a message first"}
+            >
+              {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </motion.button>
+          </div>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleListening}
+              className={cn(
+                "p-2 rounded-lg transition-all",
+                isListening
+                  ? "bg-red-500/30 text-red-400 border border-red-500/40 animate-pulse"
+                  : isTranscribing
+                  ? "bg-[#ff8b9b]/30 text-[#ff8b9b] border border-[#ff8b9b]/40 animate-spin"
+                  : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/10"
+              )}
+              title={isListening ? "Stop recording" : "Start voice input"}
+            >
+              {isTranscribing ? <Loader2 className="w-4 h-4" /> : isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </motion.button>
+            <motion.div
+              animate={{ backgroundColor: charCount > maxChars * 0.9 ? "rgb(239, 68, 68, 0.1)" : "transparent" }}
+              transition={{ duration: 0.2 }}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0",
+                charCount > maxChars * 0.8
+                  ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                  : charCount > maxChars * 0.9
+                  ? "bg-red-500/10 border-red-500/30 text-red-400"
+                  : "bg-white/5 border-white/10 text-zinc-500"
+              )}
+            >
+              <span className="font-mono">{charCount}</span>
+              <span className="text-zinc-600">/</span>
+              <span className="font-mono text-zinc-600">{maxChars}</span>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-default"
+            >
+              <Globe className="w-3 h-3 text-blue-400" />
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{selectedLanguage}</span>
+            </motion.div>
           </div>
         </motion.div>
       )}
