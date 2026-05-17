@@ -1,157 +1,277 @@
 @import "tailwindcss";
 
-@theme {
-  /* Brand palette — pink/orange neon (Nexus Builder) */
-  --color-primary:   #ff8b9b;
-  --color-primary-dim: #e31754;
-  --color-secondary: #fd8b00;
-  --color-tertiary:  #bca2ff;
+/* ═══════════════════════════════════════════════════════════════
+   Gando AI — Design Tokens
+   Pink/orange neon on obsidian dark — "Nexus Builder" aesthetic
+═══════════════════════════════════════════════════════════════ */
 
-  /* Dark surfaces */
-  --color-surface:                #0e0e0e;
-  --color-surface-dim:            #0e0e0e;
-  --color-surface-container-low:  #131313;
-  --color-surface-container:      #1a1a1a;
-  --color-surface-container-high: #20201f;
-  --color-surface-container-highest: #262626;
-  --color-surface-bright:         #2c2c2c;
+/* Fonts — loaded from Google Fonts (Manrope, Inter, JetBrains Mono, Noto Sans Adlam) */
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Adlam:wght@400;500;600;700&display=swap");
 
-  /* Text */
-  --color-on-surface:         #ffffff;
-  --color-on-surface-variant: #adaaaa;
+:root {
+  /* ── BRAND PALETTE ── Nexus Builder neon */
+  --color-primary:        #ff8b9b;   /* rose / flamingo — hero accent */
+  --color-primary-dim:    #e31754;   /* hover / pressed */
+  --color-secondary:      #fd8b00;   /* orange — gradient partner + warnings */
+  --color-tertiary:        #bca2ff;  /* lavender — language chip accent */
 
-  /* Fonts */
+  --color-accent-blue:    #3b82f6;   /* user avatar / mic info */
+  --color-accent-green:   #4ade80;   /* status ok */
+  --color-accent-red:     #f87171;   /* status down / destructive */
+
+  /* ── GRADIENTS ── Signature primary → secondary */
+  --gradient-brand:       linear-gradient(135deg, #ff8b9b, #fd8b00);
+  --gradient-brand-soft:  linear-gradient(135deg, rgba(255,139,155,0.18), rgba(253,139,0,0.18));
+  --gradient-horizontal:  linear-gradient(to right,  #ff8b9b, #fd8b00);
+  --gradient-ambient-1:   radial-gradient(at 0% 0%,   rgba(255,139,155,0.05) 0, transparent 55%);
+  --gradient-ambient-2:   radial-gradient(at 100% 100%, rgba(253,139,0,0.05) 0, transparent 55%);
+
+  /* ── DARK SURFACES ── (obsidian scale) */
+  --color-bg:                        #0e0e0e;  /* app background */
+  --color-bg-dim:                    #0a0a0a;  /* code blocks, darkest */
+  --color-surface-low:               #131313;  /* cards, chips */
+  --color-surface:                   #1a1a1a;  /* elevated panels */
+  --color-surface-high:              #20201f;  /* hovered elevated */
+  --color-surface-highest:           #262626;  /* inputs, gauge tracks */
+  --color-surface-bright:            #2c2c2c;  /* brightest container */
+
+  /* ── TEXT ── */
+  --fg-1:                 #ffffff;   /* pure white — titles, critical */
+  --fg-2:                 #adaaaa;   /* body copy */
+  --fg-3:                 #767575;   /* nav inactive */
+  --fg-4:                 #52525b;   /* zinc-600 — meta */
+  --fg-5:                 #3f3f46;   /* zinc-700 — dividers inline */
+  --fg-muted:             #71717a;   /* placeholder */
+
+  /* ── BORDERS & LINES ── always white-on-dark with alpha */
+  --line-1:               rgba(255,255,255,0.05);  /* default divider */
+  --line-2:               rgba(255,255,255,0.08);  /* card border */
+  --line-3:               rgba(255,255,255,0.10);  /* stronger border */
+  --line-4:               rgba(255,255,255,0.15);  /* hover / focus */
+  --line-accent:          rgba(255,139,155,0.30);  /* focused brand border */
+
+  /* ── GLASSMORPHISM ── */
+  --glass-1:              rgba(255,255,255,0.03);
+  --glass-2:              rgba(255,255,255,0.04);
+  --glass-3:              rgba(255,255,255,0.06);
+  --glass-black:          rgba(0,0,0,0.40);
+  --blur-sm:              blur(12px);
+  --blur-md:              blur(20px);
+  --blur-lg:              blur(80px);     /* ambient glow orbs */
+  --blur-xl:              blur(120px);    /* login-screen orbs */
+
+  /* ── NEON GLOWS ── box-shadow halos */
+  --glow-primary-sm:      0 0 20px rgba(255,139,155,0.25);
+  --glow-primary-md:      0 0 24px rgba(255,139,155,0.40);
+  --glow-primary-lg:      0 0 32px rgba(255,139,155,0.45);
+  --glow-secondary:       0 0 24px rgba(253,139,0,0.40);
+  --glow-card:            0 40px 100px -20px rgba(0,0,0,0.8);
+  --glow-sidebar:         20px 0 40px rgba(0,0,0,0.4);
+  --glow-input-focus:     0 0 50px -12px rgba(255,139,155,0.2);
+
+  /* ── RADII ── generous on Gando; never square */
+  --radius-xs:            6px;     /* tiny pills */
+  --radius-sm:            8px;     /* buttons, small chips */
+  --radius-md:            12px;    /* cards small, inputs */
+  --radius-lg:            16px;    /* modals, panels */
+  --radius-xl:            20px;    /* premium cards */
+  --radius-2xl:           24px;    /* hero input, cards */
+  --radius-3xl:           32px;    /* glass chat input */
+  --radius-4xl:           40px;    /* browser frame */
+  --radius-full:          9999px;  /* pills, avatars, scrollbar */
+
+  /* ── SPACING ── tailwind scale */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ── FONTS ── */
   --font-sans:     "Inter", "Noto Sans Adlam", ui-sans-serif, system-ui, sans-serif;
   --font-display:  "Manrope", "Noto Sans Adlam", sans-serif;
   --font-headline: "Manrope", "Noto Sans Adlam", sans-serif;
   --font-mono:     "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-adlam:    "Noto Sans Adlam", sans-serif;
+  --font-adlam:    "Noto Sans Adlam", sans-serif;  /* Fulani ADLaM script fallback */
+
+  /* ── TYPE SCALE ── display-first, bold by default */
+  --fs-xs:   10px;   /* uppercase eyebrows, meta, chips */
+  --fs-sm:   11px;   /* nav, small labels */
+  --fs-base: 12px;   /* secondary body, meta */
+  --fs-md:   13px;
+  --fs-lg:   14px;   /* default body */
+  --fs-xl:   15px;   /* messages */
+  --fs-2xl:  18px;   /* section titles */
+  --fs-3xl:  24px;   /* stat values */
+  --fs-4xl:  36px;   /* page titles */
+  --fs-5xl:  48px;   /* hero (responsive) */
+  --fs-hero: clamp(48px, 7vw, 96px);  /* login hero */
+
+  /* ── LETTER TRACKING ── brand loves wide uppercase */
+  --track-widest:  0.2em;   /* eyebrows, "BETA" */
+  --track-wide:    0.1em;
+  --track-tight:   -0.02em; /* hero */
+  --track-tighter: -0.04em; /* page titles */
+
+  /* ── WEIGHT ── Gando is font-black heavy */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+  --fw-extrabold: 800;
+  --fw-black:    900;
+
+  /* ── MOTION ── */
+  --ease-standard:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring:    cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast:       150ms;
+  --dur-base:       300ms;
+  --dur-slow:       500ms;
+  --dur-slower:     700ms;
 }
 
-@layer base {
-  body {
-    @apply bg-[#0e0e0e] text-[#adaaaa] antialiased;
-    font-family: var(--font-sans);
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-    /* Subtle ambient glow matching brand */
-    background-image:
-      radial-gradient(at 0% 0%,   rgba(255, 139, 155, 0.05) 0, transparent 55%),
-      radial-gradient(at 100% 100%, rgba(253, 139, 0, 0.05) 0, transparent 55%);
-    background-attachment: fixed;
-  }
+/* ═══════════════════════════════════════════════════════════════
+   SEMANTIC TYPE ROLES
+   Use these as classes or re-declarations (h1, p, etc).
+═══════════════════════════════════════════════════════════════ */
 
-  /* Grain overlay */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    opacity: 0.018;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    z-index: 9999;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-headline);
-    @apply text-white font-bold tracking-tight;
-  }
+.ds-hero, .ds-h0 {
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--track-tight);
+  line-height: 0.95;
+  color: var(--fg-1);
 }
 
-@layer components {
-  /* ── Buttons ── */
-  .btn-primary {
-    @apply px-6 py-3 font-bold rounded-2xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
-    background: linear-gradient(135deg, #ff8b9b, #fd8b00);
-    color: #000;
-    box-shadow: 0 0 20px rgba(255, 139, 155, 0.25);
-  }
-  .btn-primary:hover {
-    box-shadow: 0 0 32px rgba(255, 139, 155, 0.45);
-    filter: brightness(1.08);
-  }
-
-  .btn-secondary {
-    @apply px-6 py-3 bg-white/5 text-white border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-md;
-  }
-
-  /* ── Glassmorphism card ── */
-  .glass {
-    @apply bg-white/[0.03] backdrop-blur-xl border border-white/5;
-  }
-  .glass-dark {
-    @apply bg-black/40 backdrop-blur-2xl border border-white/5;
-  }
-  .premium-card {
-    @apply bg-[#1a1a1a]/60 border border-white/5 hover:border-white/10 transition-all duration-500 rounded-3xl shadow-2xl;
-  }
-
-  /* ── Gradient text ── */
-  .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #ff8b9b, #fd8b00);
-  }
-
-  /* ── Neon glow helpers ── */
-  .glow-primary {
-    box-shadow: 0 0 24px rgba(255, 139, 155, 0.4);
-  }
-  .glow-secondary {
-    box-shadow: 0 0 24px rgba(253, 139, 0, 0.4);
-  }
-
-  /* Floating ambient blob */
-  .vibe-glow {
-    filter: blur(80px);
-    opacity: 0.12;
-    position: absolute;
-    pointer-events: none;
-    z-index: 0;
-    border-radius: 9999px;
-  }
-
-  /* Subtle Adinkra star mask for texture */
-  .adinkra-mask {
-    mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><path d="M20 2L22 18L38 20L22 22L20 38L18 22L2 20L18 18Z" fill="white" fill-opacity="0.1"/></svg>');
-    mask-repeat: repeat;
-  }
-
-  /* Input glow */
-  .input-glow {
-    box-shadow: 0 0 50px -12px rgba(255, 139, 155, 0.2);
-  }
+.ds-h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-4xl);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--track-tighter);
+  line-height: 1.05;
+  color: var(--fg-1);
 }
 
-/* ── Prose (chat markdown) ── */
-.prose {
-  @apply text-[#adaaaa] leading-relaxed text-[14px];
-}
-.prose p   { @apply mb-4; }
-.prose code {
-  @apply bg-[#131313] px-1.5 py-0.5 rounded text-white font-mono text-[12px] border border-white/5;
-}
-.prose pre {
-  @apply bg-[#0a0a0a] p-5 rounded-2xl border border-white/5 overflow-x-auto mb-6 shadow-2xl;
-}
-.prose pre code { @apply bg-transparent p-0 text-zinc-300 border-none; }
-.prose h1, .prose h2, .prose h3 {
-  @apply text-white font-bold mb-3 mt-8 tracking-tight;
-  font-family: var(--font-headline);
+.ds-h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--track-tight);
+  line-height: 1.1;
+  color: var(--fg-1);
 }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar       { width: 4px; height: 4px; }
+.ds-h3 {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-black);
+  color: var(--fg-1);
+}
+
+.ds-title {
+  /* card / panel title */
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-black);
+  color: var(--fg-1);
+}
+
+.ds-body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-regular);
+  line-height: 1.6;
+  color: var(--fg-2);
+}
+
+.ds-body-sm {
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  font-weight: var(--fw-medium);
+  line-height: 1.55;
+  color: var(--fg-2);
+}
+
+.ds-meta {
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--fg-4);
+}
+
+/* Eyebrow — uppercase, wide-tracked, tiny. A SIGNATURE Gando pattern. */
+.ds-eyebrow {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-black);
+  text-transform: uppercase;
+  letter-spacing: var(--track-widest);
+  color: var(--fg-3);
+}
+
+.ds-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  color: var(--fg-2);
+}
+
+/* ADLaM — Fulani script utility. Kicks in when language is ff-adlm. */
+.ds-adlam {
+  font-family: var(--font-adlam);
+}
+
+/* Gradient text — iconic Gando treatment */
+.ds-gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+body {
+  background-image: var(--gradient-ambient-1), var(--gradient-ambient-2);
+  background-attachment: fixed;
+}
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,139,155,0.15); border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,139,155,0.35); }
-
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* ── Code editor ── */
-.npm__react-simple-code-editor__textarea { outline: none !important; }
-
-/* ── Selection ── */
-::selection {
-  background: rgba(255, 139, 155, 0.25);
-  color: #fff;
+::selection { background: rgba(255,139,155,0.25); color: #fff; }
+.ds-gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
+.ds-eyebrow {
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-black);
+  text-transform: uppercase;
+  letter-spacing: var(--track-widest);
+  color: var(--fg-3);
+}
+.ds-adlam { font-family: var(--font-adlam); }
+.gando-input {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--line-3);
+  border-radius: var(--radius-md);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+.gando-input:focus {
+  border-color: var(--line-accent);
+  box-shadow: var(--glow-input-focus);
+}
+.gando-input::placeholder { color: var(--fg-muted); }
