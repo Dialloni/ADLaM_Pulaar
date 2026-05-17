@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Gando — Full App</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #050505; color: #fff; font-family: Inter, system-ui, sans-serif; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(900px 600px at 10% 0%, rgba(255,139,155,0.06), transparent 70%),
+      radial-gradient(900px 600px at 90% 100%, rgba(253,139,0,0.05), transparent 70%),
+      #050505;
+  }
+
+  /* page chrome */
+  .page-head {
+    padding: 36px 48px 20px;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 32px;
+    flex-wrap: wrap;
+  }
+  .eyebrow-lg {
+    font-family: Manrope; font-weight: 900; font-size: 10px;
+    letter-spacing: .28em; text-transform: uppercase;
+    color: #ff8b9b; display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow-lg::after {
+    content: ''; display: block; width: 40px; height: 1px;
+    background: linear-gradient(to right, #ff8b9b, transparent);
+  }
+  h1.page-title {
+    font-family: Manrope; font-weight: 900; font-size: 44px;
+    letter-spacing: -0.04em; color: #fff; margin: 10px 0 0; line-height: 1;
+  }
+  .page-sub {
+    font-family: Inter; font-size: 14px; color: #adaaaa;
+    margin: 10px 0 0; max-width: 620px; line-height: 1.55;
+  }
+
+  /* control bar */
+  .controls {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .ctrl-group {
+    display: flex; padding: 4px; border-radius: 12px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    gap: 2px;
+  }
+  .ctrl-btn {
+    padding: 8px 14px; border-radius: 9px; border: none; cursor: pointer;
+    background: transparent; color: #adaaaa;
+    font-family: Manrope; font-weight: 700; font-size: 11px;
+    letter-spacing: .05em; transition: all 180ms;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .ctrl-btn:hover { color: #fff; }
+  .ctrl-btn.active {
+    background: linear-gradient(135deg, rgba(255,139,155,0.2), rgba(253,139,0,0.15));
+    color: #fff; box-shadow: 0 0 20px -5px rgba(255,139,155,0.3);
+  }
+
+  /* canvas */
+  .canvas {
+    padding: 20px 48px 80px;
+    display: flex; justify-content: center;
+    min-height: calc(100vh - 240px);
+  }
+  .stage {
+    display: flex; gap: 40px; align-items: flex-start; justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* frame label */
+  .frame-wrap { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+  .frame-label {
+    font-family: Manrope; font-weight: 900; font-size: 10px;
+    letter-spacing: .22em; color: #767575; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .frame-label .dot { width: 6px; height: 6px; border-radius: 9999px; background: #ff8b9b; }
+
+  /* scale wrapper — let big frames fit */
+  .scale-wrap { transform-origin: top left; }
+
+  /* footer note */
+  .footnote {
+    padding: 24px 48px 60px; text-align: center;
+    font-family: Inter; font-size: 11px; color: #52525b;
+  }
+  .footnote a { color: #ff8b9b; text-decoration: none; font-weight: 700; }
+
+  /* tweaks panel */
+  .tweaks-panel {
+    position: fixed; bottom: 20px; right: 20px; z-index: 100;
+    width: 280px; padding: 16px; border-radius: 16px;
+    background: rgba(19,19,19,0.95); backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,139,155,0.2);
+    box-shadow: 0 30px 60px -10px rgba(0,0,0,0.6);
+    display: none; flex-direction: column; gap: 12px;
+  }
+  .tweaks-panel.open { display: flex; }
+  .tweaks-head {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: Manrope; font-weight: 900; font-size: 11px;
+    color: #ff8b9b; letter-spacing: .18em; text-transform: uppercase;
+  }
+  .tweaks-close {
+    background: none; border: none; color: #767575; cursor: pointer; font-size: 16px;
+    line-height: 1;
+  }
+  .tweak-row { display: flex; flex-direction: column; gap: 6px; }
+  .tweak-label {
+    font-family: Manrope; font-weight: 700; font-size: 10px;
+    color: #adaaaa; letter-spacing: .12em; text-transform: uppercase;
+  }
+  .tweak-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tweak-pill {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03); color: #adaaaa; cursor: pointer;
+    font-family: Inter; font-size: 11px; font-weight: 600;
+  }
+  .tweak-pill.active {
+    background: rgba(255,139,155,0.15); border-color: rgba(255,139,155,0.4);
+    color: #ff8b9b;
+  }
+</style>
+</head>
+<body>
+
+<!-- page header -->
+<div class="page-head">
+  <div>
+    <div class="eyebrow-lg">Gando · Full App Preview</div>
+    <h1 class="page-title">The product, end-to-end.</h1>
+    <p class="page-sub">
+      Every screen of the Gando app, composed from the design system. Switch devices, routes, and languages to see how the system flexes. Use <b style="color:#fff">Tweaks</b> (bottom-right) for layout variants.
+    </p>
+  </div>
+  <div class="controls" id="controls">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- device canvas -->
+<div class="canvas">
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="footnote">
+  Device frames · Gando UI kit · Design tokens from <a href="../README.md">README</a>
+</div>
+
+<!-- React + Babel (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- UI kit primitives -->
+<script type="text/babel" src="../ui_kits/web/Icons.jsx"></script>
+<script type="text/babel" src="../ui_kits/web/Primitives.jsx"></script>
+
+<!-- App state + frames + screens -->
+<script type="text/babel" src="./app/AppState.jsx"></script>
+<script type="text/babel" src="./app/DeviceFrames.jsx"></script>
+<script type="text/babel" src="./app/AppShells.jsx"></script>
+<script type="text/babel" src="./app/LoginScreen.jsx"></script>
+<script type="text/babel" src="./app/DashboardScreen.jsx"></script>
+<script type="text/babel" src="./app/ProjectsScreen.jsx"></script>
+<script type="text/babel" src="./app/WorkspaceScreen.jsx"></script>
+<script type="text/babel" src="./app/StatusScreen.jsx"></script>
+<script type="text/babel" src="./app/DocsScreen.jsx"></script>
+
+<!-- Page orchestration -->
+<script type="text/babel">
+const { createElement: h, useState, useEffect, useMemo } = React;
+
+// Read persisted state so refreshes survive
+const persisted = (() => {
+  try { return JSON.parse(localStorage.getItem("gando-full-app") || "{}"); }
+  catch { return {}; }
+})();
+
+// Inner page renders based on route
+const RouteContent = ({ device }) => {
+  const { route, activeProject } = useApp();
+  const isDesktop = device === "desktop";
+  // placeholder for screens not yet built
+  const Placeholder = ({ label }) => h("div", {
+    style: {
+      minHeight: 400, display: "grid", placeItems: "center",
+      border: "1.5px dashed rgba(255,139,155,0.25)", borderRadius: 20,
+      padding: 40, color: "#adaaaa", fontFamily: "Inter",
+    },
+  },
+    h("div", { style: { textAlign: "center" } },
+      h("div", { style: { fontFamily: "Manrope", fontWeight: 900, fontSize: 14, color: "#ff8b9b", letterSpacing: ".2em", textTransform: "uppercase" } }, "Coming next"),
+      h("div", { style: { fontFamily: "Manrope", fontWeight: 900, fontSize: 28, color: "#fff", marginTop: 8, letterSpacing: "-.02em" } }, label),
+      h("div", { style: { marginTop: 8, fontSize: 12 } }, "Will be wired in the next pass (D.3 / D.4)."),
+    ),
+  );
+
+  if (activeProject) return isDesktop ? h(WorkspaceDesktop, {}) : h(WorkspaceMobile, {});
+
+  switch (route) {
+    case "dashboard": return isDesktop ? h(DashboardDesktop, {}) : h(DashboardMobile, {});
+    case "projects":  return isDesktop ? h(ProjectsDesktop, {}) : h(ProjectsMobile, {});
+    case "assets":    return h(Placeholder, { label: "Language Assets" });
+    case "settings":  return h(Placeholder, { label: "Settings" });
+    case "team":      return h(Placeholder, { label: "Team Hub" });
+    case "docs":      return isDesktop ? h(DocsDesktop, {}) : h(DocsMobile, {});
+    case "status":    return isDesktop ? h(StatusDesktop, {}) : h(StatusMobile, {});
+    default:          return isDesktop ? h(DashboardDesktop, {}) : h(DashboardMobile, {});
+  }
+};
+
+// Top-level stage — a Desktop frame + Phone frame side-by-side, sharing app state.
+const Stage = ({ screen, device }) => {
+  // Login screen fills the frames directly (no shell)
+  if (screen === "login") {
+    return device === "desktop"
+      ? h(DesktopFrame, { width: 1280, height: 800 }, h(LoginScreenDesktop, {}))
+      : h(PhoneFrame,   { width: 390,  height: 844 }, h(LoginScreenMobile, {}));
+  }
+  // Authenticated: wrap in the shell
+  if (device === "desktop") {
+    return h(DesktopFrame, { width: 1280, height: 800 },
+      h(DesktopShell, {}, h(RouteContent, { device: "desktop" })),
+    );
+  }
+  return h(PhoneFrame, { width: 390, height: 844 },
+    h(MobileShell, {}, h(RouteContent, { device: "mobile" })),
+  );
+};
+
+// Top-level App
+const FullApp = () => {
+  const [screen, setScreen]   = useState(persisted.screen   || "login");
+  const [device, setDevice]   = useState(persisted.device   || "both");
+  const [lang,   setLang]     = useState(persisted.lang     || "en");
+  const [dashVariant, setDashVariant] = useState(persisted.dashVariant || "cards");
+  const [workLayout, setWorkLayout]   = useState(persisted.workLayout   || "split");
+  const [density, setDensity]         = useState(persisted.density     || "comfortable");
+  const [tweaksOpen, setTweaksOpen]   = useState(false);
+
+  // Persist
+  useEffect(() => {
+    localStorage.setItem("gando-full-app", JSON.stringify({ screen, device, lang, dashVariant, workLayout, density }));
+  }, [screen, device, lang, dashVariant, workLayout, density]);
+
+  // Build controls (into #controls div)
+  useEffect(() => {
+    const root = document.getElementById("controls");
+    // screen picker + device picker — rebuild on every state change
+    root.innerHTML = "";
+    const screens = [
+      { id: "login",     label: "Login" },
+      { id: "dashboard", label: "Dashboard" },
+      { id: "projects",  label: "Projects" },
+      { id: "workspace", label: "Workspace" },
+      { id: "status",    label: "Status" },
+      { id: "docs",      label: "Docs" },
+    ];
+    const devices = [
+      { id: "desktop", label: "Desktop" },
+      { id: "mobile",  label: "Mobile"  },
+      { id: "both",    label: "Both"    },
+    ];
+    const mk = (items, active, onClick) => {
+      const g = document.createElement("div");
+      g.className = "ctrl-group";
+      items.forEach(i => {
+        const b = document.createElement("button");
+        b.className = "ctrl-btn" + (active === i.id ? " active" : "");
+        b.textContent = i.label;
+        b.onclick = () => onClick(i.id);
+        g.appendChild(b);
+      });
+      return g;
+    };
+    root.appendChild(mk(screens, screen, id => {
+      if (id === "workspace") {
+        setScreen("dashboard"); // workspace = activeProject set, done in onClick below
+        // load first project
+        setTimeout(() => {
+          const ev = new CustomEvent("gando-route", { detail: { route: "dashboard", activeProject: SAMPLE_PROJECTS[0] } });
+          window.dispatchEvent(ev);
+        }, 20);
+      } else {
+        setScreen(id);
+        const routeMap = { login: null, dashboard: "dashboard", projects: "projects", status: "status", docs: "docs" };
+        const route = routeMap[id] || "dashboard";
+        const ev = new CustomEvent("gando-route", { detail: { route, activeProject: null } });
+        window.dispatchEvent(ev);
+      }
+    }));
+    root.appendChild(mk(devices, device, setDevice));
+    // tweaks toggle
+    const tweak = document.createElement("button");
+    tweak.className = "ctrl-btn" + (tweaksOpen ? " active" : "");
+    tweak.style.border = "1px solid rgba(255,139,155,0.3)";
+    tweak.style.borderRadius = "12px";
+    tweak.innerHTML = "✦ Tweaks";
+    tweak.onclick = () => setTweaksOpen(o => !o);
+    root.appendChild(tweak);
+  }, [screen, device, tweaksOpen]);
+
+  // Route change bridge — since FullApp is outside AppStateProvider, we dispatch events
+  // and a child component listens. See Bridge below.
+
+  const stage = h(AppStateProvider, { initial: { lang, dashboardVariant: dashVariant, workspaceLayout: workLayout } },
+    h(StateBridge, {
+      onLangChange: setLang, lang,
+      dashVariant, onDashVariantChange: setDashVariant,
+      workLayout, onWorkLayoutChange: setWorkLayout,
+    },
+      device === "both"
+        ? h("div", { style: { display: "flex", gap: 48, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center", transform: "scale(0.78)", transformOrigin: "top center" } },
+            h("div", { className: "frame-wrap" },
+              h("div", { className: "frame-label" }, h("span", { className: "dot" }), "Desktop · 1280×800"),
+              h(Stage, { screen, device: "desktop" }),
+            ),
+            h("div", { className: "frame-wrap" },
+              h("div", { className: "frame-label" }, h("span", { className: "dot" }), "Mobile · 390×844"),
+              h(Stage, { screen, device: "mobile" }),
+            ),
+          )
+        : h("div", { className: "frame-wrap" },
+            h("div", { className: "frame-label" }, h("span", { className: "dot" }),
+              device === "desktop" ? "Desktop · 1280×800" : "Mobile · 390×844"),
+            h(Stage, { screen, device }),
+          ),
+    ),
+  );
+
+  // Tweaks panel
+  const tweaks = h("div", { className: "tweaks-panel" + (tweaksOpen ? " open" : ""), style: { display: tweaksOpen ? "flex" : "none" } },
+    h("div", { className: "tweaks-head" },
+      h("span", {}, "Tweaks"),
+      h("button", { className: "tweaks-close", onClick: () => setTweaksOpen(false) }, "×"),
+    ),
+    h("div", { className: "tweak-row" },
+      h("div", { className: "tweak-label" }, "Dashboard layout"),
+      h("div", { className: "tweak-pills" },
+        ["cards", "list"].map(v =>
+          h("button", {
+            key: v,
+            className: "tweak-pill" + (dashVariant === v ? " active" : ""),
+            onClick: () => setDashVariant(v),
+          }, v.charAt(0).toUpperCase() + v.slice(1)),
+        ),
+      ),
+    ),
+    h("div", { className: "tweak-row" },
+      h("div", { className: "tweak-label" }, "Workspace layout"),
+      h("div", { className: "tweak-pills" },
+        [
+          { id: "split",   label: "Split"   },
+          { id: "preview", label: "Preview only" },
+        ].map(v =>
+          h("button", {
+            key: v.id,
+            className: "tweak-pill" + (workLayout === v.id ? " active" : ""),
+            onClick: () => setWorkLayout(v.id),
+          }, v.label),
+        ),
+      ),
+    ),
+    h("div", { className: "tweak-row" },
+      h("div", { className: "tweak-label" }, "Density"),
+      h("div", { className: "tweak-pills" },
+        ["comfortable", "compact"].map(v =>
+          h("button", {
+            key: v,
+            className: "tweak-pill" + (density === v ? " active" : ""),
+            onClick: () => { setDensity(v); document.body.dataset.density = v; },
+          }, v.charAt(0).toUpperCase() + v.slice(1)),
+        ),
+      ),
+    ),
+    h("div", { className: "tweak-row" },
+      h("div", { className: "tweak-label" }, "Language"),
+      h("div", { className: "tweak-pills" },
+        Object.keys(LANG_META).map(k =>
+          h("button", {
+            key: k,
+            className: "tweak-pill" + (lang === k ? " active" : ""),
+            onClick: () => setLang(k),
+          }, LANG_META[k].native),
+        ),
+      ),
+    ),
+  );
+
+  return h(React.Fragment, {}, stage, tweaks);
+};
+
+// Bridge: forwards external events into AppStateProvider
+const StateBridge = ({ children, onLangChange, lang, dashVariant, onDashVariantChange, workLayout, onWorkLayoutChange }) => {
+  const app = useApp();
+  // keep external lang/dashVariant in sync with provider
+  useEffect(() => { if (app.lang !== lang) app.setLang(lang); }, [lang]);
+  useEffect(() => { if (app.lang !== lang) onLangChange(app.lang); }, [app.lang]);
+  useEffect(() => { if (app.dashboardVariant !== dashVariant) app.setDashboardVariant(dashVariant); }, [dashVariant]);
+  useEffect(() => { if (app.workspaceLayout !== workLayout) app.setWorkspaceLayout(workLayout); }, [workLayout]);
+  // receive route events from outside
+  useEffect(() => {
+    const handler = (e) => {
+      const { route, activeProject } = e.detail || {};
+      if (route) app.setRoute(route);
+      app.setActiveProject(activeProject || null);
+    };
+    window.addEventListener("gando-route", handler);
+    return () => window.removeEventListener("gando-route", handler);
+  }, [app]);
+  return children;
+};
+
+ReactDOM.createRoot(document.createElement("div")).render(h("div"));  // warmup
+const mount = document.createElement("div");
+document.getElementById("stage").appendChild(mount);
+ReactDOM.createRoot(mount).render(h(FullApp));
+</script>
+
+</body>
+</html>

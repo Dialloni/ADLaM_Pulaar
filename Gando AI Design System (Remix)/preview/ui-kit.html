@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Gando — UI Kit</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<link rel="stylesheet" href="../ui_kits/web/kit.css"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:#0a0a0a; color:#adaaaa; font-family:Inter,sans-serif; overflow:hidden; }
+  #root { height:100%; display:flex; flex-direction:column; }
+
+  /* Top bar */
+  .topbar {
+    display:flex; align-items:center; gap:18px; padding:18px 28px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    background:rgba(10,10,10,0.8); backdrop-filter:blur(20px);
+    flex:0 0 auto;
+  }
+  .topbar .brand {
+    font-family:Manrope; font-weight:900; font-size:13px; color:#fff; letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:10px;
+  }
+  .topbar .eyebrow {
+    font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:.2em;
+    text-transform:uppercase; color:#ff8b9b;
+    padding:3px 9px; border-radius:9999px;
+    background:rgba(255,139,155,0.12); border:1px solid rgba(255,139,155,0.25);
+  }
+  .spacer { flex:1; }
+  .search {
+    width:280px; height:36px; border-radius:10px;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+    color:#adaaaa; font-family:Inter; font-size:12px; padding:0 12px;
+    outline:none;
+  }
+  .search:focus { border-color:rgba(255,139,155,0.4); }
+
+  /* Body */
+  .body { flex:1; display:flex; min-height:0; }
+
+  /* Side tabs */
+  .sidebar {
+    flex:0 0 220px; border-right:1px solid rgba(255,255,255,0.06);
+    padding:20px 0; overflow-y:auto; background:#0e0e0e;
+  }
+  .sidebar .group {
+    font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:.2em;
+    text-transform:uppercase; color:#767575; padding:14px 24px 8px;
+  }
+  .sidebar .tab {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 24px; width:100%; text-align:left;
+    background:transparent; border:none; cursor:pointer;
+    font-family:Inter; font-size:13px; font-weight:500; color:#adaaaa;
+    border-left:3px solid transparent; transition:all 180ms cubic-bezier(.16,1,.3,1);
+  }
+  .sidebar .tab:hover { color:#fff; background:rgba(255,255,255,0.02); }
+  .sidebar .tab.active {
+    color:#fff; font-weight:700;
+    border-left-color:#ff8b9b;
+    background:linear-gradient(to right, rgba(255,139,155,0.1), transparent);
+  }
+  .sidebar .tab .count {
+    margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:10px; color:#767575;
+  }
+
+  /* Stage */
+  .stage {
+    flex:1; min-width:0; overflow:auto; padding:40px 48px 80px;
+    position:relative;
+  }
+  .stage::before, .stage::after {
+    content:''; position:absolute; width:600px; height:600px; border-radius:9999px;
+    pointer-events:none; filter:blur(140px); opacity:.05;
+  }
+  .stage::before { background:#ff8b9b; left:-10%; top:-10%; }
+  .stage::after  { background:#fd8b00; right:-10%; bottom:-10%; }
+  .stage > * { position:relative; z-index:1; }
+
+  .page-title { font-family:Manrope; font-weight:900; font-size:34px; letter-spacing:-.03em; color:#fff; margin:0; }
+  .page-sub { margin-top:8px; font-size:14px; color:#adaaaa; max-width:640px; line-height:1.6;}
+  .page-header { margin-bottom:36px; display:flex; align-items:flex-start; gap:20px; }
+  .page-header .meta {
+    margin-left:auto; display:flex; gap:8px; align-items:center;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:#767575;
+  }
+
+  /* Specimen blocks */
+  .block { margin-bottom:40px; }
+  .block-title {
+    font-family:Manrope; font-weight:900; font-size:11px; letter-spacing:.22em;
+    text-transform:uppercase; color:#767575; margin:0 0 14px;
+    padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.05);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .block-title .hint { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.08em; text-transform:none; color:#767575; font-weight:500;}
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+  .grid-2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+  .swatch {
+    padding:18px; border-radius:14px; background:#131313;
+    border:1px solid rgba(255,255,255,0.06);
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .swatch .label {
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.06em;
+    color:#767575;
+  }
+
+  /* Shell preview frame */
+  .shell-frame {
+    height:560px; border-radius:16px; overflow:hidden;
+    border:1px solid rgba(255,255,255,0.08); background:#0a0a0a;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.8);
+  }
+
+  /* Coverage strip at top of every section */
+  .coverage {
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;
+    margin-bottom:28px;
+  }
+  .coverage .cell {
+    padding:12px 14px; border-radius:12px;
+    background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+  }
+  .coverage .cell .k {
+    font-family:Manrope; font-weight:900; font-size:9px; letter-spacing:.18em;
+    text-transform:uppercase; color:#767575;
+  }
+  .coverage .cell .v {
+    font-family:Manrope; font-weight:900; font-size:16px; color:#fff; margin-top:4px;
+    letter-spacing:-0.01em;
+  }
+  .coverage .cell .v.accent { color:#ff8b9b; }
+
+  /* Foundation tile */
+  .foundation-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+  .foundation-tile {
+    display:flex; flex-direction:column; gap:10px;
+    padding:18px; border-radius:14px;
+    background:#131313; border:1px solid rgba(255,255,255,0.06);
+    text-decoration:none; color:inherit; transition:all 180ms;
+  }
+  .foundation-tile:hover {
+    transform:translateY(-2px);
+    border-color:rgba(255,139,155,0.3);
+    box-shadow:0 20px 40px -20px rgba(255,139,155,0.25);
+  }
+  .foundation-tile .ft-label {
+    font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:.2em;
+    color:#ff8b9b; text-transform:uppercase;
+  }
+  .foundation-tile .ft-title {
+    font-family:Manrope; font-weight:900; font-size:16px; color:#fff;
+    letter-spacing:-0.01em;
+  }
+  .foundation-tile .ft-sub { font-size:11px; color:#adaaaa; line-height:1.5; }
+  .foundation-tile .ft-preview {
+    margin-top:6px; padding:16px; border-radius:10px;
+    background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.04);
+    display:flex; align-items:center; justify-content:center;
+    min-height:60px;
+  }
+
+  /* Code chip */
+  .code {
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    background:rgba(255,139,155,0.08); color:#ff8b9b;
+    padding:2px 7px; border-radius:5px;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="../ui_kits/web/Icons.jsx"></script>
+<script type="text/babel" src="../ui_kits/web/Primitives.jsx"></script>
+<script type="text/babel" src="../ui_kits/web/Shell.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+// ───────────────────────── pages ─────────────────────────
+
+const Block = ({ title, hint, children }) => (
+  <div className="block">
+    <div className="block-title"><span>{title}</span>{hint && <span className="hint">{hint}</span>}</div>
+    {children}
+  </div>
+);
+
+// BUTTONS
+const ButtonsPage = () => (
+  <>
+    <Block title="Variants" hint="<Button variant='...' />">
+      <div className="row">
+        <Button variant="primary" icon="plus">New project</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="subtle">Subtle</Button>
+        <Button variant="danger" icon="trash">Delete</Button>
+        <Button variant="icon" icon="bell"/>
+      </div>
+    </Block>
+    <Block title="Sizes" hint="size='sm' | 'md' | 'lg'">
+      <div className="row">
+        <Button variant="primary" size="sm" icon="send">Small</Button>
+        <Button variant="primary" size="md" icon="send">Medium</Button>
+        <Button variant="primary" size="lg" icon="send">Large</Button>
+      </div>
+    </Block>
+    <Block title="States">
+      <div className="row">
+        <Button variant="primary">Default</Button>
+        <Button variant="primary" disabled>Disabled</Button>
+        <Button variant="ghost" icon="loader">Loading</Button>
+      </div>
+    </Block>
+  </>
+);
+
+// CHIPS
+const ChipsPage = () => (
+  <>
+    <Block title="Tones" hint="<Chip tone='...' />">
+      <div className="row">
+        <Chip tone="neutral">Neutral</Chip>
+        <Chip tone="primary" icon="rotate">Primary</Chip>
+        <Chip tone="lavender">Lavender</Chip>
+        <Chip tone="success" icon="check">Operational</Chip>
+        <Chip tone="warn" icon="alert">Degraded</Chip>
+        <Chip tone="danger" icon="xcircle">Down</Chip>
+      </div>
+    </Block>
+    <Block title="Eyebrows" hint="all-caps section labels">
+      <div className="row" style={{gap:28}}>
+        <Eyebrow>Workspace</Eyebrow>
+        <Eyebrow color="#ff8b9b">Upgrade</Eyebrow>
+        <Eyebrow color="#fd8b00">New</Eyebrow>
+        <Eyebrow color="#4ade80">Online</Eyebrow>
+      </div>
+    </Block>
+    <Block title="Status pills" hint="<StatusPill status='...' />">
+      <div className="row">
+        <StatusPill status="operational"/>
+        <StatusPill status="degraded"/>
+        <StatusPill status="down"/>
+        <StatusPill status="checking"/>
+      </div>
+    </Block>
+  </>
+);
+
+// INPUTS
+const InputsPage = () => {
+  const [v1, setV1] = useState("");
+  const [v2, setV2] = useState("Amadou Diallo");
+  return (
+    <>
+      <Block title="Text input" hint="<Input size='md' | 'lg' />">
+        <div style={{display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:16}}>
+          <Input icon="search" placeholder="Search projects…" value={v1} onChange={e=>setV1(e.target.value)}/>
+          <Input icon="user" placeholder="Your name" value={v2} onChange={e=>setV2(e.target.value)}/>
+          <Input size="lg" icon="send" placeholder="Describe the app you want to build in Pulaar…"/>
+          <Input icon="lock" type="password" placeholder="Password" defaultValue="••••••••"/>
+        </div>
+      </Block>
+    </>
+  );
+};
+
+// CARDS
+const CardsPage = () => (
+  <>
+    <Block title="Card (default + hover)" hint="hover to see lift">
+      <div className="grid-2">
+        <Card gradientBar style={{padding:24}}>
+          <Eyebrow color="#ff8b9b">Project</Eyebrow>
+          <div style={{fontFamily:"Manrope", fontWeight:900, fontSize:20, color:"#fff", marginTop:8}}>Pulaar tutor app</div>
+          <div style={{fontSize:12, color:"#adaaaa", marginTop:6}}>12 messages · updated 2h ago</div>
+        </Card>
+        <Card style={{padding:24}}>
+          <Eyebrow>Metric</Eyebrow>
+          <div style={{fontFamily:"Manrope", fontWeight:900, fontSize:32, color:"#fff", marginTop:8}}>87%</div>
+          <div style={{fontSize:12, color:"#4ade80", marginTop:4}}>↑ 12 pts this week</div>
+        </Card>
+      </div>
+    </Block>
+    <Block title="Icon chips" hint="<IconChip icon='...' color='...' />">
+      <div className="row">
+        <IconChip icon="dashboard" color="#ff8b9b" size={48}/>
+        <IconChip icon="folder" color="#fd8b00" size={48}/>
+        <IconChip icon="globe" color="#bca2ff" size={48}/>
+        <IconChip icon="activity" color="#4ade80" size={48}/>
+        <IconChip icon="book" color="#f87171" size={48}/>
+      </div>
+    </Block>
+  </>
+);
+
+// AVATARS + MARK
+const AvatarsPage = () => (
+  <>
+    <Block title="Gando Mark" hint="<GandoMark size={n} variant='gradient'|'mono'|'ink'/>">
+      <div className="row">
+        <div className="swatch">
+          <GandoMark size={64} variant="gradient"/>
+          <span className="label">gradient · 64</span>
+        </div>
+        <div className="swatch">
+          <div style={{color:"#fff"}}><GandoMark size={48} variant="mono"/></div>
+          <span className="label">mono · 48 on dark</span>
+        </div>
+        <div className="swatch" style={{background:"#ff8b9b"}}>
+          <GandoMark size={48} variant="ink"/>
+          <span className="label" style={{color:"rgba(10,10,10,0.5)"}}>ink · 48 on fill</span>
+        </div>
+        <div className="swatch">
+          <div style={{display:"flex", gap:10, alignItems:"center"}}>
+            <GandoMark size={16} variant="gradient"/>
+            <GandoMark size={24} variant="gradient"/>
+            <GandoMark size={32} variant="gradient"/>
+          </div>
+          <span className="label">scale · 16 / 24 / 32</span>
+        </div>
+      </div>
+    </Block>
+    <Block title="Avatars" hint="<Avatar kind='user'|'bot'|'empty' />">
+      <div className="row">
+        <Avatar kind="user" size={40} label="A"/>
+        <Avatar kind="user" size={40} label="Amadou"/>
+        <Avatar kind="bot" size={40}/>
+        <Avatar kind="empty" size={40}/>
+        <Avatar kind="user" size={56} label="D"/>
+        <Avatar kind="bot" size={56}/>
+      </div>
+    </Block>
+    <Block title="Bot chip with mark (replaces sparkle)" hint="pair GandoMark with a chip">
+      <div className="row">
+        <span style={{
+          display:"inline-flex", alignItems:"center", gap:7,
+          padding:"6px 11px 6px 8px", borderRadius:9999,
+          background:"rgba(255,139,155,0.1)", border:"1px solid rgba(255,139,155,0.25)",
+          color:"#ff8b9b", fontFamily:"Manrope", fontWeight:900, fontSize:11, letterSpacing:".14em",
+        }}>
+          <GandoMark size={14} variant="gradient"/>
+          BETA
+        </span>
+        <span style={{
+          display:"inline-flex", alignItems:"center", gap:8,
+          padding:"8px 14px", borderRadius:9999,
+          background:"rgba(255,139,155,0.08)", border:"1px solid rgba(255,139,155,0.2)",
+          color:"#fff", fontFamily:"Inter", fontSize:12, fontWeight:600,
+        }}>
+          <GandoMark size={14} variant="gradient"/>
+          Generating your app…
+        </span>
+      </div>
+    </Block>
+  </>
+);
+
+// WORDMARK
+const WordmarkPage = () => (
+  <>
+    <Block title="Latin" hint='<Wordmark size={n} script="latin" />'>
+      <div className="row"><Wordmark size={32}/><Wordmark size={56}/><Wordmark size={88}/></div>
+    </Block>
+    <Block title="ADLaM" hint='script="adlam" · Noto Sans Adlam'>
+      <div className="row"><Wordmark size={32} script="adlam"/><Wordmark size={56} script="adlam"/><Wordmark size={88} script="adlam"/></div>
+    </Block>
+    <Block title="Mark + wordmark lockup">
+      <div className="row" style={{gap:36}}>
+        <div style={{display:"flex", alignItems:"center", gap:12}}>
+          <GandoMark size={40} variant="gradient"/><Wordmark size={36}/>
+        </div>
+        <div style={{display:"flex", alignItems:"center", gap:12}}>
+          <GandoMark size={40} variant="gradient"/><Wordmark size={36} script="adlam"/>
+        </div>
+      </div>
+    </Block>
+  </>
+);
+
+// SHELL preview
+const ShellPage = () => {
+  const [active, setActive] = useState("dashboard");
+  return (
+    <Block title="App shell" hint="header + 288px sidebar + main">
+      <div className="shell-frame">
+        <Shell active={active} onNavigate={setActive}
+               lang="EN" onLangChange={()=>{}} onLogout={()=>{}}
+               user={{name:"Amadou", email:"amadou@gando.ai"}}>
+          <Eyebrow color="#ff8b9b">Overview</Eyebrow>
+          <div style={{fontFamily:"Manrope", fontWeight:900, fontSize:36, color:"#fff", letterSpacing:"-.03em", marginTop:8}}>
+            Good morning, Amadou.
+          </div>
+          <div style={{color:"#adaaaa", fontSize:14, marginTop:8}}>
+            Navigate the sidebar — the active nav row now shows the Ga Hook-branded workspace badge above it, not a gradient "A".
+          </div>
+          <div className="grid-3" style={{marginTop:28}}>
+            <Card style={{padding:20}} gradientBar>
+              <Eyebrow>Projects</Eyebrow>
+              <div style={{fontFamily:"Manrope", fontWeight:900, fontSize:32, color:"#fff", marginTop:6}}>7</div>
+            </Card>
+            <Card style={{padding:20}}>
+              <Eyebrow>Messages</Eyebrow>
+              <div style={{fontFamily:"Manrope", fontWeight:900, fontSize:32, color:"#fff", marginTop:6}}>128</div>
+            </Card>
+            <Card style={{padding:20}}>
+              <Eyebrow>Status</Eyebrow>
+              <div style={{marginTop:10}}><StatusPill status="operational"/></div>
+            </Card>
+          </div>
+        </Shell>
+      </div>
+    </Block>
+  );
+};
+
+// FOUNDATIONS overview — links to the individual spec cards
+const FOUNDATIONS = [
+  { href: "./colors-brand.html",         label: "Color",    title: "Brand palette",   sub: "Pink + orange gradient, dark neutrals, semantic greens/ambers.",
+    preview: (
+      <div style={{display:"flex", gap:8}}>
+        {["#ff8b9b","#fd8b00","#bca2ff","#4ade80","#0a0a0a"].map(c =>
+          <div key={c} style={{width:28, height:28, borderRadius:6, background:c, border:"1px solid rgba(255,255,255,0.08)"}}/>)}
+      </div>) },
+  { href: "./type-display.html",         label: "Type",     title: "Display & body",  sub: "Manrope for display, Inter for body, Noto Sans Adlam for ADLaM.",
+    preview: <span style={{fontFamily:"Manrope", fontWeight:900, fontSize:28, letterSpacing:"-0.03em", color:"#fff"}}>Aa Gg</span> },
+  { href: "./type-mono-adlam.html",      label: "Script",   title: "ADLaM",           sub: "𞤘𞤵𞤤𞤢𞤪 — Noto Sans Adlam, full Latin parity.",
+    preview: <span style={{fontFamily:"'Noto Sans Adlam', Manrope", fontWeight:900, fontSize:28, color:"#fff"}}>𞤘𞤢𞤲𞤣𞤮</span> },
+  { href: "./spacing.html",              label: "Space",    title: "8-px rhythm",     sub: "4 / 8 / 12 / 16 / 24 / 32 / 48. Consistent gutters everywhere.",
+    preview: (
+      <div style={{display:"flex", alignItems:"flex-end", gap:4}}>
+        {[4,8,12,16,24,32].map(s => <div key={s} style={{width:6, height:s*1.4, background:"linear-gradient(180deg,#ff8b9b,#fd8b00)", borderRadius:2}}/>)}
+      </div>) },
+  { href: "./radii.html",                label: "Radius",   title: "Corner scale",    sub: "8 / 10 / 14 / 18 / 24 — one step per layer depth.",
+    preview: (
+      <div style={{display:"flex", gap:8}}>
+        {[6,10,14,18,24].map(r => <div key={r} style={{width:30, height:30, borderRadius:r, background:"rgba(255,139,155,0.18)", border:"1px solid rgba(255,139,155,0.35)"}}/>)}
+      </div>) },
+  { href: "./shadows-glows.html",        label: "Shadow",   title: "Elevation & glow", sub: "Flat panels + soft ambient glows. Never hard drop shadows.",
+    preview: (
+      <div style={{position:"relative", width:48, height:48, borderRadius:14, background:"linear-gradient(135deg,#ff8b9b,#fd8b00)", boxShadow:"0 20px 40px -10px rgba(255,139,155,0.5)"}}/>) },
+  { href: "./brand-iconography.html",    label: "Mark",     title: "Ga Hook",         sub: "The brand symbol. Replaces every sparkle across the product.",
+    preview: <GandoMark size={44} variant="gradient"/> },
+  { href: "./brand-wordmark.html",       label: "Wordmark", title: "Gando / 𞤘𞤢𞤲𞤣𞤮",   sub: "Latin (Manrope 900) and ADLaM (Noto Sans Adlam) lockups.",
+    preview: (
+      <div style={{display:"flex", flexDirection:"column", gap:4, alignItems:"flex-start"}}>
+        <Wordmark size={22}/><Wordmark size={22} script="adlam"/>
+      </div>) },
+  { href: "./brand-glow-orbs.html",      label: "Atmosphere", title: "Glow orbs",      sub: "Ambient background blobs — pink top-left, amber bottom-right.",
+    preview: (
+      <div style={{position:"relative", width:60, height:40, overflow:"hidden", borderRadius:8}}>
+        <div style={{position:"absolute", width:40, height:40, left:-8, top:-8, borderRadius:9999, background:"#ff8b9b", filter:"blur(16px)", opacity:0.5}}/>
+        <div style={{position:"absolute", width:40, height:40, right:-8, bottom:-8, borderRadius:9999, background:"#fd8b00", filter:"blur(16px)", opacity:0.4}}/>
+      </div>) },
+];
+
+const FoundationsPage = () => (
+  <>
+    <Block title="Foundations" hint="click a tile to open its spec card">
+      <div className="foundation-grid">
+        {FOUNDATIONS.map(f =>
+          <a key={f.href} className="foundation-tile" href={f.href} target="_top">
+            <div className="ft-label">{f.label}</div>
+            <div className="ft-title">{f.title}</div>
+            <div className="ft-sub">{f.sub}</div>
+            <div className="ft-preview">{f.preview}</div>
+          </a>)}
+      </div>
+    </Block>
+    <Block title="How to compose" hint="every surface in Gando is built from these atoms">
+      <div style={{display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:10}}>
+        {[
+          {n:"01", k:"Color",   v:"Pink → orange gradient for accent. Black 0a0a0a base."},
+          {n:"02", k:"Type",    v:"Manrope 900 display. Inter body. Tighten to -0.03em."},
+          {n:"03", k:"Space",   v:"8-px grid. Card padding 20–28. Section gap 40."},
+          {n:"04", k:"Radius",  v:"14 for cards, 10 for inputs, 9999 for pills."},
+          {n:"05", k:"Shadow",  v:"Soft glow only; no hard drop shadows under 0.4 alpha."},
+          {n:"06", k:"Border",  v:"1px rgba(255,255,255,0.06–0.10). On brand: pink at 0.25."},
+          {n:"07", k:"Motion",  v:"180ms cubic-bezier(.16,1,.3,1). Lift 2–4px on hover."},
+          {n:"08", k:"Mark",    v:"Ga Hook everywhere a sparkle would've been. No exceptions."},
+        ].map(r =>
+          <div key={r.n} style={{padding:"12px 14px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:12}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10, color:"#ff8b9b"}}>{r.n}</div>
+            <div style={{fontFamily:"Manrope", fontWeight:800, fontSize:12, color:"#fff", marginTop:4}}>{r.k}</div>
+            <div style={{fontSize:11, color:"#adaaaa", marginTop:4, lineHeight:1.45}}>{r.v}</div>
+          </div>)}
+      </div>
+    </Block>
+  </>
+);
+
+// ───────────────────────── app ─────────────────────────
+
+const TABS = [
+  { group: "Overview",  id: "foundations", label: "Foundations",     page: FoundationsPage, count: 9 },
+  { group: "Brand",  id: "mark",     label: "Mark",       page: AvatarsPage, count: 3 },
+  { group: "Brand",  id: "wordmark", label: "Wordmark",   page: WordmarkPage, count: 3 },
+  { group: "Atoms",  id: "buttons",  label: "Buttons",    page: ButtonsPage, count: 8 },
+  { group: "Atoms",  id: "chips",    label: "Chips & pills", page: ChipsPage, count: 9 },
+  { group: "Atoms",  id: "inputs",   label: "Inputs",     page: InputsPage, count: 4 },
+  { group: "Molecules", id: "cards", label: "Cards",      page: CardsPage, count: 7 },
+  { group: "Layout", id: "shell",    label: "App shell",  page: ShellPage, count: 1 },
+];
+
+const SUBS = {
+  mark:     "Ga Hook · abstracted ADLaM 𞤘. Use anywhere the product needs a brand dot — loaders, chips, bot avatars. Never use a four-point sparkle.",
+  wordmark: "Manrope 900 for Latin, Noto Sans Adlam for the ADLaM script. Always gradient on dark, mono on color, never re-color arbitrarily.",
+  buttons:  "Five variants × three sizes × states. Primary uses the brand gradient; ghost/subtle for secondary actions; danger reserved for destructive.",
+  chips:    "Eyebrow labels, tone chips, and system status pills — the vocabulary for metadata and state.",
+  inputs:   "One input component, two sizes. Focus ring uses the primary pink at 40% alpha with a soft outer glow.",
+  cards:    "Interactive card (hover lifts 4px, optional gradient bar on top) and the IconChip square used to label things.",
+  shell:    "The fixed-header + 288px-sidebar + scrollable-main layout every product surface lives inside.",
+};
+
+const App = () => {
+  const [active, setActive] = useState("mark");
+  const tab = TABS.find(t => t.id === active);
+  const Page = tab.page;
+
+  const groups = [...new Set(TABS.map(t => t.group))];
+
+  return (
+    <>
+      <div className="topbar">
+        <div className="brand">
+          <GandoMark size={22} variant="gradient"/>
+          Gando · UI Kit
+        </div>
+        <span className="eyebrow">Click-through</span>
+        <div className="spacer"/>
+        <input className="search" placeholder="Search components…"/>
+      </div>
+      <div className="body">
+        <div className="sidebar">
+          {groups.map(g => (
+            <div key={g}>
+              <div className="group">{g}</div>
+              {TABS.filter(t => t.group === g).map(t => (
+                <button
+                  key={t.id}
+                  className={"tab " + (t.id === active ? "active" : "")}
+                  onClick={() => setActive(t.id)}
+                >
+                  {t.label}
+                  <span className="count">{t.count}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="stage">
+          <div className="page-header">
+            <div>
+              <h1 className="page-title">{tab.label}</h1>
+              <p className="page-sub">{SUBS[tab.id]}</p>
+            </div>
+            <div className="meta">
+              <span className="code">ui_kits/web/</span>
+            </div>
+          </div>
+          <Page/>
+        </div>
+      </div>
+    </>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+
+</body>
+</html>

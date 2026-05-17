@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { GandoLogo } from './components/GandoLogo';
 import {
   Loader2, Trash2, Eye, Code as CodeIcon, Download, AlertTriangle,
   Search, Bell, LayoutDashboard, FolderKanban, Globe2, Settings,
@@ -383,6 +384,7 @@ export default function App() {
         style={{ background: 'rgba(14,14,14,0.92)' }}>
         {/* brand + nav */}
         <div className="flex items-center gap-8">
+          <GandoLogo size={28} />
           <span className={cn('text-2xl font-black tracking-tight cursor-pointer select-none', isAdlam && 'font-adlam')}
             style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
             onClick={() => { setCurrentProject(null); setPage('dashboard'); }}>
