@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { GandoLogo } from './components/GandoLogo';
 import {
   Loader2, Trash2, Eye, Code as CodeIcon, Download, AlertTriangle,
   Search, Bell, LayoutDashboard, FolderKanban, Globe2, Settings,
@@ -301,59 +302,156 @@ export default function App() {
      LOGIN
   ═════════════════════════════════════════════════ */
   if (!user) return (
-    <div className={cn('min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden', isAdlam && 'font-adlam')} style={{ background: '#0e0e0e' }}>
-      <div className="absolute w-[55%] h-[55%] rounded-full top-[-15%] left-[-10%] pointer-events-none" style={{ background: P, filter: 'blur(120px)', opacity: 0.1 }} />
-      <div className="absolute w-[55%] h-[55%] rounded-full bottom-[-15%] right-[-10%] pointer-events-none" style={{ background: S, filter: 'blur(120px)', opacity: 0.1 }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right,#80808006 1px,transparent 1px),linear-gradient(to bottom,#80808006 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
+    <div className={cn('min-h-screen flex items-center relative overflow-hidden', isAdlam && 'font-adlam')}
+      style={{ background: '#0e0e0e', padding: '48px 64px' }}>
+      {/* ambient blobs */}
+      <div className="absolute w-[55%] h-[55%] rounded-full top-[-15%] left-[-10%] pointer-events-none"
+        style={{ background: P, filter: 'blur(120px)', opacity: 0.1 }} />
+      <div className="absolute w-[55%] h-[55%] rounded-full bottom-[-15%] right-[-10%] pointer-events-none"
+        style={{ background: S, filter: 'blur(120px)', opacity: 0.1 }} />
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ backgroundImage: 'linear-gradient(to right,#80808006 1px,transparent 1px),linear-gradient(to bottom,#80808006 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
       <div className="absolute top-8 right-8 z-50">
         <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
       </div>
+
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
-        className="max-w-md w-full text-center space-y-8 relative z-10">
-        <div>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 mb-6" style={{ background: 'rgba(255,255,255,0.03)' }}>
-            <Sparkles className="w-3.5 h-3.5" style={{ color: P }} />
-            <span className={cn('text-[11px] font-black tracking-[0.2em] uppercase text-zinc-400', isAdlam && 'font-adlam')}>{t.beta}</span>
+        className="relative z-10 w-full flex items-center gap-16">
+
+        {/* ── LEFT COLUMN ── */}
+        <div className="flex-1 flex flex-col" style={{ gap: 28 }}>
+
+          {/* logo + wordmark + beta chip */}
+          <div className="flex items-center gap-3">
+            <GandoLogo size={28} />
+            <span style={{ fontFamily: MANROPE, fontSize: 22, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Gando
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10"
+              style={{ background: 'rgba(255,255,255,0.04)', fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: '#adaaaa', textTransform: 'uppercase' }}>
+              <GandoLogo size={11} />
+              PUBLIC BETA
+            </span>
           </div>
-          <h1 className={cn('text-6xl md:text-7xl font-black tracking-tighter text-white mb-4', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, lineHeight: 0.95 }}>
-            <span style={{ background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              {t.heroTitle}
+
+          {/* eyebrow */}
+          <p style={{ fontFamily: MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: P, textTransform: 'uppercase', margin: 0 }}>
+            {t.loginEyebrow}
+          </p>
+
+          {/* hero h1 */}
+          <h1 className={cn(isAdlam && 'font-adlam')}
+            style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(48px,5.5vw,72px)', lineHeight: 1.0, color: '#fff', margin: 0 }}>
+            {t.loginLine1}<br />
+            {t.loginLine2}<br />
+            <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              {t.loginLine3}
             </span>
           </h1>
-          <p className={cn('text-zinc-500 text-base leading-relaxed', isAdlam && 'font-adlam')}>{t.heroSubtitle}</p>
-        </div>
-        <div className="space-y-4">
-          {authMode === 'google' ? (
-            <button onClick={handleLogin} className="w-full py-4 rounded-2xl font-bold text-black flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
-              style={{ fontFamily: MANROPE, background: `linear-gradient(135deg,${P},${S})`, boxShadow: `0 0 24px ${P}40` }}>
-              <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-              <span className={cn(isAdlam && 'font-adlam')}>{t.loginWithGoogle}</span>
+
+          {/* subtext */}
+          <p className={cn(isAdlam && 'font-adlam')}
+            style={{ fontFamily: 'Inter, sans-serif', fontSize: 16, color: '#767575', lineHeight: 1.6, maxWidth: 460, margin: 0 }}>
+            {t.heroSubtitle}
+          </p>
+
+          {/* auth section */}
+          <div className="flex flex-col" style={{ gap: 10, maxWidth: 380 }}>
+            {authMode === 'google' ? (
+              <button onClick={handleLogin}
+                className="flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
+                style={{ padding: '16px 32px', borderRadius: 9999, background: '#ffffff', color: '#000000', fontFamily: MANROPE, fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', width: '100%' }}>
+                <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+                <span className={cn(isAdlam && 'font-adlam')}>{t.loginWithGoogle}</span>
+              </button>
+            ) : (
+              <div className="space-y-3 rounded-2xl p-5 border border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <h3 className="text-base font-black text-white text-left" style={{ fontFamily: MANROPE }}>
+                  {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+                </h3>
+                <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
+                  className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
+                <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+                  className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
+                {authError && <p className="text-red-400 text-xs">{authError}</p>}
+                <button onClick={handleLogin} className="w-full py-3 rounded-xl font-black text-black transition-all hover:scale-[1.01]"
+                  style={{ fontFamily: MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
+                  {authMode === 'login' ? 'Sign In' : 'Sign Up'}
+                </button>
+                <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                  className="w-full text-xs font-bold transition-colors" style={{ color: P }}>
+                  {authMode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
+                </button>
+              </div>
+            )}
+            {authError && authMode === 'google' && <p className="text-red-400 text-xs">{authError}</p>}
+            <button onClick={() => { setAuthMode(authMode === 'google' ? 'login' : 'google'); setAuthError(null); }}
+              className="text-sm font-medium transition-colors hover:text-white text-center" style={{ color: '#767575' }}>
+              {authMode === 'google' ? 'Or use email & password' : '← Back to Google Login'}
             </button>
-          ) : (
-            <div className="space-y-3 rounded-3xl p-6 border border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
-              <h3 className="text-lg font-black text-white text-left" style={{ fontFamily: MANROPE }}>
-                {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
-              </h3>
-              <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" style={{ background: 'rgba(0,0,0,0.4)' }} />
-              <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" style={{ background: 'rgba(0,0,0,0.4)' }} />
-              {authError && <p className="text-red-400 text-xs">{authError}</p>}
-              <button onClick={handleLogin} className="w-full py-3 rounded-xl font-black text-black transition-all hover:scale-[1.01]"
-                style={{ fontFamily: MANROPE, background: `linear-gradient(135deg,${P},${S})` }}>
-                {authMode === 'login' ? 'Sign In' : 'Sign Up'}
-              </button>
-              <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="w-full text-xs font-bold transition-colors" style={{ color: P }}>
-                {authMode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
-              </button>
-            </div>
-          )}
-          {authError && authMode === 'google' && <p className="text-red-400 text-xs text-center">{authError}</p>}
-          <button onClick={() => { setAuthMode(authMode === 'google' ? 'login' : 'google'); setAuthError(null); }}
-            className="w-full text-sm font-medium text-zinc-500 hover:text-white transition-colors">
-            {authMode === 'google' ? 'Or use email & password' : '← Back to Google Login'}
-          </button>
+          </div>
+
+          {/* trust badges */}
+          <div className="flex items-center gap-3 flex-wrap" style={{ fontSize: 12, color: '#52525b' }}>
+            <span>🔒 SOC 2 Type II</span>
+            <span style={{ color: '#3f3f46' }}>•</span>
+            <span>Data stays in-region</span>
+            <span style={{ color: '#3f3f46' }}>•</span>
+            <span>Free during Beta</span>
+          </div>
         </div>
+
+        {/* ── RIGHT COLUMN — stacked cards ── */}
+        <div className="flex-1 hidden md:flex items-center justify-center relative" style={{ height: 520 }}>
+          {/* card 3 — back-left, deep purple */}
+          <div className="absolute" style={{
+            width: 300, height: 380, borderRadius: 24,
+            background: 'linear-gradient(145deg,#6B21A8,#581C87)',
+            transform: 'rotate(-8deg) translate(-90px,24px)',
+            zIndex: 1, boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ padding: 24 }}><GandoLogo size={32} mono /></div>
+            <div style={{ position: 'absolute', top: 24, right: 24 }}>
+              <span style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', borderRadius: 9999, padding: '4px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#fff', textTransform: 'uppercase' }}>YORUBA</span>
+            </div>
+          </div>
+
+          {/* card 2 — mid, lighter purple */}
+          <div className="absolute" style={{
+            width: 300, height: 380, borderRadius: 24,
+            background: 'linear-gradient(145deg,#7C3AED,#6D28D9)',
+            transform: 'rotate(-3deg) translate(-28px,12px)',
+            zIndex: 2, boxShadow: '0 40px 80px rgba(0,0,0,0.55)',
+          }}>
+            <div style={{ padding: 24 }}><GandoLogo size={32} mono /></div>
+            <div style={{ position: 'absolute', top: 24, right: 24 }}>
+              <span style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', borderRadius: 9999, padding: '4px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#fff', textTransform: 'uppercase' }}>ADLAM</span>
+            </div>
+          </div>
+
+          {/* card 1 — front, brown/rust */}
+          <div className="absolute" style={{
+            width: 300, height: 380, borderRadius: 24,
+            background: 'linear-gradient(145deg,#92400E,#78350F)',
+            transform: 'rotate(3deg) translate(44px,0px)',
+            zIndex: 3, boxShadow: '0 40px 80px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ padding: 24 }}><GandoLogo size={32} mono /></div>
+            <div style={{ position: 'absolute', top: 24, right: 24 }}>
+              <span style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', borderRadius: 9999, padding: '4px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#fff', textTransform: 'uppercase' }}>FRANÇAIS</span>
+            </div>
+            <div style={{ position: 'absolute', bottom: 32, left: 24, right: 24 }}>
+              <p style={{ color: '#fff', fontFamily: MANROPE, fontWeight: 900, fontSize: 22, margin: '0 0 4px 0' }}>Marché Bamako</p>
+              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, margin: '0 0 10px 0' }}>100% built</p>
+              <div style={{ height: 4, borderRadius: 9999, background: 'rgba(255,255,255,0.12)' }}>
+                <div style={{ height: '100%', borderRadius: 9999, width: '100%', background: 'var(--gradient-brand)' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
       </motion.div>
     </div>
   );
@@ -379,10 +477,11 @@ export default function App() {
       </AnimatePresence>
 
       {/* ════════ HEADER ════════ */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-8 border-b border-white/5 backdrop-blur-xl flex-shrink-0"
-        style={{ background: 'rgba(14,14,14,0.92)' }}>
+      <header className="fixed top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-8 flex-shrink-0"
+        style={{ background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--line-1)' }}>
         {/* brand + nav */}
         <div className="flex items-center gap-8">
+          <GandoLogo size={28} />
           <span className={cn('text-2xl font-black tracking-tight cursor-pointer select-none', isAdlam && 'font-adlam')}
             style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
             onClick={() => { setCurrentProject(null); setPage('dashboard'); }}>
@@ -422,7 +521,7 @@ export default function App() {
                   }
                 }}
                 placeholder={t.searchPlaceholder}
-                className={cn('bg-transparent border-none outline-none text-sm w-40 text-white placeholder-zinc-600', isAdlam && 'font-adlam')}
+                className={cn('gando-input bg-transparent border-none outline-none text-sm w-40 text-white placeholder-zinc-600', isAdlam && 'font-adlam')}
               />
               {headerSearch && (
                 <button onClick={() => { setHeaderSearch(''); setSearchOpen(false); }}
@@ -585,10 +684,15 @@ export default function App() {
               const active = pg && page === pg && !currentProject;
               return (
                 <button key={label} onClick={() => { if (pg) { setPage(pg); setCurrentProject(null); } }}
-                  className={cn('w-full flex items-center gap-4 py-4 text-sm font-bold transition-all duration-200', isAdlam && 'font-adlam')}
-                  style={active
-                    ? { background: `linear-gradient(to right,${P}18,transparent)`, borderLeft: `4px solid ${P}`, color: '#fff', paddingLeft: '28px', paddingRight: '24px' }
-                    : { color: '#767575', borderLeft: '4px solid transparent', paddingLeft: '28px', paddingRight: '24px' }}>
+                  className={cn('w-full flex items-center gap-4 py-4 text-sm font-bold', isAdlam && 'font-adlam')}
+                  style={{
+                    color: active ? 'var(--fg-1)' : 'var(--fg-3)',
+                    background: active ? 'linear-gradient(to right, rgba(255,139,155,0.12), transparent)' : 'transparent',
+                    border: 'none',
+                    borderLeft: active ? '4px solid var(--color-primary)' : '4px solid transparent',
+                    transition: 'all 150ms cubic-bezier(0.16,1,0.3,1)',
+                    paddingLeft: '28px', paddingRight: '24px',
+                  }}>
                   <Icon className="w-4 h-4 flex-shrink-0" />
                   <span style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
                 </button>
@@ -600,7 +704,9 @@ export default function App() {
           <div className="px-6 py-5">
             <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); }}
               className={cn('w-full py-4 rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', isAdlam && 'font-adlam')}
-              style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, boxShadow: `0 0 20px ${P}40` }}>
+              style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
               + {t.newProject}
             </button>
           </div>
@@ -643,7 +749,7 @@ export default function App() {
                   {isRenaming ? (
                     <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
                       onBlur={handleRename} onKeyDown={e => e.key === 'Enter' && handleRename()}
-                      className="bg-transparent border-b text-white text-sm font-bold outline-none w-48 px-1"
+                      className="gando-input bg-transparent border-b text-white text-sm font-bold outline-none w-48 px-1"
                       style={{ borderColor: `${P}60` }} />
                   ) : (
                     <span className={cn('text-sm font-black text-white cursor-pointer hover:text-[#ff8b9b] transition-colors', isAdlam && 'font-adlam')}
@@ -712,7 +818,7 @@ export default function App() {
                   <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
                   <input value={projectSearch} onChange={e => setProjectSearch(e.target.value)}
                     placeholder={t.searchProjectsPlaceholder}
-                    className={cn('bg-transparent border-none outline-none text-sm text-white placeholder-zinc-600 flex-1', isAdlam && 'font-adlam')} />
+                    className={cn('gando-input bg-transparent border-none outline-none text-sm text-white placeholder-zinc-600 flex-1', isAdlam && 'font-adlam')} />
                   {projectSearch && <button onClick={() => setProjectSearch('')}><X className="w-3.5 h-3.5 text-zinc-500 hover:text-white" /></button>}
                 </div>
               </div>
@@ -731,8 +837,7 @@ export default function App() {
                     <motion.div key={p.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                       className="group relative rounded-2xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
                       style={{ background: '#131313' }}>
-                      {/* color accent bar */}
-                      <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(to right,${P},${S})` }} />
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-4">
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${P}18`, color: P }}>
@@ -755,7 +860,9 @@ export default function App() {
                           </span>
                           <button onClick={() => openProject(p)}
                             className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-black transition-all hover:scale-105', isAdlam && 'font-adlam')}
-                            style={{ background: `linear-gradient(135deg,${P},${S})` }}>
+                            style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
                             {t.openProjectLabel} <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
@@ -784,7 +891,8 @@ export default function App() {
                 [t.docsSection2Title, t.docsSection2Body, S],
                 [t.docsSection3Title, t.docsSection3Body, T],
               ] as [string, string, string][]).map(([title, body, accent], i) => (
-                <div key={i} className="rounded-2xl p-8 border border-white/8" style={{ background: '#131313' }}>
+                <div key={i} className="rounded-2xl p-8 border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-black" style={{ background: accent }}>
                       {i + 1}
@@ -796,7 +904,8 @@ export default function App() {
               ))}
 
               {/* quick tips */}
-              <div className="rounded-2xl p-8 border border-white/8" style={{ background: '#131313' }}>
+              <div className="rounded-2xl p-8 border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                 <h2 className={cn('text-lg font-black text-white mb-6', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
                   💡 Quick Tips
                 </h2>
@@ -841,7 +950,8 @@ export default function App() {
                 { label: t.statusAI,       status: sysStatus.ai,      detail: sysStatus.aiMs ? `${sysStatus.aiMs}ms latency` : '' },
                 { label: t.statusFirebase, status: sysStatus.db,      detail: user ? 'Authenticated' : 'Not connected' },
               ] as { label: string; status: 'ok'|'degraded'|'down'|'checking'; detail: string }[]).map(({ label, status, detail }) => (
-                <div key={label} className="flex items-center justify-between p-6 rounded-2xl border border-white/8" style={{ background: '#131313' }}>
+                <div key={label} className="flex items-center justify-between p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="flex items-center gap-4">
                     <StatusDot status={status} />
                     <div>
@@ -860,7 +970,8 @@ export default function App() {
               ))}
 
               {/* model info */}
-              <div className="p-6 rounded-2xl border border-white/8" style={{ background: '#131313' }}>
+              <div className="p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                 <h3 className={cn('font-black text-white mb-4', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.statusModel}</h3>
                 <div className="flex items-center justify-between">
                   <div>
@@ -904,7 +1015,9 @@ export default function App() {
                     <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
                     <button onClick={handleSend} disabled={isGenerating || !input.trim()}
                       className={cn('flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:scale-100 text-sm', isAdlam && 'font-adlam')}
-                      style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, boxShadow: `0 4px 20px ${P}35` }}>
+                      style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
                       {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                       {isGenerating ? (generationStatus || t.generating) : t.generateLabel}
                     </button>
@@ -916,7 +1029,7 @@ export default function App() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder={t.inputPlaceholder}
                     rows={4}
-                    className={cn('w-full bg-transparent border-none outline-none resize-none text-white placeholder-zinc-600 px-5 py-4 text-base font-medium leading-relaxed', isAdlam && 'font-adlam')}
+                    className={cn('gando-input w-full bg-transparent border-none outline-none resize-none text-white placeholder-zinc-600 px-5 py-4 text-base font-medium leading-relaxed', isAdlam && 'font-adlam')}
                   />
                 </div>
                 <div className="absolute -inset-px rounded-3xl blur-xl opacity-0 group-hover:opacity-60 pointer-events-none transition-opacity duration-500"
@@ -928,6 +1041,7 @@ export default function App() {
                 {/* completion donut */}
                 <div className="lg:col-span-7 rounded-2xl p-6 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xl"
                   style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="adinkra-mask absolute inset-0 opacity-[0.025]" />
                   <div className="relative z-10 flex-1">
                     <h2 className={cn('text-2xl font-black text-white tracking-tight mb-1', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
@@ -954,7 +1068,8 @@ export default function App() {
 
                 {/* gauges */}
                 <div className="lg:col-span-5 flex flex-col gap-4">
-                  <div className="flex-1 rounded-2xl p-6 shadow-xl" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="flex-1 rounded-2xl p-6 shadow-xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                     <div className="flex justify-between items-center mb-4">
                       <h3 className={cn('font-black text-white text-sm', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.tokenUsageLabel}</h3>
                       <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: `${P}15`, color: P }}>
@@ -966,7 +1081,8 @@ export default function App() {
                       {t.tokenResetHint} <span style={{ color: S, fontWeight: 700 }}>{t.healthyLabel}.</span>
                     </p>
                   </div>
-                  <div className="flex-1 rounded-2xl p-6 shadow-xl" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="flex-1 rounded-2xl p-6 shadow-xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                     <div className="flex justify-between items-center mb-4">
                       <h3 className={cn('font-black text-white text-sm', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.appPerformanceLabel}</h3>
                       <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: `${T}15`, color: T }}>{t.excellentLabel}</span>
@@ -1011,7 +1127,7 @@ export default function App() {
                       <motion.div key={p.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         className="group relative cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
                         style={{ background: '#131313' }} onClick={() => openProject(p)}>
-                        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(to right,${P},${S})` }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                         <div className="p-6">
                           <div className="flex justify-between items-start mb-4">
                             <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${P}18`, color: P }}>

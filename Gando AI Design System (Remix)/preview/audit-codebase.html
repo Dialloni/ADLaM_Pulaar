@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Gando codebase — audit report</title>
+<link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; background:#0a0a0a; color:#adaaaa; font-family: Inter, sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 48px 40px 80px; }
+
+  /* Header */
+  .doc-eyebrow { font-family:Manrope; font-weight:900; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:#ff8b9b; }
+  .doc-title { font-family:Manrope; font-weight:900; font-size:44px; letter-spacing:-.03em; line-height:1.05; color:#fff; margin:10px 0 8px; }
+  .doc-sub { font-size:15px; color:#adaaaa; line-height:1.6; max-width:680px; }
+  .doc-meta {
+    display:flex; gap:24px; margin-top:20px; padding:14px 18px;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px;
+    font-size:12px;
+  }
+  .doc-meta b { color:#fff; font-weight:600; }
+  .doc-meta span { color:#767575; }
+
+  /* Summary scoreboard */
+  .scores { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:32px 0 12px; }
+  .score { padding:16px; border-radius:14px; border:1px solid rgba(255,255,255,0.06); background:#131313; }
+  .score .lbl { font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#767575; }
+  .score .val { font-family:Manrope; font-weight:900; font-size:30px; color:#fff; margin-top:8px; letter-spacing:-.03em; line-height:1; display:flex; align-items:baseline; gap:4px;}
+  .score .val small { font-size:13px; color:#767575; font-weight:500; letter-spacing:0; }
+  .score .delta { font-size:11px; margin-top:6px; }
+  .score.good   { border-color: rgba(74,222,128,.25); }
+  .score.good   .lbl { color:#4ade80;}
+  .score.warn   { border-color: rgba(253,139,0,.3); }
+  .score.warn   .lbl { color:#fd8b00;}
+  .score.bad    { border-color: rgba(248,113,113,.3); }
+  .score.bad    .lbl { color:#f87171;}
+
+  /* Section heading */
+  h2.sec {
+    font-family:Manrope; font-weight:900; font-size:13px; letter-spacing:.22em; text-transform:uppercase;
+    color:#767575; margin:40px 0 14px; padding-bottom:12px;
+    border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:baseline; gap:14px;
+  }
+  h2.sec .num {
+    font-family:Manrope; font-weight:900; font-size:11px; letter-spacing:.18em;
+    padding:3px 9px; border-radius:9999px;
+    background:rgba(255,139,155,0.12); color:#ff8b9b; border:1px solid rgba(255,139,155,0.25);
+  }
+
+  /* Finding card */
+  .finding {
+    display:grid; grid-template-columns: 76px 1fr; gap:18px;
+    padding:20px 22px; border-radius:14px;
+    background:#131313; border:1px solid rgba(255,255,255,0.06);
+    margin-bottom:14px;
+  }
+  .priority {
+    font-family:Manrope; font-weight:900; font-size:9px; letter-spacing:.15em; text-transform:uppercase;
+    padding:5px 10px; border-radius:9999px; text-align:center; height:fit-content;
+    white-space:nowrap;
+  }
+  .p-p0 { background:rgba(248,113,113,.12); color:#f87171; border:1px solid rgba(248,113,113,.3); }
+  .p-p1 { background:rgba(253,139,0,.12); color:#fd8b00; border:1px solid rgba(253,139,0,.3); }
+  .p-p2 { background:rgba(255,139,155,.12); color:#ff8b9b; border:1px solid rgba(255,139,155,.3); }
+  .p-p3 { background:rgba(74,222,128,.1); color:#4ade80; border:1px solid rgba(74,222,128,.25); }
+
+  .finding h3 {
+    font-family:Manrope; font-weight:900; font-size:17px; color:#fff; margin:0 0 6px; letter-spacing:-.01em;
+  }
+  .finding .evidence { font-size:12.5px; line-height:1.65; color:#adaaaa; margin:6px 0 0; }
+  .finding .evidence b { color:#fff; font-weight:600; }
+  .finding code {
+    font-family:'JetBrains Mono',monospace; font-size:11.5px;
+    background:rgba(255,139,155,.08); color:#ff8b9b;
+    padding:1px 6px; border-radius:4px;
+  }
+  .fix {
+    margin-top:10px; padding:12px 14px; border-radius:10px;
+    background:#0a0a0a; border-left:3px solid #ff8b9b;
+    font-size:12.5px; line-height:1.6; color:#adaaaa;
+  }
+  .fix .lbl { font-family:Manrope; font-weight:900; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#ff8b9b; margin-bottom:6px; display:block;}
+  .fix pre {
+    margin:8px 0 0; font-family:'JetBrains Mono', monospace; font-size:11px;
+    background:#020202; padding:10px 12px; border-radius:8px;
+    color:#d4d4d4; overflow-x:auto; border:1px solid rgba(255,255,255,0.05);
+  }
+  .fix pre .c { color:#767575; }
+  .fix pre .k { color:#ff8b9b; }
+  .fix pre .s { color:#fd8b00; }
+  .fix pre .t { color:#bca2ff; }
+  .fix pre .g { color:#4ade80; }
+
+  .where {
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;
+  }
+  .where .file {
+    font-family:'JetBrains Mono', monospace; font-size:10.5px;
+    padding:2px 8px; border-radius:6px;
+    background:rgba(255,255,255,0.04); color:#adaaaa;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+
+  .kicker {
+    display:flex; align-items:center; gap:10px; margin-bottom:8px;
+    font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#767575;
+  }
+  .kicker .effort { font-size:10px; font-weight:600; letter-spacing:.1em; }
+
+  /* Finale */
+  .roadmap {
+    margin-top:40px; padding:24px;
+    background:
+      radial-gradient(80% 120% at 0% 0%, rgba(255,139,155,0.08), transparent 60%),
+      radial-gradient(80% 120% at 100% 100%, rgba(253,139,0,0.08), transparent 60%),
+      #0a0a0a;
+    border:1px solid rgba(255,139,155,.2); border-radius:18px;
+  }
+  .roadmap h3 {
+    font-family:Manrope; font-weight:900; font-size:20px; color:#fff; margin:0 0 12px;
+  }
+  .roadmap ol { margin:0; padding-left:20px; }
+  .roadmap li { font-size:13px; line-height:1.8; color:#adaaaa; }
+  .roadmap li b { color:#fff; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="doc-eyebrow">Part A — Engineering audit</div>
+  <h1 class="doc-title">Gando codebase — what to fix first</h1>
+  <p class="doc-sub">
+    Line-by-line review of the attached <code style="font-family:'JetBrains Mono',monospace;color:#ff8b9b;background:rgba(255,139,155,.08);padding:1px 6px;border-radius:4px;">gando-ai_Design/</code> sources — React 19 + Vite 6 + Tailwind v4 + Firebase + Gemini. Issues are ranked by <b style="color:#fff">impact × effort</b>; quick wins at the top.
+  </p>
+
+  <div class="doc-meta">
+    <div><span>Lines reviewed</span><br/><b>~3,200</b></div>
+    <div><span>Files</span><br/><b>12 source</b></div>
+    <div><span>Main file size</span><br/><b style="color:#f87171">App.tsx · 1,046 lines</b></div>
+    <div><span>Icons imported</span><br/><b>22 from lucide-react</b></div>
+    <div><span>Hardcoded brand hex</span><br/><b style="color:#fd8b00">~30 occurrences</b></div>
+  </div>
+
+  <!-- Scores -->
+  <div class="scores">
+    <div class="score good">   <div class="lbl">Visual polish</div><div class="val">A <small>−</small></div><div class="delta" style="color:#4ade80">Strong, consistent brand.</div></div>
+    <div class="score warn">   <div class="lbl">Architecture</div> <div class="val">C <small>+</small></div><div class="delta" style="color:#fd8b00">God-component, no routes.</div></div>
+    <div class="score bad">    <div class="lbl">A11y</div>         <div class="val">D</div>            <div class="delta" style="color:#f87171">Missing ARIA, focus, contrast.</div></div>
+    <div class="score warn">   <div class="lbl">Perf / stability</div><div class="val">B <small>−</small></div><div class="delta" style="color:#fd8b00">Listener leaks, re-renders.</div></div>
+  </div>
+
+  <!-- SECTION: QUICK WINS -->
+  <h2 class="sec"><span class="num">01</span> Quick wins — do this week</h2>
+
+  <!-- 1.1 -->
+  <div class="finding">
+    <div class="priority p-p0">P0</div>
+    <div>
+      <div class="kicker">Brand consistency <span class="effort">· 2 hrs</span></div>
+      <h3>Replace the Sparkles icon — it reads as Gemini.</h3>
+      <p class="evidence">
+        <code>Sparkles</code> from lucide-react appears <b>10 times</b> across <code>App.tsx</code> and <code>Chat.tsx</code> — login hero, empty states, the "Generate" CTA, avatar for bot messages, and the beta chip. It's the exact four-point mark Google uses for Gemini, so the product reads as a Gemini wrapper.
+      </p>
+      <div class="where">
+        <span class="file">App.tsx:315, 472, 739, 908, 1004, 1018</span>
+        <span class="file">Chat.tsx:293, 649</span>
+      </div>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Swap every <code>&lt;Sparkles/&gt;</code> for the new Ga Hook mark. Commit an <code>&lt;GandoMark/&gt;</code> component and import it everywhere the sparkle was.
+        <pre><span class="c">// src/components/GandoMark.tsx</span>
+<span class="k">export</span> <span class="k">const</span> <span class="t">GandoMark</span> = ({ size = <span class="s">16</span>, className = <span class="s">''</span> }) =&gt; (
+  &lt;svg <span class="g">viewBox</span>=<span class="s">"0 0 64 64"</span> width={size} height={size} className={className}&gt;
+    &lt;rect x=<span class="s">"2"</span> y=<span class="s">"2"</span> width=<span class="s">"60"</span> height=<span class="s">"60"</span> rx=<span class="s">"16"</span>
+          stroke=<span class="s">"url(#gm)"</span> strokeWidth=<span class="s">"4"</span> fill=<span class="s">"none"</span>/&gt;
+    &lt;path d=<span class="s">"M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22"</span>
+          stroke=<span class="s">"url(#gm)"</span> strokeWidth=<span class="s">"5"</span> strokeLinecap=<span class="s">"round"</span> fill=<span class="s">"none"</span>/&gt;
+    &lt;circle cx=<span class="s">"34"</span> cy=<span class="s">"22"</span> r=<span class="s">"3"</span> fill=<span class="s">"#fd8b00"</span>/&gt;
+    &lt;defs&gt;&lt;linearGradient id=<span class="s">"gm"</span>&gt;
+      &lt;stop offset=<span class="s">"0%"</span> stopColor=<span class="s">"#ff8b9b"</span>/&gt;&lt;stop offset=<span class="s">"100%"</span> stopColor=<span class="s">"#fd8b00"</span>/&gt;
+    &lt;/linearGradient&gt;&lt;/defs&gt;
+  &lt;/svg&gt;
+);</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1.2 -->
+  <div class="finding">
+    <div class="priority p-p0">P0</div>
+    <div>
+      <div class="kicker">Tokens <span class="effort">· 3 hrs</span></div>
+      <h3>Stop hard-coding the brand hex — use CSS variables.</h3>
+      <p class="evidence">
+        <code>#ff8b9b</code> and <code>#fd8b00</code> appear <b>~30 times</b> inline in components, defeating the <code>@theme</code> tokens in <code>index.css</code>. When the brand changes (or when dark/light variants are added), every occurrence must be edited. The top of <code>App.tsx</code> even redeclares <code>const P = '#ff8b9b'; const S = '#fd8b00';</code> as module constants.
+      </p>
+      <div class="where">
+        <span class="file">App.tsx:30-31 + 5 refs</span>
+        <span class="file">Chat.tsx: 20+ occurrences</span>
+        <span class="file">LanguageSelector.tsx:80</span>
+      </div>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Expose the theme variables to Tailwind utilities and replace inline hex with <code>text-primary</code> / <code>bg-primary</code>. Tailwind v4's <code>@theme</code> already does this — you're just not using the generated classes.
+        <pre><span class="c">// before</span>
+className=<span class="s">"text-[#ff8b9b] border-[#ff8b9b]/20"</span>
+
+<span class="c">// after</span>
+className=<span class="s">"text-primary border-primary/20"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1.3 -->
+  <div class="finding">
+    <div class="priority p-p0">P0</div>
+    <div>
+      <div class="kicker">A11y — critical <span class="effort">· 4 hrs</span></div>
+      <h3>Icon buttons have no accessible name. Screen readers announce nothing.</h3>
+      <p class="evidence">
+        Header bell, profile toggle, delete-project, revert, copy, and the send button are all <code>&lt;button&gt;</code>s wrapping a lucide icon — no <code>aria-label</code>, no text. A Fulani speaker on a screen reader hears "button, button, button."
+      </p>
+      <div class="where">
+        <span class="file">App.tsx: header icon cluster, project-card overlay actions</span>
+        <span class="file">Chat.tsx: send, mic, copy, revert, thumbs up/down</span>
+      </div>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Add <code>aria-label={t.xxx}</code> to every icon-only button. Run <code>axe-core</code> once (<code>npm i -D @axe-core/react</code>, one line in <code>main.tsx</code>) to catch the rest. Also: the <code>img alt=""</code> on user photos is correct (decorative) — <b>keep</b> that — but the Google favicon has <code>alt="Google"</code> which needs translation.
+      </div>
+    </div>
+  </div>
+
+  <!-- 1.4 -->
+  <div class="finding">
+    <div class="priority p-p0">P0</div>
+    <div>
+      <div class="kicker">A11y — contrast <span class="effort">· 1 hr</span></div>
+      <h3>Body text <code>#adaaaa</code> on <code>#0e0e0e</code> passes AA — but <code>#767575</code>, <code>#52525b</code>, and <code>#3f3f46</code> don't.</h3>
+      <p class="evidence">
+        Your eyebrow labels, nav inactive state, meta captions, and footer text sit at <b>2.8:1 – 3.9:1</b> contrast — below WCAG AA (4.5:1) for body copy. Only <code>#adaaaa</code> (7.1:1) and <code>#fff</code> are safe for text ≥ 12px.
+      </p>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Bump the low-contrast grays up one step for <b>text</b>, keep the existing values for <b>strokes/dividers</b>. A single find-and-replace in <code>index.css</code> <code>@theme</code>:
+        <pre><span class="k">--color-fg-3</span>: <span class="s">#8b8a8a</span>; <span class="c">/* was #767575, nav inactive */</span>
+<span class="k">--color-fg-4</span>: <span class="s">#6b6b70</span>; <span class="c">/* was #52525b, meta copy   */</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: ARCHITECTURE -->
+  <h2 class="sec"><span class="num">02</span> Architecture — needs a refactor sprint</h2>
+
+  <!-- 2.1 -->
+  <div class="finding">
+    <div class="priority p-p1">P1</div>
+    <div>
+      <div class="kicker">Structure <span class="effort">· 2 days</span></div>
+      <h3>Split <code>App.tsx</code> (1,046 lines) into routed pages.</h3>
+      <p class="evidence">
+        <code>App.tsx</code> holds auth, dashboard, projects list, workspace, status, docs, header, sidebar, and 7 state-machine <code>useEffect</code>s in a single file. There's a manual <code>const [page, setPage] = useState&lt;NavPage&gt;('dashboard')</code> instead of React Router. You're already at <b>19 <code>useState</code> hooks</b> on the root — it's unmaintainable.
+      </p>
+      <div class="fix">
+        <span class="lbl">Fix — target shape</span>
+<pre>src/
+ ├ routes/
+ │  ├ Login.tsx        <span class="c">// auth UI</span>
+ │  ├ Dashboard.tsx    <span class="c">// stats, recents</span>
+ │  ├ Projects.tsx     <span class="c">// grid + search</span>
+ │  ├ Workspace.tsx    <span class="c">// chat + preview</span>
+ │  ├ Status.tsx
+ │  └ Docs.tsx
+ ├ layout/
+ │  ├ AppShell.tsx     <span class="c">// header + sidebar + &lt;Outlet/&gt;</span>
+ │  ├ Header.tsx
+ │  └ Sidebar.tsx
+ ├ components/ <span class="c">// (as today)</span>
+ └ stores/
+    ├ useProjects.ts   <span class="c">// zustand or useReducer</span>
+    └ useStatus.ts</pre>
+        <span class="lbl" style="margin-top:10px">Why</span>
+        Each route becomes ~150 lines. <code>react-router-dom</code> gets you browser-history, deep-linking to a project, and back-button support (all broken today).
+      </div>
+    </div>
+  </div>
+
+  <!-- 2.2 -->
+  <div class="finding">
+    <div class="priority p-p1">P1</div>
+    <div>
+      <div class="kicker">Data <span class="effort">· 1 day</span></div>
+      <h3>The Firestore listener re-subscribes on every <code>currentProject.id</code> change — and the stale-check inside does double work.</h3>
+      <p class="evidence">
+        <code>App.tsx:145-155</code> — the projects <code>onSnapshot</code> effect has <code>[user, currentProject?.id]</code> as deps. Every time the user opens a project, you tear down and re-subscribe to the <i>entire projects collection</i>. It also runs a <code>list.find(p =&gt; p.id === currentProject.id)</code> on every snapshot to patch <code>currentProject</code> — unnecessary because you can read it from the map directly.
+      </p>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Two effects: one subscribing to <code>projects</code> with deps <code>[user?.uid]</code> only; a second derived <code>useMemo</code> that reads <code>currentProject</code> from the list by id. Extract to a <code>useProjects()</code> hook.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2.3 -->
+  <div class="finding">
+    <div class="priority p-p1">P1</div>
+    <div>
+      <div class="kicker">Error UX <span class="effort">· 4 hrs</span></div>
+      <h3>Errors are logged to the console, not shown to the user.</h3>
+      <p class="evidence">
+        <code>console.error</code> is called in <b>11 places</b> — rename failure, delete failure, code-update failure, mic failure, transcription failure. The user sees nothing. For a bilingual product this is worse: the user may assume the click was received when it wasn't.
+      </p>
+      <div class="where">
+        <span class="file">App.tsx:246, 264, 270</span>
+        <span class="file">Chat.tsx:231, 244</span>
+        <span class="file">AuthContext.tsx:37,54,63,72,81</span>
+      </div>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Add a toast system (<code>sonner</code> or a 50-line own one) and wire <code>setGlobalError</code> to it. Show a localized string from <code>translations.ts</code>, not the raw Firestore error.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2.4 -->
+  <div class="finding">
+    <div class="priority p-p1">P1</div>
+    <div>
+      <div class="kicker">Input UX <span class="effort">· 1 hr</span></div>
+      <h3><code>confirm(t.confirmDelete)</code> is a native browser dialog — not brand, not translated consistently, not mobile-friendly.</h3>
+      <p class="evidence">
+        <code>App.tsx:269</code>. Native confirm() styling ignores the brand, sits above glass panels ugly, and some mobile browsers localize the OK/Cancel buttons separately from your <code>t</code> string.
+      </p>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Ship a <code>&lt;ConfirmDialog/&gt;</code> modal using your existing <code>.glass</code> + <code>rounded-3xl</code> vocabulary. Keyboard-accessible (Esc closes, Enter confirms, focus trap).
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: PERF -->
+  <h2 class="sec"><span class="num">03</span> Perf — stability &amp; bundle</h2>
+
+  <!-- 3.1 -->
+  <div class="finding">
+    <div class="priority p-p2">P2</div>
+    <div>
+      <div class="kicker">Bundle <span class="effort">· 2 hrs</span></div>
+      <h3>All 22 lucide icons are tree-shaken per-import already — but <code>motion</code>, <code>prismjs</code>, and <code>react-simple-code-editor</code> load on first paint.</h3>
+      <p class="evidence">
+        The workspace (<code>CodeEditor</code>, chat markdown with <code>react-markdown</code>) is only reached <i>after</i> login + opening a project, yet its dependencies sit in the initial bundle. Lighthouse's TBT will thank you.
+      </p>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        <code>React.lazy</code> the CodeEditor and Preview iframe. Estimated shave: 180–220 kB gzipped.
+      </div>
+    </div>
+  </div>
+
+  <!-- 3.2 -->
+  <div class="finding">
+    <div class="priority p-p2">P2</div>
+    <div>
+      <div class="kicker">Re-renders <span class="effort">· 2 hrs</span></div>
+      <h3>No <code>useMemo</code> on filtered/derived arrays — they recompute on every render.</h3>
+      <p class="evidence">
+        <code>filteredProjects</code>, <code>userMessages</code>, <code>completionPct</code>, <code>tokenPct</code> are all computed inline in the render body. Paired with the 19 <code>useState</code>s, <code>App</code> re-renders many times per second while the user types in the chat.
+      </p>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Wrap in <code>useMemo(..., [projects, projectSearch])</code>. Bigger win comes from the route-split above.
+      </div>
+    </div>
+  </div>
+
+  <!-- 3.3 -->
+  <div class="finding">
+    <div class="priority p-p2">P2</div>
+    <div>
+      <div class="kicker">Layout <span class="effort">· 3 hrs</span></div>
+      <h3>Workspace split-pane isn't responsive — below ~900 px, chat and preview stack awkwardly without a tab switcher.</h3>
+      <p class="evidence">
+        The split is a <code>grid-cols-1 lg:grid-cols-2</code>. Below <code>lg</code>, both panes render stacked — on a 390×844 phone that's 2,000 px of scroll before the preview is reachable.
+      </p>
+      <div class="fix">
+        <span class="lbl">Fix</span>
+        Add a mobile tab switcher (Chat / Preview / Code) and hide the inactive panes with <code>display:none</code> — not opacity. Reuse the existing <code>activeTab</code> state.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: POLISH -->
+  <h2 class="sec"><span class="num">04</span> Polish — when the roadmap allows</h2>
+
+  <div class="finding">
+    <div class="priority p-p3">P3</div>
+    <div>
+      <div class="kicker">i18n hygiene <span class="effort">· 2 hrs</span></div>
+      <h3>Hardcoded English in at least 8 places — "Beta", "Operational", "Degraded", "Projects", error strings.</h3>
+      <p class="evidence">
+        <code>You've reached the AI limit. Please wait a minute.</code> is English-only even when ADLaM is selected. Same for the system-status labels and the sidebar "Workspace" chip.
+      </p>
+      <div class="fix"><span class="lbl">Fix</span> Thread the missing strings through <code>TRANSLATIONS</code>. Add a CI check: any string literal over 3 chars in JSX must come from <code>t.*</code>.</div>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="priority p-p3">P3</div>
+    <div>
+      <div class="kicker">Motion <span class="effort">· 2 hrs</span></div>
+      <h3>Two animation libraries in play (<code>motion/react</code> + CSS keyframes).</h3>
+      <p class="evidence">
+        Spring config is duplicated. Easing is hard-coded <code>[0.16, 1, 0.3, 1]</code> in 9 places.
+      </p>
+      <div class="fix"><span class="lbl">Fix</span> Export a <code>src/motion.ts</code> with <code>EASE_STANDARD</code>, <code>SPRING_CARD</code>, <code>FADE_IN</code>. Same as CSS vars, but for Framer.</div>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="priority p-p3">P3</div>
+    <div>
+      <div class="kicker">Empty states <span class="effort">· half-day</span></div>
+      <h3>Empty dashboard (0 projects) and empty search both show the same block of chrome — no guidance.</h3>
+      <p class="evidence">First-run users see stat chips reading <b>0</b> with no nudge toward the chat input.</p>
+      <div class="fix"><span class="lbl">Fix</span> Different empty state per surface. Dashboard: giant CTA "Describe your first app →" that focuses the chat. Projects: starter template cards. Status: "Checking…" Lottie (already there, keep).</div>
+    </div>
+  </div>
+
+  <div class="finding">
+    <div class="priority p-p3">P3</div>
+    <div>
+      <div class="kicker">Security <span class="effort">· 1 hr</span></div>
+      <h3>The generated <code>.html</code> is previewed in an iframe without <code>sandbox</code>.</h3>
+      <p class="evidence">
+        If Gemini returns code with an inline <code>&lt;script&gt;</code> that calls <code>fetch</code> to a third-party, it runs with your origin's cookies. Not exploited yet because Firebase auth is HTTP-only, but a drive-by of <code>localStorage</code> is trivial.
+      </p>
+      <div class="fix"><span class="lbl">Fix</span> <code>&lt;iframe sandbox="allow-scripts" srcDoc={code}/&gt;</code>. If you want forms/popups later, widen from there — don't open-default.</div>
+    </div>
+  </div>
+
+  <!-- Roadmap -->
+  <div class="roadmap">
+    <h3>Recommended order</h3>
+    <ol>
+      <li><b>Week 1:</b> Ga Hook propagation, token swap, aria-labels, contrast bump. (the 4 P0s — 1 dev-day total)</li>
+      <li><b>Week 2:</b> Route split + <code>useProjects</code> hook + toast system. (3 P1s — 3 dev-days)</li>
+      <li><b>Week 3:</b> Responsive workspace + lazy CodeEditor + <code>useMemo</code> pass. (3 P2s)</li>
+      <li><b>Week 4+:</b> i18n cleanup, motion constants, empty states, iframe sandbox. (P3s)</li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>

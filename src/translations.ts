@@ -6,6 +6,10 @@ export interface UIStrings {
   loginWithGoogle: string;
   heroTitle: string;
   heroSubtitle: string;
+  loginEyebrow: string;
+  loginLine1: string;
+  loginLine2: string;
+  loginLine3: string;
   beta: string;
   errorAuth: string;
 
@@ -144,6 +148,10 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     loginWithGoogle: "𞤔𞤮𞤳𞥆𞤵 𞤫 𞤘𞤵𞥅𞤺𞤮𞤤",
     heroTitle: "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆𞤧 𞤫 𞤘𞤢𞤲𞤣𞤮.",
     heroSubtitle: "𞤃𞤢𞤸𞤮𞥅𞤱𞤮 𞤢𞤨𞥆𞤧 𞤶𞤢𞤥𞤢𞥄𞤲𞤵 𞤲𞤺𞤢𞤥 𞤀𞤬𞤪𞤭𞤳𞤢. 𞤖𞤢𞥄𞤤𞤵 𞤳𞤮 𞤲𞤮𞤼𞥆𞤢𞥄 𞤯𞤫𞤲𞤯𞤢𞤤 𞤥𞤢𞥄𞤯𞤢.",
+    loginEyebrow: "𞤘𞤢𞤲𞤣𞤮 · 𞤲𞤺𞤢𞤥 𞤀𞤬𞤪𞤭𞤳𞤢",
+    loginLine1: "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆𞤧",
+    loginLine2: "𞤫 𞤯𞤫𞤲𞤯𞤢𞤤",
+    loginLine3: "𞤥𞤢𞥄𞤯𞤢 𞤥𞤢𞤥.",
     beta: "𞤘𞤢𞤲𞤣𞤮 𞤄𞤫𞤼𞤢",
     errorAuth: "𞤊𞤭𞤣𞥆𞤭𞥅𞤲𞤣𞤫 𞤲𞤮 𞤱𞤢𞤲𞤢𞥄. 𞤐𞤮𞤱𞥆𞤮 𞤫 𞤔𞤮𞤳𞥆𞤵.",
 
@@ -279,6 +287,10 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     loginWithGoogle: "Continuer avec Google",
     heroTitle: "Créez des apps avec Gando AI.",
     heroSubtitle: "Le constructeur d'applications moderne pour l'Afrique. Décrivez votre vision dans votre langue maternelle.",
+    loginEyebrow: "GANDO · POUR L'AFRIQUE",
+    loginLine1: "Créez des apps",
+    loginLine2: "dans votre",
+    loginLine3: "langue maternelle.",
     beta: "Bêta Publique",
     errorAuth: "Erreur d'authentification. Veuillez vous reconnecter.",
 
@@ -404,6 +416,10 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     loginWithGoogle: "Continue with Google",
     heroTitle: "Build apps with Gando AI.",
     heroSubtitle: "The modern app builder for Africa. Describe your vision in your native tongue and watch it come to life.",
+    loginEyebrow: "GANDO · BUILT FOR AFRICA",
+    loginLine1: "Build apps",
+    loginLine2: "in your",
+    loginLine3: "native tongue.",
     beta: "Public Beta",
     errorAuth: "Authentication failed. Please sign in again.",
 
