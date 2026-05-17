@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" role="img" aria-label="Gando">
+  <rect x="2" y="2" width="60" height="60" rx="16" stroke="currentColor" stroke-width="2.5"></rect>
+  <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"></path>
+  <circle cx="34" cy="22" r="2.5" fill="currentColor"></circle>
+</svg>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="_card.css"/>
+<style>
+  .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .label { font-family:Inter; font-size:10px; color:#52525b; margin-top:6px; text-align:center; }
+  .caption { font-family:Inter; font-size:11px; color:#767575; margin-top:16px; line-height:1.5; }
+  .caption b { color:#adaaaa; font-weight:600; }
+</style>
+</head>
+<body class="card">
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="ga-grad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ff8b9b"/>
+        <stop offset="100%" stop-color="#fd8b00"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="row">
+
+    <!-- User avatar, initial -->
+    <div>
+      <div style="width:44px;height:44px;border-radius:9999px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-family:Manrope;font-weight:900;font-size:17px">A</div>
+      <div class="label">User</div>
+    </div>
+
+    <!-- Bot / Gando avatar = Ga Hook mark -->
+    <div>
+      <div style="width:44px;height:44px;border-radius:9999px;background:#131313;border:1.5px solid rgba(255,139,155,0.35);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(255,139,155,0.25)">
+        <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+          <path d="M10 10 Q10 22 16 22 Q22 22 22 16 Q22 11 17 11 L14 11"
+                stroke="url(#ga-grad)" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+          <circle cx="17" cy="11" r="1.4" fill="#fd8b00"/>
+        </svg>
+      </div>
+      <div class="label">Bot (Gando)</div>
+    </div>
+
+    <!-- Empty state avatar -->
+    <div>
+      <div style="width:44px;height:44px;border-radius:9999px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.12);color:#52525b;display:flex;align-items:center;justify-content:center;font-family:Inter;font-size:18px;font-weight:300">?</div>
+      <div class="label">Empty</div>
+    </div>
+
+    <!-- Small stacked / online -->
+    <div>
+      <div style="display:flex;align-items:center">
+        <div style="width:32px;height:32px;border-radius:9999px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-family:Manrope;font-weight:900;font-size:12px;border:2px solid #0e0e0e">A</div>
+        <div style="width:32px;height:32px;border-radius:9999px;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-family:Manrope;font-weight:900;font-size:12px;border:2px solid #0e0e0e;margin-left:-8px">F</div>
+        <div style="width:32px;height:32px;border-radius:9999px;background:#0e9f6e;color:#fff;display:flex;align-items:center;justify-content:center;font-family:Manrope;font-weight:900;font-size:12px;border:2px solid #0e0e0e;margin-left:-8px">K</div>
+      </div>
+      <div class="label">Community (stack)</div>
+    </div>
+
+    <!-- Beta chip, now with Ga Hook mark (NOT sparkle) -->
+    <div>
+      <div style="display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 8px;border-radius:9999px;background:rgba(255,139,155,0.10);border:1px solid rgba(255,139,155,0.25);color:#ff8b9b;font-family:Manrope;font-weight:900;font-size:11px;letter-spacing:0.18em;text-transform:uppercase">
+        <svg viewBox="0 0 32 32" width="14" height="14" fill="none">
+          <path d="M10 10 Q10 22 16 22 Q22 22 22 16 Q22 11 17 11 L14 11"
+                stroke="url(#ga-grad)" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <circle cx="17" cy="11" r="1.6" fill="#fd8b00"/>
+        </svg>
+        Gando Beta
+      </div>
+      <div class="label">Beta chip (with mark)</div>
+    </div>
+  </div>
+
+  <div class="caption">
+    <b>Updated:</b> the beta chip now uses the <b>Ga Hook</b> logomark (abstracted ADLaM 𞤘) instead of the four-point sparkle — the sparkle was too close to Gemini's brand. The Gando bot avatar uses the same mark so the identity stays consistent across touchpoints. User avatars remain solid-color initial circles.
+  </div>
+</body></html>

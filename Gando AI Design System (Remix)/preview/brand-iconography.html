@@ -1,0 +1,386 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<link rel="stylesheet" href="_card.css"/>
+<style>
+  body.card { padding:0; }
+  .wrap { padding:20px; }
+
+  /* Shared SVG reusable symbols */
+  .eyebrow { font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#ff8b9b; margin-bottom:8px;}
+  .section { font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:#767575; margin:18px 4px 10px; display:flex; align-items:baseline; gap:10px; }
+  .section .hint { font-family:Inter; font-size:10.5px; font-weight:500; color:#52525b; letter-spacing:0; text-transform:none;}
+
+  /* Hero */
+  .hero {
+    display:flex; align-items:center; gap:28px; padding:24px 22px;
+    background:
+      radial-gradient(80% 120% at 0% 0%, rgba(255,139,155,0.08), transparent 60%),
+      radial-gradient(80% 120% at 100% 100%, rgba(253,139,0,0.08), transparent 60%),
+      #0a0a0a;
+    border:1px solid rgba(255,139,155,0.2); border-radius:18px;
+    margin-bottom:4px; position:relative; overflow:hidden;
+  }
+  .hero .name { font-family:Manrope; font-weight:900; font-size:28px; letter-spacing:-0.04em; color:#fff; line-height:1; }
+  .hero .story { font-family:Inter; font-size:12px; color:#adaaaa; line-height:1.6; margin-top:10px; max-width:420px; }
+  .hero .story b { color:#fff; font-weight:600; }
+
+  /* Generic tile grids */
+  .row { display:flex; gap:10px; align-items:stretch; }
+  .tile {
+    flex:1; padding:14px; border-radius:12px;
+    background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .tile.dark { background:#0a0a0a; }
+  .tile.light { background:#f5f4f2; }
+  .tile .lbl { font-family:Inter; font-size:9px; color:#767575; letter-spacing:0.1em; text-transform:uppercase; }
+  .tile.light .lbl { color:#767575; }
+  .tile .swatch { height:56px; display:flex; align-items:center; justify-content:center; }
+
+  /* Clear-space diagram */
+  .clearspace {
+    display:grid; grid-template-columns: 200px 1fr; gap:16px;
+    padding:20px; border-radius:14px;
+    background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+  }
+  .cs-diagram {
+    position:relative; width:180px; height:180px;
+    background:
+      repeating-linear-gradient(0deg, rgba(255,139,155,0.10) 0 1px, transparent 1px 20px),
+      repeating-linear-gradient(90deg, rgba(255,139,155,0.10) 0 1px, transparent 1px 20px),
+      #0a0a0a;
+    border:1px solid rgba(255,139,155,0.25); border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cs-mark {
+    position:relative; width:80px; height:80px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cs-mark::before {
+    content:''; position:absolute; inset:-20px;
+    border:1px dashed rgba(253,139,0,0.6); border-radius:12px;
+  }
+  .cs-label {
+    position:absolute; font-family:'JetBrains Mono',monospace;
+    font-size:10px; color:#fd8b00; background:#0a0a0a; padding:1px 5px;
+  }
+  .cs-label.top { top:-7px; left:50%; transform:translateX(-50%); }
+  .cs-label.side { left:-22px; top:50%; transform:translateY(-50%) rotate(-90deg); transform-origin:center; }
+  .cs-copy { font-family:Inter; font-size:12px; color:#adaaaa; line-height:1.65; }
+  .cs-copy h4 { font-family:Manrope; font-weight:900; font-size:13px; color:#fff; margin:0 0 8px; letter-spacing:-.01em;}
+  .cs-copy code { font-family:'JetBrains Mono',monospace; font-size:11px; color:#ff8b9b; background:rgba(255,139,155,0.08); padding:1px 6px; border-radius:4px; }
+  .cs-copy .pair { display:flex; gap:14px; margin-top:10px; }
+  .cs-copy .pair > div { flex:1; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); padding:10px 12px; border-radius:10px;}
+  .cs-copy .k { color:#767575; font-size:10.5px; font-family:Manrope; font-weight:900; letter-spacing:0.18em; text-transform:uppercase; display:block; margin-bottom:4px;}
+
+  /* Do / Don't grid */
+  .dodont { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  .dd {
+    padding:14px; border-radius:12px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+    display:flex; flex-direction:column; gap:10px; position:relative; overflow:hidden;
+  }
+  .dd .flag {
+    position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .dd.good .flag { background:#4ade80; }
+  .dd.bad .flag { background:#f87171; }
+  .dd .canvas {
+    height:90px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    background:#0a0a0a;
+  }
+  .dd .canvas.white { background:#f5f4f2; }
+  .dd .canvas.photo {
+    background:
+      radial-gradient(circle at 30% 30%, #fd8b00 0%, transparent 40%),
+      radial-gradient(circle at 70% 70%, #bca2ff 0%, transparent 45%),
+      linear-gradient(135deg, #1a1a1a, #3a3a3a);
+  }
+  .dd .tag {
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:Manrope; font-weight:900; font-size:9px; letter-spacing:0.18em; text-transform:uppercase;
+  }
+  .dd.good .tag { color:#4ade80; }
+  .dd.bad .tag  { color:#f87171; }
+  .dd .tag::before {
+    content:''; display:inline-block; width:10px; height:10px; border-radius:9999px;
+  }
+  .dd.good .tag::before { background:#4ade80; }
+  .dd.bad  .tag::before { background:#f87171; }
+  .dd .caption { font-family:Inter; font-size:11px; color:#adaaaa; line-height:1.5; }
+  .dd .caption b { color:#fff; font-weight:600; }
+
+  /* App icon row */
+  .appicons { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+  .ai {
+    padding:14px; border-radius:12px; background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.06);
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  .ai .ai-lbl { font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#767575;}
+  .ai .ai-dim { font-family:'JetBrains Mono',monospace; font-size:10px; color:#52525b;}
+
+  /* iOS rounded square */
+  .ios-tile {
+    width:88px; height:88px; border-radius:20px;
+    background: radial-gradient(140% 140% at 0% 0%, #ff8b9b, #fd8b00);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.3), 0 8px 24px rgba(253,139,0,0.4);
+    display:flex; align-items:center; justify-content:center;
+  }
+  /* macOS squircle (larger r, slight highlight on top) */
+  .mac-tile {
+    width:88px; height:88px; border-radius:20px;
+    background:#0a0a0a; border:1px solid rgba(255,255,255,0.08);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+  /* Android adaptive (full circle, solid fill background, mark floats at 72% safe zone) */
+  .and-tile {
+    width:88px; height:88px; border-radius:9999px;
+    background:#0e0e0e;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    position:relative;
+  }
+  .and-tile::after {
+    content:''; position:absolute; inset:8px;
+    border-radius:9999px;
+    background: radial-gradient(140% 140% at 0% 0%, rgba(255,139,155,0.25), rgba(253,139,0,0.15) 60%, transparent);
+    pointer-events:none;
+  }
+  .and-tile svg { position:relative; z-index:1; }
+
+  /* Favicon tab mock */
+  .fav-tab {
+    width:210px; height:32px; border-radius:10px 10px 0 0;
+    background:#1a1a1a; border:1px solid rgba(255,255,255,0.08); border-bottom:none;
+    display:flex; align-items:center; gap:8px; padding:0 10px;
+    font-family:Inter; font-size:11px; color:#adaaaa;
+  }
+  .fav-tab .close { margin-left:auto; color:#767575;}
+
+  /* Spec/rules reused */
+  .rules {
+    font-family:Inter; font-size:11px; color:#adaaaa; line-height:1.65;
+    padding:14px 16px; background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.06); border-radius:12px;
+  }
+  .rules ul { margin:0; padding-left:16px; }
+  .rules li + li { margin-top:4px; }
+  .rules code { font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#ff8b9b; background:rgba(255,139,155,0.08); padding:1px 6px; border-radius:4px; }
+
+  .spec { display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; font-family:Inter; font-size:11px; color:#adaaaa; line-height:1.5;}
+  .spec .k { color:#767575; }
+  .spec .v { color:#fff; font-weight:500; }
+  .spec .v code { font-family:'JetBrains Mono',monospace; font-size:10.5px; background:rgba(255,255,255,0.04); padding:1px 6px; border-radius:4px; color:#ff8b9b;}
+
+  .lockup-row { display:flex; gap:12px; }
+  .lockup {
+    flex:1; display:flex; align-items:center; gap:12px;
+    padding:18px 20px; background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.06); border-radius:14px;
+  }
+  .wordmark {
+    font-family:Manrope; font-weight:900; font-size:26px; letter-spacing:-0.04em;
+    background:linear-gradient(135deg,#ff8b9b,#fd8b00);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; line-height:1;
+  }
+</style>
+</head>
+<body class="card">
+<div class="wrap">
+
+  <!-- Reusable SVG definitions -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ff8b9b"/>
+        <stop offset="100%" stop-color="#fd8b00"/>
+      </linearGradient>
+      <!-- The Ga Hook as a symbol, so we can reuse it at any size -->
+      <symbol id="gando" viewBox="0 0 64 64">
+        <rect x="2" y="2" width="60" height="60" rx="16" stroke="url(#g)" stroke-width="2.5" fill="none"/>
+        <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="22" r="2.5" fill="#fd8b00"/>
+      </symbol>
+      <symbol id="gando-heavy" viewBox="0 0 64 64">
+        <rect x="3" y="3" width="58" height="58" rx="12" stroke="url(#g)" stroke-width="5" fill="none"/>
+        <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="22" r="3.5" fill="#fd8b00"/>
+      </symbol>
+      <symbol id="gando-ink" viewBox="0 0 64 64">
+        <rect x="2" y="2" width="60" height="60" rx="16" stroke="#0a0a0a" stroke-width="2.5" fill="none"/>
+        <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="#0a0a0a" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="22" r="2.5" fill="#0a0a0a"/>
+      </symbol>
+      <symbol id="gando-mono" viewBox="0 0 64 64">
+        <rect x="2" y="2" width="60" height="60" rx="16" stroke="currentColor" stroke-width="2.5" fill="none"/>
+        <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="22" r="2.5" fill="currentColor"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- Hero: big mark + story -->
+  <div class="hero">
+    <svg viewBox="0 0 64 64" width="100" height="100"><use href="#gando"/></svg>
+    <div>
+      <div class="eyebrow">The Ga Hook</div>
+      <div class="name">Gando Logomark</div>
+      <div class="story">
+        An abstracted <b style="font-family:'Noto Sans Adlam',sans-serif">𞤘</b> — the ADLaM letter "ga" — enclosed in a soft-cornered square. It honors the product's African-language-first identity and cannot be confused with any existing AI brand. The terminal dot in secondary orange is the one permanent accent.
+      </div>
+    </div>
+  </div>
+
+  <!-- Size scale -->
+  <div class="section">Size scale <span class="hint">strokes thicken as size shrinks</span></div>
+  <div class="row">
+    <div class="tile dark"><div class="swatch"><svg viewBox="0 0 64 64" width="64" height="64"><use href="#gando"/></svg></div><div class="lbl">64 px</div></div>
+    <div class="tile dark"><div class="swatch"><svg viewBox="0 0 64 64" width="32" height="32"><use href="#gando"/></svg></div><div class="lbl">32 px</div></div>
+    <div class="tile dark"><div class="swatch"><svg viewBox="0 0 64 64" width="24" height="24"><use href="#gando"/></svg></div><div class="lbl">24 px</div></div>
+    <div class="tile dark"><div class="swatch"><svg viewBox="0 0 64 64" width="16" height="16"><use href="#gando-heavy"/></svg></div><div class="lbl">16 px · favicon</div></div>
+    <div class="tile light"><div class="swatch"><svg viewBox="0 0 64 64" width="32" height="32" style="color:#0a0a0a"><use href="#gando-mono"/></svg></div><div class="lbl">Mono on light</div></div>
+  </div>
+
+  <!-- Clear space -->
+  <div class="section">Clear space <span class="hint">don't crowd the mark</span></div>
+  <div class="clearspace">
+    <div class="cs-diagram">
+      <div class="cs-mark">
+        <svg viewBox="0 0 64 64" width="80" height="80"><use href="#gando"/></svg>
+        <span class="cs-label top">x · 25%</span>
+        <span class="cs-label side">x · 25%</span>
+      </div>
+    </div>
+    <div class="cs-copy">
+      <h4>Minimum clear space = 25% of mark height</h4>
+      For an 80 px mark that's <code>20 px</code> of breathing room on every side. The <b>x</b> unit is simply <b>mark height ÷ 4</b>. Use this same rule in every context — side-by-side layouts, lockups, and especially inside dense UIs like the app sidebar.
+      <div class="pair">
+        <div><span class="k">Minimum on screen</span>16 px favicon</div>
+        <div><span class="k">Minimum in print</span>6 mm (≈ 17 px @ 72 dpi)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Do / Don't -->
+  <div class="section">Do &amp; Don't</div>
+  <div class="dodont">
+
+    <div class="dd good">
+      <div class="flag"></div>
+      <div class="canvas"><svg viewBox="0 0 64 64" width="56" height="56"><use href="#gando"/></svg></div>
+      <span class="tag">Do</span>
+      <div class="caption"><b>Gradient on dark</b> — the default. Use on <code style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,139,155,.1);color:#ff8b9b;padding:1px 5px;border-radius:4px">#0a0a0a</code> or <code style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,139,155,.1);color:#ff8b9b;padding:1px 5px;border-radius:4px">#0e0e0e</code>.</div>
+    </div>
+
+    <div class="dd good">
+      <div class="flag"></div>
+      <div class="canvas white"><svg viewBox="0 0 64 64" width="56" height="56" style="color:#0a0a0a"><use href="#gando-mono"/></svg></div>
+      <span class="tag">Do</span>
+      <div class="caption"><b>Mono ink on light</b> — when printed or on a light UI, use the single-color mono variant.</div>
+    </div>
+
+    <div class="dd good">
+      <div class="flag"></div>
+      <div class="canvas" style="background:#ff8b9b"><svg viewBox="0 0 64 64" width="56" height="56"><use href="#gando-ink"/></svg></div>
+      <span class="tag">Do</span>
+      <div class="caption"><b>Ink on brand fill</b> — on a pink or orange block, reverse to solid <code style="font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(255,139,155,.1);color:#ff8b9b;padding:1px 5px;border-radius:4px">#0a0a0a</code>.</div>
+    </div>
+
+    <div class="dd bad">
+      <div class="flag"></div>
+      <div class="canvas photo"><svg viewBox="0 0 64 64" width="56" height="56"><use href="#gando"/></svg></div>
+      <span class="tag">Don't</span>
+      <div class="caption"><b>Never on busy imagery</b> without a chip or plate behind. The gradient dissolves.</div>
+    </div>
+
+    <div class="dd bad">
+      <div class="flag"></div>
+      <div class="canvas">
+        <svg viewBox="0 0 64 64" width="56" height="56" style="transform:rotate(18deg)"><use href="#gando"/></svg>
+      </div>
+      <span class="tag">Don't</span>
+      <div class="caption"><b>Never rotate or skew.</b> The Ga Hook sits upright. Always.</div>
+    </div>
+
+    <div class="dd bad">
+      <div class="flag"></div>
+      <div class="canvas">
+        <svg viewBox="0 0 64 64" width="56" height="56">
+          <rect x="2" y="2" width="60" height="60" rx="16" stroke="#bca2ff" stroke-width="2.5" fill="none"/>
+          <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="#bca2ff" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="34" cy="22" r="2.5" fill="#4ade80"/>
+        </svg>
+      </div>
+      <span class="tag">Don't</span>
+      <div class="caption"><b>Never recolor.</b> The gradient and the orange terminal dot are fixed.</div>
+    </div>
+
+  </div>
+
+  <!-- App icon lockups -->
+  <div class="section">App-icon lockups</div>
+  <div class="appicons">
+    <div class="ai">
+      <div class="ios-tile">
+        <svg viewBox="0 0 64 64" width="52" height="52"><use href="#gando-ink"/></svg>
+      </div>
+      <div class="ai-lbl">iOS</div>
+      <div class="ai-dim">1024 · rx 22%</div>
+    </div>
+    <div class="ai">
+      <div class="mac-tile">
+        <svg viewBox="0 0 64 64" width="56" height="56"><use href="#gando"/></svg>
+      </div>
+      <div class="ai-lbl">macOS</div>
+      <div class="ai-dim">1024 · squircle</div>
+    </div>
+    <div class="ai">
+      <div class="and-tile">
+        <svg viewBox="0 0 64 64" width="46" height="46"><use href="#gando"/></svg>
+      </div>
+      <div class="ai-lbl">Android</div>
+      <div class="ai-dim">432 · safe 66%</div>
+    </div>
+    <div class="ai">
+      <div class="fav-tab">
+        <svg viewBox="0 0 64 64" width="16" height="16"><use href="#gando-heavy"/></svg>
+        <span>Gando</span>
+        <span class="close">×</span>
+      </div>
+      <div class="ai-lbl">Favicon</div>
+      <div class="ai-dim">32 · in browser tab</div>
+    </div>
+  </div>
+
+  <!-- Lockups -->
+  <div class="section">Lockups <span class="hint">mark + wordmark</span></div>
+  <div class="lockup-row">
+    <div class="lockup">
+      <svg viewBox="0 0 64 64" width="36" height="36"><use href="#gando"/></svg>
+      <span class="wordmark">Gando</span>
+    </div>
+    <div class="lockup">
+      <svg viewBox="0 0 64 64" width="36" height="36"><use href="#gando"/></svg>
+      <span class="wordmark" style="font-family:'Noto Sans Adlam',sans-serif; font-weight:700; font-size:22px;">𞤘𞤢𞤲𞤣𞤮</span>
+    </div>
+  </div>
+
+  <!-- Spec -->
+  <div class="section">Spec</div>
+  <div class="rules">
+    <div class="spec">
+      <div class="k">Shape</div><div class="v">60×60 rounded rect, <code>rx=16</code>, 2.5 px stroke</div>
+      <div class="k">Hook</div><div class="v">4 px stroke, round caps, abstracted ADLaM 𞤘</div>
+      <div class="k">Accent dot</div><div class="v">Solid <code>#fd8b00</code>, r = 2.5</div>
+      <div class="k">Gradient</div><div class="v"><code>135°, #ff8b9b → #fd8b00</code></div>
+      <div class="k">Min on-screen</div><div class="v">16 px — switch to heavy-stroke variant</div>
+      <div class="k">Clear space</div><div class="v">≥ 25% of mark height on all sides</div>
+      <div class="k">File formats</div><div class="v"><code>logo.svg</code>, <code>logo-mono.svg</code>, <code>favicon.svg</code></div>
+      <div class="k">In-code</div><div class="v"><code>&lt;GandoMark/&gt;</code> — see <code>ui_kits/web/Primitives.jsx</code></div>
+    </div>
+  </div>
+
+</div>
+</body></html>
