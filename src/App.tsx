@@ -326,7 +326,9 @@ export default function App() {
         <div className="space-y-4">
           {authMode === 'google' ? (
             <button onClick={handleLogin} className="w-full py-4 rounded-2xl font-bold text-black flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
-              style={{ fontFamily: MANROPE, background: `linear-gradient(135deg,${P},${S})`, boxShadow: `0 0 24px ${P}40` }}>
+              style={{ fontFamily: MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
               <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
               <span className={cn(isAdlam && 'font-adlam')}>{t.loginWithGoogle}</span>
             </button>
@@ -336,12 +338,14 @@ export default function App() {
                 {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
               </h3>
               <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" style={{ background: 'rgba(0,0,0,0.4)' }} />
+                className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
               <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" style={{ background: 'rgba(0,0,0,0.4)' }} />
+                className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
               {authError && <p className="text-red-400 text-xs">{authError}</p>}
               <button onClick={handleLogin} className="w-full py-3 rounded-xl font-black text-black transition-all hover:scale-[1.01]"
-                style={{ fontFamily: MANROPE, background: `linear-gradient(135deg,${P},${S})` }}>
+                style={{ fontFamily: MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
                 {authMode === 'login' ? 'Sign In' : 'Sign Up'}
               </button>
               <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="w-full text-xs font-bold transition-colors" style={{ color: P }}>
@@ -424,7 +428,7 @@ export default function App() {
                   }
                 }}
                 placeholder={t.searchPlaceholder}
-                className={cn('bg-transparent border-none outline-none text-sm w-40 text-white placeholder-zinc-600', isAdlam && 'font-adlam')}
+                className={cn('gando-input bg-transparent border-none outline-none text-sm w-40 text-white placeholder-zinc-600', isAdlam && 'font-adlam')}
               />
               {headerSearch && (
                 <button onClick={() => { setHeaderSearch(''); setSearchOpen(false); }}
@@ -602,7 +606,9 @@ export default function App() {
           <div className="px-6 py-5">
             <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); }}
               className={cn('w-full py-4 rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', isAdlam && 'font-adlam')}
-              style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, boxShadow: `0 0 20px ${P}40` }}>
+              style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
               + {t.newProject}
             </button>
           </div>
@@ -645,7 +651,7 @@ export default function App() {
                   {isRenaming ? (
                     <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
                       onBlur={handleRename} onKeyDown={e => e.key === 'Enter' && handleRename()}
-                      className="bg-transparent border-b text-white text-sm font-bold outline-none w-48 px-1"
+                      className="gando-input bg-transparent border-b text-white text-sm font-bold outline-none w-48 px-1"
                       style={{ borderColor: `${P}60` }} />
                   ) : (
                     <span className={cn('text-sm font-black text-white cursor-pointer hover:text-[#ff8b9b] transition-colors', isAdlam && 'font-adlam')}
@@ -714,7 +720,7 @@ export default function App() {
                   <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
                   <input value={projectSearch} onChange={e => setProjectSearch(e.target.value)}
                     placeholder={t.searchProjectsPlaceholder}
-                    className={cn('bg-transparent border-none outline-none text-sm text-white placeholder-zinc-600 flex-1', isAdlam && 'font-adlam')} />
+                    className={cn('gando-input bg-transparent border-none outline-none text-sm text-white placeholder-zinc-600 flex-1', isAdlam && 'font-adlam')} />
                   {projectSearch && <button onClick={() => setProjectSearch('')}><X className="w-3.5 h-3.5 text-zinc-500 hover:text-white" /></button>}
                 </div>
               </div>
@@ -757,7 +763,9 @@ export default function App() {
                           </span>
                           <button onClick={() => openProject(p)}
                             className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-black transition-all hover:scale-105', isAdlam && 'font-adlam')}
-                            style={{ background: `linear-gradient(135deg,${P},${S})` }}>
+                            style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
                             {t.openProjectLabel} <ChevronRight className="w-3 h-3" />
                           </button>
                         </div>
@@ -906,7 +914,9 @@ export default function App() {
                     <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
                     <button onClick={handleSend} disabled={isGenerating || !input.trim()}
                       className={cn('flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:scale-100 text-sm', isAdlam && 'font-adlam')}
-                      style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, boxShadow: `0 4px 20px ${P}35` }}>
+                      style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
                       {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                       {isGenerating ? (generationStatus || t.generating) : t.generateLabel}
                     </button>
@@ -918,7 +928,7 @@ export default function App() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder={t.inputPlaceholder}
                     rows={4}
-                    className={cn('w-full bg-transparent border-none outline-none resize-none text-white placeholder-zinc-600 px-5 py-4 text-base font-medium leading-relaxed', isAdlam && 'font-adlam')}
+                    className={cn('gando-input w-full bg-transparent border-none outline-none resize-none text-white placeholder-zinc-600 px-5 py-4 text-base font-medium leading-relaxed', isAdlam && 'font-adlam')}
                   />
                 </div>
                 <div className="absolute -inset-px rounded-3xl blur-xl opacity-0 group-hover:opacity-60 pointer-events-none transition-opacity duration-500"
