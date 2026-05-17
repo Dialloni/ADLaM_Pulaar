@@ -108,6 +108,7 @@ export default function App() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [projectSearch, setProjectSearch] = useState('');
+  const [projectFilter, setProjectFilter] = useState<'all' | 'live' | 'building' | 'draft'>('all');
   const [headerSearch, setHeaderSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -270,7 +271,9 @@ export default function App() {
   const tokenPct = Math.min(messages.length * 2.5, 90);
   const perfPct = 94;
   const userMessages = messages.filter(m => m.role === 'user').length;
-  const filteredProjects = projects.filter(p =>
+  const filteredProjects = projects
+    .filter(p => projectFilter === 'all' || p.status === projectFilter)
+    .filter(p =>
     p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
     (p.description || '').toLowerCase().includes(projectSearch.toLowerCase())
   );
@@ -840,13 +843,35 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Filter tabs */}
+              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', width: 'fit-content' }}>
+                {(['all', 'live', 'building', 'draft'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setProjectFilter(f)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 8,
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontFamily: MANROPE,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      transition: 'all 150ms',
+                      background: projectFilter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      color: projectFilter === f ? '#fff' : '#adaaaa',
+                      fontWeight: projectFilter === f ? 700 : 500,
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+
               {filteredProjects.length === 0 ? (
-                <div className="rounded-2xl p-12 text-center border border-dashed border-white/10" style={{ background: 'rgba(255,255,255,0.01)' }}>
-                  <FolderKanban className="w-8 h-8 mx-auto mb-4" style={{ color: P }} />
-                  <p className={cn('text-white font-black text-lg mb-2', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                    {projectSearch ? 'No matching projects' : t.noProjectsTitle}
-                  </p>
-                  <p className={cn('text-zinc-600 text-sm', isAdlam && 'font-adlam')}>{t.noProjectsSubtitle}</p>
+                <div className="flex items-center justify-center py-16">
+                  <p style={{ color: '#767575', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>No projects found</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
