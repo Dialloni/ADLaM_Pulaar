@@ -8,6 +8,7 @@ export interface Project {
   code: string;
   createdAt: any;
   updatedAt: any;
+  status?: 'live' | 'building' | 'draft';
 }
 
 export interface Message {
