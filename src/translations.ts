@@ -21,6 +21,7 @@ export interface UIStrings {
 
   /* sidebar */
   myProjectsLabel: string;
+  templatesNav: string;
   languageAssetsLabel: string;
   settingsNav: string;
   teamHubLabel: string;
@@ -163,6 +164,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
 
     /* sidebar */
     myProjectsLabel: "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤢𞤥",
+    templatesNav: "𞤃𞤮𞤣𞤫𞤤𞤭",
     languageAssetsLabel: "𞤆𞤓𞤂𞤀𞥄𞤈 𞤑𞤢𞥄𞤤𞤫𞥅𞤶𞤭",
     settingsNav: "𞤚𞤫𞤩𞥆𞤫",
     teamHubLabel: "𞤒𞤫𞤴𞥆𞤢𞤥",
@@ -300,6 +302,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     searchPlaceholder: "Rechercher dans Gando…",
 
     myProjectsLabel: "Mes Projets",
+    templatesNav: "Modèles",
     languageAssetsLabel: "Ressources Linguistiques",
     settingsNav: "Paramètres",
     teamHubLabel: "Équipe",
@@ -429,6 +432,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     searchPlaceholder: "Search Gando…",
 
     myProjectsLabel: "My Projects",
+    templatesNav: "Templates",
     languageAssetsLabel: "Language Assets",
     settingsNav: "Settings",
     teamHubLabel: "Team Hub",

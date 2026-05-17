@@ -1061,7 +1061,7 @@ export default function App() {
             {([
               { icon: LayoutDashboard, label: t.dashboardNav,        pg: 'dashboard'  as NavPage },
               { icon: FolderKanban,   label: t.myProjectsLabel,     pg: 'projects'   as NavPage },
-              { icon: Layers,         label: 'Templates',            pg: 'templates'  as NavPage },
+              { icon: Layers,         label: t.templatesNav,         pg: 'templates'  as NavPage },
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'     as NavPage },
               { icon: Settings,       label: t.settingsNav,          pg: null },
               { icon: Users,          label: t.teamHubLabel,         pg: null },
@@ -1308,7 +1308,7 @@ export default function App() {
                           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#fff'}
                           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#adaaaa'}
                         >
-                          <ChevronRight className="w-3 h-3 rotate-180" /> Templates
+                          <ChevronRight className="w-3 h-3 rotate-180" /> {t.templatesNav}
                         </button>
                         <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>/</span>
                         <span style={{ fontSize: 12, color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{tr.name}</span>
@@ -1352,7 +1352,7 @@ export default function App() {
                     <div className="overflow-y-auto" style={{ width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
                       {/* breadcrumb */}
                       <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ cursor: 'pointer' }} onClick={() => setSelectedTemplate(null)}>Templates</span>
+                        <span style={{ cursor: 'pointer' }} onClick={() => setSelectedTemplate(null)}>{t.templatesNav}</span>
                         <ChevronRight className="w-3 h-3" />
                         <span style={{ color: '#adaaaa' }}>{tr.name}</span>
                       </div>
