@@ -336,23 +336,23 @@ export default function App() {
 
           {/* eyebrow */}
           <p style={{ fontFamily: MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: P, textTransform: 'uppercase', margin: 0 }}>
-            GANDO · BUILT FOR AFRICA
+            {t.loginEyebrow}
           </p>
 
           {/* hero h1 */}
           <h1 className={cn(isAdlam && 'font-adlam')}
             style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(48px,5.5vw,72px)', lineHeight: 1.0, color: '#fff', margin: 0 }}>
-            Build apps<br />
-            in your<br />
+            {t.loginLine1}<br />
+            {t.loginLine2}<br />
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              native tongue.
+              {t.loginLine3}
             </span>
           </h1>
 
           {/* subtext */}
           <p className={cn(isAdlam && 'font-adlam')}
             style={{ fontFamily: 'Inter, sans-serif', fontSize: 16, color: '#767575', lineHeight: 1.6, maxWidth: 460, margin: 0 }}>
-            The modern app builder for Africa. Describe your vision in your native tongue and watch it come to life.
+            {t.heroSubtitle}
           </p>
 
           {/* auth section */}
