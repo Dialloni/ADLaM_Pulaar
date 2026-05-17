@@ -207,6 +207,47 @@ const TEMPLATES_META = [
   { id: 'legal',      category: 'Legal',      city: 'Casablanca', color: '#1c1a16', previewUrl: '/templates/legal-casablanca/index.html' },
 ];
 
+/* ── ADLaM UI string map (English/French → Pulaar ADLaM) ── */
+const ADLAM_UI: Record<string, string> = {
+  'Home':         '𞤖𞤮𞤪𞤮𞤲𞤣𞤫',
+  'Accueil':      '𞤖𞤮𞤪𞤮𞤲𞤣𞤫',
+  'About':        '𞤃𞤢𞤲𞤫',
+  'À propos':     '𞤃𞤢𞤲𞤫',
+  'Shop':         '𞤐𞤢𞥄𞤺𞤫',
+  'Boutique':     '𞤐𞤢𞥄𞤺𞤫',
+  'Contact':      '𞤐𞤭𞤲𞤣𞤫',
+  'Search':       '𞤅𞤫𞤳𞤭𞤼𞤮𞤤',
+  'Rechercher':   '𞤅𞤫𞤳𞤭𞤼𞤮𞤤',
+  'Discover':     '𞤁𞤫𞤬𞤪𞤭𞤲𞤣𞤫',
+  'Découvrir':    '𞤁𞤫𞤬𞤪𞤭𞤲𞤣𞤫',
+  'Sign Up':      '𞤁𞤢𞤤𞤢𞤤',
+  'Login':        '𞤁𞤵𞤺𞤭𞤲𞤣𞤫',
+  'Connexion':    '𞤁𞤵𞤺𞤭𞤲𞤣𞤫',
+  'Get Started':  '𞤄𞤫𞤫𞤼𞤭𞤪',
+  'Learn More':   '𞤐𞤢𞤤𞤫 𞤸𞤮𞤪𞤭',
+  'Services':     '𞤑𞤮𞤤𞤮𞤤𞤭',
+  'Women':        '𞤔𞤭𞤤𞥆𞤭',
+  'Femme':        '𞤔𞤭𞤤𞥆𞤭',
+  'Men':          '𞤘𞤢𞤤𞥆𞤭',
+  'Homme':        '𞤘𞤢𞤤𞥆𞤭',
+  'Music':        '𞤑𞤵𞤤𞤢𞤤',
+  'Musique':      '𞤑𞤵𞤤𞤢𞤤',
+  'News':         '𞤖𞤮𞤤𞤤𞤭𞤲𞤣𞤫',
+  'Actualités':   '𞤖𞤮𞤤𞤤𞤭𞤲𞤣𞤫',
+  'Events':       '𞤖𞤭𞤼𞤼𞤢𞤲𞤣𞤫',
+  'Événements':   '𞤖𞤭𞤼𞤼𞤢𞤲𞤣𞤫',
+  'Artists':      '𞤕𞤭𞤤𞥆𞤮𞤱𞤮𞤤',
+  'Artistes':     '𞤕𞤭𞤤𞥆𞤮𞤱𞤮𞤤',
+  'Charts':       '𞤂𞤭𞤧𞤼𞤮 𞤑𞤵𞤤𞤢𞤤',
+  'Radio':        '𞤈𞤢𞤣𞤭𞤴𞤮',
+  'Fashion':      '𞤊𞤢𞤼𞤮',
+  'Politics':     '𞤆𞤮𞤤𞤭𞤼𞤭𞤳𞤭',
+  'Business':     '𞤄𞤭𞤱𞤼𞤮𞤤𞤭',
+  'Technology':   '𞤚𞤫𞤳𞤲𞤮𞤤𞤮𞤶𞤭',
+  'Culture':      '𞤑𞤮𞤤𞤼𞤵𞤪𞤫',
+  'Sports':       '𞤅𞤮𞤪𞤼𞤭',
+};
+
 /* ── tiny helpers ───────────────────────────────── */
 function DonutChart({ pct, label }: { pct: number; label: string }) {
   const r = 52; const circ = 2 * Math.PI * r;
@@ -296,6 +337,28 @@ export default function App() {
     el.style.height = next + 'px';
     el.style.overflowY = el.scrollHeight > 200 ? 'auto' : 'hidden';
   };
+
+  const injectAdlamTranslations = useCallback((iframe: HTMLIFrameElement) => {
+    try {
+      const doc = iframe.contentDocument;
+      if (!doc || !doc.body) return;
+      const style = doc.createElement('style');
+      style.textContent = `@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Adlam:wght@400;700&display=swap');body,nav,h1,h2,h3,p,button,a,li,span,div{font-family:'Noto Sans Adlam',sans-serif!important}`;
+      doc.head.appendChild(style);
+      const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
+      let node: Text | null;
+      while ((node = walker.nextNode() as Text | null)) {
+        const orig = node.textContent || '';
+        let text = orig;
+        for (const [src, adlam] of Object.entries(ADLAM_UI)) {
+          text = text.replace(new RegExp(`\\b${src}\\b`, 'gi'), adlam);
+        }
+        if (text !== orig) node.textContent = text;
+      }
+    } catch {
+      // cross-origin or doc not ready — silently skip
+    }
+  }, []);
 
   /* system status */
   const [sysStatus, setSysStatus] = useState<{
@@ -1172,6 +1235,7 @@ export default function App() {
                             title={tr.name}
                             className="w-full h-full border-none"
                             sandbox="allow-scripts allow-same-origin"
+                            onLoad={isAdlam ? (e) => injectAdlamTranslations(e.currentTarget) : undefined}
                           />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center gap-3">
