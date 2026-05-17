@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Benali & Associés</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Georgia',serif;background:#faf9f7;color:#1c1c1c}
+nav{background:#1c1c1c;display:flex;justify-content:space-between;align-items:center;padding:22px 56px}
+.logo{display:flex;flex-direction:column}
+.logo-name{font-size:17px;letter-spacing:.25em;text-transform:uppercase;color:#fff;font-weight:400}
+.logo-tag{font-size:8px;letter-spacing:.45em;text-transform:uppercase;color:#c8a96e;margin-top:2px}
+.nav-links{display:flex;gap:36px;list-style:none}
+.nav-links a{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#888;text-decoration:none;transition:color .15s}
+.nav-links a:hover{color:#c8a96e}
+.btn-consult{padding:11px 28px;border:1px solid #c8a96e;color:#c8a96e;font-size:9px;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;background:none;font-family:Georgia,serif;transition:all .15s}
+.btn-consult:hover{background:#c8a96e;color:#1c1c1c}
+.hero{display:grid;grid-template-columns:1fr 1fr;min-height:75vh}
+.hl{display:flex;flex-direction:column;justify-content:center;padding:80px 56px;background:#1c1c1c}
+.he{font-size:9px;letter-spacing:.5em;text-transform:uppercase;color:#c8a96e;margin-bottom:28px}
+h1{font-size:52px;font-weight:300;line-height:1.15;color:#f5f0e8;margin-bottom:24px;letter-spacing:-.5px}
+h1 strong{font-weight:700;color:#c8a96e}
+p.sub{font-size:14px;color:#888;line-height:2;margin-bottom:36px;max-width:380px}
+.cta-row{display:flex;gap:14px}
+.btn-p{padding:15px 36px;background:#c8a96e;color:#1c1c1c;font-size:9px;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;border:none;font-family:Georgia,serif}
+.btn-s{padding:15px 36px;border:1px solid rgba(255,255,255,0.2);color:#f5f0e8;font-size:9px;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;background:none;font-family:Georgia,serif}
+.hr{background:linear-gradient(160deg,#2a1f0e,#1c1510);display:flex;align-items:center;justify-content:center}
+.seal{text-align:center}
+.seal-icon{font-size:72px;display:block;margin-bottom:12px;opacity:.7}
+.seal-text{font-size:9px;letter-spacing:.4em;text-transform:uppercase;color:#c8a96e80}
+.practices{padding:72px 56px;background:#fff}
+.sec-title{text-align:center;font-size:9px;letter-spacing:.45em;text-transform:uppercase;color:#c8a96e;margin-bottom:48px}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:#f0ede8}
+.practice{background:#fff;padding:36px 32px;cursor:pointer;transition:background .15s}
+.practice:hover{background:#faf8f4}
+.p-icon{font-size:28px;margin-bottom:16px}
+.p-name{font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.p-desc{font-size:12px;color:#888;line-height:1.8}
+.team{padding:72px 56px;background:#faf9f7}
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:900px;margin:0 auto}
+.attorney{text-align:center}
+.a-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#2a1f0e,#c8a96e20);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.a-name{font-size:13px;font-weight:600;letter-spacing:.05em;margin-bottom:4px}
+.a-title{font-size:10px;color:#c8a96e;letter-spacing:.15em;text-transform:uppercase}
+.contact-bar{background:#1c1c1c;padding:48px 56px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:40px}
+.cb-text h3{font-size:24px;font-weight:300;color:#f5f0e8;margin-bottom:6px}
+.cb-text p{font-size:13px;color:#666}
+footer{background:#111;padding:24px 56px;display:flex;justify-content:space-between;align-items:center}
+footer p{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#444}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">
+    <span class="logo-name">Benali &amp; Associés</span>
+    <span class="logo-tag">Cabinet d'Avocats · Casablanca</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#">Expertise</a></li>
+    <li><a href="#">Équipe</a></li>
+    <li><a href="#">Actualités</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+  <button class="btn-consult">Consultation</button>
+</nav>
+<section class="hero">
+  <div class="hl">
+    <p class="he">Excellence Juridique depuis 1998</p>
+    <h1>Droit des <strong>affaires</strong><br>au Maghreb<br>&amp; en Afrique</h1>
+    <p class="sub">Nous accompagnons investisseurs, entreprises et institutions dans leurs transactions, litiges et expansions en Afrique du Nord et subsaharienne.</p>
+    <div class="cta-row">
+      <button class="btn-p">Prendre Rendez-vous</button>
+      <button class="btn-s">Nos Domaines</button>
+    </div>
+  </div>
+  <div class="hr">
+    <div class="seal">
+      <span class="seal-icon">⚖️</span>
+      <p class="seal-text">Lex · Veritas · Integritas</p>
+    </div>
+  </div>
+</section>
+<section class="practices">
+  <p class="sec-title">Domaines d'Expertise</p>
+  <div class="pg">
+    <div class="practice"><div class="p-icon">🏢</div><div class="p-name">Droit des Sociétés</div><div class="p-desc">Création, fusion-acquisition, gouvernance et restructuration d'entreprises.</div></div>
+    <div class="practice"><div class="p-icon">🌐</div><div class="p-name">Droit International</div><div class="p-desc">Contrats transfrontaliers, arbitrage commercial et investissements étrangers.</div></div>
+    <div class="practice"><div class="p-icon">🏗️</div><div class="p-name">Droit Immobilier</div><div class="p-desc">Transactions foncières, permis de construire et contentieux immobiliers.</div></div>
+    <div class="practice"><div class="p-icon">💼</div><div class="p-name">Droit Fiscal</div><div class="p-desc">Optimisation fiscale, conformité et conseil en matière de fiscalité des entreprises.</div></div>
+    <div class="practice"><div class="p-icon">⚡</div><div class="p-name">Énergie &amp; Mines</div><div class="p-desc">Permis d'exploitation, contrats de concession et partenariats public-privé.</div></div>
+    <div class="practice"><div class="p-icon">🔒</div><div class="p-name">Propriété Intellectuelle</div><div class="p-desc">Brevets, marques, droits d'auteur et protection de l'innovation.</div></div>
+  </div>
+</section>
+<section class="team" style="text-align:center">
+  <p class="sec-title" style="margin-bottom:48px">L'Équipe Dirigeante</p>
+  <div class="team-grid">
+    <div class="attorney"><div class="a-avatar">👨‍⚖️</div><div class="a-name">Me. Karim Benali</div><div class="a-title">Associé Fondateur</div></div>
+    <div class="attorney"><div class="a-avatar">👩‍⚖️</div><div class="a-name">Me. Leila Fassi</div><div class="a-title">Associée, Droit International</div></div>
+    <div class="attorney"><div class="a-avatar">👨‍⚖️</div><div class="a-name">Me. Omar Idrissi</div><div class="a-title">Associé, Droit Fiscal</div></div>
+  </div>
+</section>
+<div class="contact-bar">
+  <div class="cb-text">
+    <h3>Discutons de votre situation</h3>
+    <p>Consultation initiale offerte — réponse sous 24h</p>
+  </div>
+  <button class="btn-p" style="white-space:nowrap">Nous Contacter →</button>
+</div>
+<footer>
+  <p>Benali &amp; Associés · Casablanca, Maroc</p>
+  <p>© 2025 · Tous droits réservés</p>
+</footer>
+</body>
+</html>
