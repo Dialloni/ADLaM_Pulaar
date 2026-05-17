@@ -4,7 +4,7 @@ import {
   Loader2, Trash2, Eye, Code as CodeIcon, Download, AlertTriangle,
   Search, Bell, LayoutDashboard, FolderKanban, Globe2, Settings,
   Users, BookOpen, Activity, Sparkles, LogOut, ChevronRight,
-  RotateCcw, CheckCircle2, XCircle, AlertCircle, X,
+  RotateCcw, CheckCircle2, XCircle, AlertCircle, X, PanelLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
@@ -36,15 +36,6 @@ const MANROPE = 'Manrope, sans-serif';
 type NavPage = 'dashboard' | 'projects' | 'assets' | 'docs' | 'status';
 
 /* ── tiny helpers ───────────────────────────────── */
-function StatChip({ label, value, accent }: { label: string; value: string; accent: string }) {
-  return (
-    <div className="p-4 rounded-xl" style={{ background: '#131313', borderLeft: `4px solid ${accent}` }}>
-      <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: accent }}>{label}</p>
-      <p className="text-2xl font-black text-white" style={{ fontFamily: MANROPE }}>{value}</p>
-    </div>
-  );
-}
-
 function DonutChart({ pct, label }: { pct: number; label: string }) {
   const r = 52; const circ = 2 * Math.PI * r;
   return (
@@ -110,6 +101,7 @@ export default function App() {
   const isAdlam = selectedLang.code === 'ff-adlm';
 
   /* nav / UI */
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [page, setPage] = useState<NavPage>('dashboard');
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState('');
@@ -660,70 +652,93 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden pt-20">
 
         {/* ════ SIDEBAR ════ */}
-        <aside className="w-72 flex-shrink-0 flex flex-col overflow-y-auto border-r border-white/5"
-          style={{ background: '#0e0e0e', boxShadow: '20px 0 40px rgba(0,0,0,0.4)' }}>
-          {/* user */}
-          <div className="px-8 pt-10 pb-6">
-            <p className={cn('text-white font-black text-lg', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-              {user.displayName || user.email?.split('@')[0] || 'Builder'}
-            </p>
-            <p className={cn('text-zinc-500 text-xs font-bold uppercase tracking-widest mt-0.5', isAdlam && 'font-adlam')}>
-              {projects.length} {t.projectsCreatedLabel}
-            </p>
+        <aside className="flex-shrink-0 flex flex-col overflow-y-auto border-r border-white/5"
+          style={{
+            background: '#0e0e0e',
+            boxShadow: '20px 0 40px rgba(0,0,0,0.4)',
+            width: sidebarCollapsed ? 64 : 288,
+            transition: 'width 200ms cubic-bezier(0.16,1,0.3,1)',
+            overflowX: 'hidden',
+          }}>
+
+          {/* toggle button */}
+          <div className="flex px-4 pt-5 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-end' }}>
+            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+              <PanelLeft className="w-4 h-4" style={{ color: '#767575' }} />
+            </button>
           </div>
+
+          {/* user — hidden when collapsed */}
+          {!sidebarCollapsed && (
+            <div className="px-8 pt-4 pb-6">
+              <p className={cn('text-white font-black text-lg', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                {user.displayName || user.email?.split('@')[0] || 'Builder'}
+              </p>
+              <p className={cn('text-zinc-500 text-xs font-bold uppercase tracking-widest mt-0.5', isAdlam && 'font-adlam')}>
+                {projects.length} {t.projectsCreatedLabel}
+              </p>
+            </div>
+          )}
 
           {/* nav */}
           <nav className="flex-1 space-y-0.5">
             {([
-              { icon: LayoutDashboard, label: t.dashboardNav,      pg: 'dashboard' as NavPage },
-              { icon: FolderKanban,   label: t.myProjectsLabel,   pg: 'projects'  as NavPage },
-              { icon: Globe2,         label: t.languageAssetsLabel, pg: 'assets'   as NavPage },
-              { icon: Settings,       label: t.settingsNav,        pg: null },
-              { icon: Users,          label: t.teamHubLabel,       pg: null },
+              { icon: LayoutDashboard, label: t.dashboardNav,        pg: 'dashboard' as NavPage },
+              { icon: FolderKanban,   label: t.myProjectsLabel,     pg: 'projects'  as NavPage },
+              { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
+              { icon: Settings,       label: t.settingsNav,          pg: null },
+              { icon: Users,          label: t.teamHubLabel,         pg: null },
             ]).map(({ icon: Icon, label, pg }) => {
               const active = pg && page === pg && !currentProject;
               return (
                 <button key={label} onClick={() => { if (pg) { setPage(pg); setCurrentProject(null); } }}
-                  className={cn('w-full flex items-center gap-4 py-4 text-sm font-bold', isAdlam && 'font-adlam')}
+                  className={cn('w-full flex items-center py-4 text-sm font-bold', !sidebarCollapsed && 'gap-4', isAdlam && 'font-adlam')}
                   style={{
                     color: active ? 'var(--fg-1)' : 'var(--fg-3)',
                     background: active ? 'linear-gradient(to right, rgba(255,139,155,0.12), transparent)' : 'transparent',
                     border: 'none',
                     borderLeft: active ? '4px solid var(--color-primary)' : '4px solid transparent',
                     transition: 'all 150ms cubic-bezier(0.16,1,0.3,1)',
-                    paddingLeft: '28px', paddingRight: '24px',
+                    justifyContent: sidebarCollapsed ? 'center' : undefined,
+                    paddingLeft: sidebarCollapsed ? 0 : '28px',
+                    paddingRight: sidebarCollapsed ? 0 : '24px',
                   }}>
                   <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
+                  {!sidebarCollapsed && <span style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>}
                 </button>
               );
             })}
           </nav>
 
           {/* new project */}
-          <div className="px-6 py-5">
+          <div className="py-5" style={{ paddingLeft: sidebarCollapsed ? 12 : 24, paddingRight: sidebarCollapsed ? 12 : 24 }}>
             <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); }}
               className={cn('w-full py-4 rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', isAdlam && 'font-adlam')}
               style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
               onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
-              + {t.newProject}
+              {sidebarCollapsed ? '+' : `+ ${t.newProject}`}
             </button>
           </div>
 
           {/* footer */}
-          <div className="px-8 py-5 border-t border-white/5 space-y-3">
+          <div className="py-5 border-t border-white/5 space-y-3"
+            style={{ paddingLeft: sidebarCollapsed ? 12 : 32, paddingRight: sidebarCollapsed ? 12 : 32 }}>
             <button onClick={() => { setPage('docs'); setCurrentProject(null); }}
-              className={cn('flex items-center gap-3 text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-zinc-300 transition-colors w-full text-left', isAdlam && 'font-adlam')}>
-              <BookOpen className="w-4 h-4" /> {t.documentationLabel}
+              className={cn('flex items-center text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-zinc-300 transition-colors w-full', sidebarCollapsed ? 'justify-center' : 'gap-3 text-left', isAdlam && 'font-adlam')}>
+              <BookOpen className="w-4 h-4 flex-shrink-0" />
+              {!sidebarCollapsed && t.documentationLabel}
             </button>
             <button onClick={() => { setPage('status'); setCurrentProject(null); }}
-              className={cn('flex items-center gap-3 text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-zinc-300 transition-colors w-full text-left', isAdlam && 'font-adlam')}>
-              <Activity className="w-4 h-4" style={{ color: S }} /> {t.systemStatusLabel}
+              className={cn('flex items-center text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-zinc-300 transition-colors w-full', sidebarCollapsed ? 'justify-center' : 'gap-3 text-left', isAdlam && 'font-adlam')}>
+              <Activity className="w-4 h-4 flex-shrink-0" style={{ color: S }} />
+              {!sidebarCollapsed && t.systemStatusLabel}
             </button>
             <button onClick={() => logout()}
-              className={cn('flex items-center gap-3 text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-red-400 transition-colors mt-2 w-full text-left', isAdlam && 'font-adlam')}>
-              <LogOut className="w-4 h-4" /> {t.signOut}
+              className={cn('flex items-center text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-red-400 transition-colors mt-2 w-full', sidebarCollapsed ? 'justify-center' : 'gap-3 text-left', isAdlam && 'font-adlam')}>
+              <LogOut className="w-4 h-4 flex-shrink-0" />
+              {!sidebarCollapsed && t.signOut}
             </button>
           </div>
         </aside>
@@ -766,11 +781,13 @@ export default function App() {
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <button onClick={() => setActiveTab('preview')}
-                      className={cn('flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all', activeTab === 'preview' ? 'bg-white text-black' : 'text-zinc-500 hover:text-zinc-300')}>
+                      className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                      style={activeTab === 'preview' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: '#adaaaa' }}>
                       <Eye className="w-3.5 h-3.5" /> {t.preview}
                     </button>
                     <button onClick={() => setActiveTab('code')}
-                      className={cn('flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all', activeTab === 'code' ? 'bg-white text-black' : 'text-zinc-500 hover:text-zinc-300')}>
+                      className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                      style={activeTab === 'code' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: '#adaaaa' }}>
                       <CodeIcon className="w-3.5 h-3.5" /> {t.code}
                     </button>
                   </div>
@@ -785,7 +802,7 @@ export default function App() {
               {/* chat + preview */}
               <div className="flex flex-1 pt-14 overflow-hidden">
                 {/* chat panel — wider */}
-                <div className="w-[480px] flex-shrink-0 border-r border-white/5 flex flex-col" style={{ background: '#0d0d0d' }}>
+                <div className="w-[480px] flex-shrink-0 flex flex-col" style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
                   <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
                     isGenerating={isGenerating} generationStatus={generationStatus}
                     selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
@@ -875,54 +892,162 @@ export default function App() {
 
           ) : page === 'docs' ? (
             /* ══ DOCUMENTATION PAGE ══ */
-            <div className="flex-1 overflow-y-auto relative z-10 p-8 md:p-10 max-w-3xl mx-auto w-full space-y-10">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4 border border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  <BookOpen className="w-3.5 h-3.5" style={{ color: P }} />
-                  <span className="text-xs font-black uppercase tracking-widest text-zinc-400">Docs</span>
-                </div>
-                <h1 className={cn('text-4xl font-black text-white tracking-tighter mb-2', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                  {t.docsPageTitle}
-                </h1>
-                <p className={cn('text-zinc-500', isAdlam && 'font-adlam')}>{t.docsPageSubtitle}</p>
-              </div>
-              {([
-                [t.docsSection1Title, t.docsSection1Body, P],
-                [t.docsSection2Title, t.docsSection2Body, S],
-                [t.docsSection3Title, t.docsSection3Body, T],
-              ] as [string, string, string][]).map(([title, body, accent], i) => (
-                <div key={i} className="rounded-2xl p-8 border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-black" style={{ background: accent }}>
-                      {i + 1}
-                    </div>
-                    <h2 className={cn('text-lg font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{title}</h2>
-                  </div>
-                  <p className={cn('text-zinc-400 leading-relaxed text-sm', isAdlam && 'font-adlam')}>{body}</p>
-                </div>
-              ))}
+            <div className="flex-1 overflow-y-auto relative z-10">
+              <div className="w-full p-8 md:p-10 space-y-8">
 
-              {/* quick tips */}
-              <div className="rounded-2xl p-8 border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                <h2 className={cn('text-lg font-black text-white mb-6', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                  💡 Quick Tips
-                </h2>
-                <div className="space-y-3">
-                  {[
-                    'Type in your native language — Gando understands Fulani, Swahili, Yoruba, Hausa, and more.',
-                    'Press Enter to send, Shift+Enter for a new line.',
-                    'After generation, ask follow-up questions to refine your app.',
-                    'Use the Revert button on any chat message to go back to that version.',
-                    'Download your app as a single HTML file — works offline.',
-                    'Set GEMINI_MODEL=gemini-2.5-pro in .env for higher-quality generation.',
-                  ].map((tip, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: P }} />
-                      <p className="text-zinc-400 text-sm">{tip}</p>
+                {/* ── SEARCH HERO CARD ── */}
+                <div style={{ background: 'linear-gradient(135deg, rgba(255,139,155,0.1), rgba(253,139,0,0.06) 60%, rgba(19,19,19,1))', border: '1px solid rgba(255,139,155,0.2)', borderRadius: 20, padding: 28, position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
+                  <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: P, textTransform: 'uppercase', marginBottom: 12, fontFamily: MANROPE }}>DOCUMENTATION</p>
+                  <h1 className={cn('font-black text-white tracking-tighter mb-2', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 32 }}>
+                    {t.docsPageTitle}
+                  </h1>
+                  <p className={cn('text-zinc-500 mb-5', isAdlam && 'font-adlam')} style={{ fontSize: 14 }}>{t.docsPageSubtitle}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 14 }}>
+                    <Search className="w-4 h-4 flex-shrink-0" style={{ color: '#767575' }} />
+                    <span style={{ fontSize: 13, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>Search docs — prompting, deploy, ADLaM...</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {['Getting Started', 'Prompting Guide', 'Deploy', 'API Reference', 'ADLaM support'].map(chip => (
+                      <span key={chip} style={{ padding: '4px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, fontWeight: 600, color: '#adaaaa', fontFamily: MANROPE }}>{chip}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ── TWO-COLUMN: sidebar + content ── */}
+                <div className="flex gap-8 items-start">
+
+                  {/* SIDEBAR */}
+                  <div className="w-52 flex-shrink-0 space-y-6">
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginBottom: 8, fontFamily: MANROPE }}>BROWSE</p>
+                      <div className="space-y-1">
+                        {[
+                          { Icon: BookOpen, label: t.docsSection1Title, active: true },
+                          { Icon: Sparkles, label: t.docsSection2Title, active: false },
+                          { Icon: Globe2,   label: t.docsSection3Title, active: false },
+                          { Icon: Settings, label: 'API & Integrations', active: false },
+                          { Icon: Globe2,   label: 'Supported Languages', active: false },
+                          { Icon: Activity, label: 'Billing & Tokens',    active: false },
+                        ].map(({ Icon, label, active }) => (
+                          <div key={label} className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-default"
+                            style={active
+                              ? { background: 'rgba(255,139,155,0.12)', border: '1px solid rgba(255,139,155,0.25)', color: '#fff', fontWeight: 700 }
+                              : { background: 'transparent', border: '1px solid transparent', color: '#adaaaa', fontWeight: 500 }}>
+                            <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? '#ff8b9b' : undefined }} />
+                            <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginBottom: 8, fontFamily: MANROPE }}>QUICK LINKS</p>
+                      <div className="space-y-1">
+                        {[
+                          { Icon: Activity,      label: t.systemStatusLabel },
+                          { Icon: BookOpen,      label: 'Release Notes' },
+                          { Icon: Users,         label: 'Community Forum' },
+                          { Icon: AlertTriangle, label: 'Contact Support' },
+                        ].map(({ Icon, label }) => (
+                          <div key={label} className="flex items-center justify-between px-3 py-2 rounded-xl transition-all hover:bg-white/5 cursor-default"
+                            style={{ color: '#767575' }}>
+                            <div className="flex items-center gap-3">
+                              <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 500 }}>{label}</span>
+                            </div>
+                            <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CONTENT */}
+                  <div className="flex-1 min-w-0 space-y-6">
+                    {/* Section header */}
+                    <div className="flex items-center gap-4 p-5 rounded-2xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <BookOpen className="w-4 h-4" style={{ color: P }} />
+                      </div>
+                      <div>
+                        <h2 className={cn('font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 20, marginBottom: 2 }}>{t.docsSection1Title}</h2>
+                        <p style={{ fontSize: 12, color: '#767575' }}>Your first app in under 5 minutes</p>
+                      </div>
+                    </div>
+
+                    {/* TOPIC CARDS 2×2 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { n: '01', label: 'Create your account' },
+                        { n: '02', label: 'Sign in with Google' },
+                        { n: '03', label: 'Your first prompt' },
+                        { n: '04', label: 'Understanding previews' },
+                      ].map(({ n, label }) => (
+                        <div key={n} className="flex items-center gap-3 transition-all hover:bg-white/5 cursor-pointer"
+                          style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', color: '#ff8b9b', fontFamily: MANROPE, fontWeight: 900, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {n}
+                          </div>
+                          <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontWeight: 600, color: '#e5e5e5', fontFamily: isAdlam ? undefined : MANROPE, flex: 1 }}>{label}</span>
+                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#767575' }} />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ARTICLE CARD */}
+                    <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
+                      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#767575', textTransform: 'uppercase', marginBottom: 10, fontFamily: MANROPE }}>ARTICLE · 3 MIN READ</p>
+                      <h3 className={cn('font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 20, marginBottom: 12 }}>{t.docsSection2Title}</h3>
+                      <p className={cn('text-sm leading-relaxed', isAdlam && 'font-adlam')} style={{ color: '#adaaaa', marginBottom: 16 }}>{t.docsSection2Body}</p>
+                      <div className="space-y-2 mb-4">
+                        {[
+                          { label: t.docsSection3Title, bold: true },
+                          { label: 'Press Enter to send, Shift+Enter for a new line.', bold: false },
+                          { label: 'After generation, ask follow-up questions to refine your app.', bold: false },
+                        ].map(({ label, bold }, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span style={{ fontWeight: 700, color: P, flexShrink: 0 }}>·</span>
+                            <p className={cn('text-xs', isAdlam && 'font-adlam')} style={{ color: bold ? '#e5e5e5' : '#767575', fontWeight: bold ? 700 : 400 }}>{label}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Author row */}
+                      <div style={{ paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', fontFamily: MANROPE }}>G</span>
+                        </div>
+                        <div>
+                          <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 11, color: '#fff', lineHeight: 1.3 }}>Gando Team</p>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#767575', lineHeight: 1.3 }}>Updated 2 weeks ago</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* QUICK TIPS */}
+                    <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
+                      <h2 className={cn('font-black text-white mb-5', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 16 }}>
+                        💡 Quick Tips
+                      </h2>
+                      <div className="space-y-3">
+                        {[
+                          'Type in your native language — Gando understands Fulani, Swahili, Yoruba, Hausa, and more.',
+                          'Press Enter to send, Shift+Enter for a new line.',
+                          'After generation, ask follow-up questions to refine your app.',
+                          'Use the Revert button on any chat message to go back to that version.',
+                          'Download your app as a single HTML file — works offline.',
+                          'Set GEMINI_MODEL=gemini-2.5-pro in .env for higher-quality generation.',
+                        ].map((tip, i) => (
+                          <div key={i} className="flex items-start gap-3">
+                            <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: P }} />
+                            <p className={cn('text-zinc-400 text-sm', isAdlam && 'font-adlam')}>{tip}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -992,53 +1117,66 @@ export default function App() {
           ) : (
             /* ══ DASHBOARD ══ */
             <div className="flex-1 overflow-y-auto relative z-10 p-8 md:p-10 space-y-8">
-              {/* title + chips */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                <div>
-                  <h1 className={cn('text-4xl md:text-5xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                    {t.gandoViewTitle}
-                  </h1>
-                  <p className={cn('text-zinc-500 font-medium mt-1', isAdlam && 'font-adlam')}>{t.gandoViewSubtitle}</p>
-                </div>
-                <div className="flex gap-4">
-                  <StatChip label={t.projectsLabel} value={String(projects.length)} accent={T} />
-                  <StatChip label={t.appsBuiltLabel} value={String(projects.length)} accent={S} />
-                </div>
-              </div>
 
-              {/* input card */}
-              <div className="relative group">
-                <div className="rounded-3xl border border-white/6 backdrop-blur-xl shadow-2xl transition-all group-hover:border-white/10 overflow-hidden"
-                  style={{ background: 'rgba(32,32,31,0.5)' }}>
-                  {/* top row: language + generate */}
-                  <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/5">
-                    <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
-                    <button onClick={handleSend} disabled={isGenerating || !input.trim()}
-                      className={cn('flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:scale-100 text-sm', isAdlam && 'font-adlam')}
-                      style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
-                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      {isGenerating ? (generationStatus || t.generating) : t.generateLabel}
-                    </button>
-                  </div>
-                  {/* textarea */}
+              {/* ── HERO/WELCOME CARD ── */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(255,139,155,0.08), rgba(253,139,0,0.04))', border: '1px solid rgba(255,139,155,0.2)', borderRadius: 22, padding: '28px 32px', position: 'relative', overflow: 'hidden' }}>
+                <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: '#ff8b9b', textTransform: 'uppercase', marginBottom: 16, fontFamily: MANROPE }}>OVERVIEW</p>
+                <h1 className={cn('text-4xl md:text-5xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')}
+                  style={{ fontFamily: isAdlam ? undefined : MANROPE, marginBottom: 4 }}>
+                  {t.gandoViewTitle}
+                </h1>
+                <p className={cn('text-zinc-500 font-medium', isAdlam && 'font-adlam')} style={{ marginBottom: 20 }}>{t.gandoViewSubtitle}</p>
+                {/* inline prompt */}
+                <div style={{ padding: '6px 6px 6px 18px', borderRadius: 16, background: 'rgba(10,10,10,0.7)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
                   <textarea
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                     placeholder={t.inputPlaceholder}
-                    rows={4}
-                    className={cn('gando-input w-full bg-transparent border-none outline-none resize-none text-white placeholder-zinc-600 px-5 py-4 text-base font-medium leading-relaxed', isAdlam && 'font-adlam')}
+                    rows={1}
+                    className={cn('gando-input flex-1 bg-transparent border-none outline-none resize-none text-white placeholder-zinc-600 py-2 text-sm font-medium leading-relaxed', isAdlam && 'font-adlam')}
+                    style={{ minWidth: 0 }}
                   />
+                  <button onClick={handleSend} disabled={isGenerating || !input.trim()}
+                    className={cn('flex items-center gap-2 px-5 py-2 rounded-xl font-black text-black transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:scale-100 text-sm flex-shrink-0', isAdlam && 'font-adlam')}
+                    style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
+                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {isGenerating ? (generationStatus || t.generating) : t.generateLabel}
+                  </button>
                 </div>
-                <div className="absolute -inset-px rounded-3xl blur-xl opacity-0 group-hover:opacity-60 pointer-events-none transition-opacity duration-500"
-                  style={{ background: `linear-gradient(135deg,${P}25,${S}25)` }} />
               </div>
 
-              {/* stats grid */}
+              {/* ── STAT CARDS ROW ── */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Projects — gradient variant */}
+                <div style={{ padding: 20, borderRadius: 18, background: 'linear-gradient(135deg, rgba(255,139,155,0.12), rgba(253,139,0,0.06))', border: '1px solid rgba(255,139,155,0.25)' }}>
+                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: P, fontFamily: MANROPE, marginBottom: 8 }}>{t.projectsLabel}</p>
+                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1, marginBottom: 8 }}>{projects.length}</p>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 9999, background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontSize: 11, fontWeight: 700 }}>+{projects.length} total</span>
+                </div>
+                {/* Apps Built */}
+                <div style={{ padding: 20, borderRadius: 18, background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: S, fontFamily: MANROPE, marginBottom: 8 }}>{t.appsBuiltLabel}</p>
+                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1 }}>{projects.length}</p>
+                </div>
+                {/* Prompts */}
+                <div style={{ padding: 20, borderRadius: 18, background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: T, fontFamily: MANROPE, marginBottom: 8 }}>{t.totalPromptsLabel}</p>
+                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1 }}>{userMessages}</p>
+                </div>
+                {/* Performance */}
+                <div style={{ padding: 20, borderRadius: 18, background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: '#4ade80', fontFamily: MANROPE, marginBottom: 8 }}>{t.appPerformanceLabel}</p>
+                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1, marginBottom: 8 }}>{perfPct}%</p>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 9999, background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontSize: 11, fontWeight: 700 }}>{t.excellentLabel}</span>
+                </div>
+              </div>
+
+              {/* ── ANALYTICS GRID (donut + gauges) ── */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* completion donut */}
                 <div className="lg:col-span-7 rounded-2xl p-6 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xl"
                   style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
@@ -1065,8 +1203,6 @@ export default function App() {
                   </div>
                   <DonutChart pct={completionPct || 3} label={t.totalFlowLabel} />
                 </div>
-
-                {/* gauges */}
                 <div className="lg:col-span-5 flex flex-col gap-4">
                   <div className="flex-1 rounded-2xl p-6 shadow-xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
@@ -1100,7 +1236,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* active builds */}
+              {/* ── RECENT PROJECTS (list rows) ── */}
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className={cn('text-xl font-black text-white flex items-center gap-3', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
@@ -1122,31 +1258,30 @@ export default function App() {
                     <p className={cn('text-zinc-600 text-sm', isAdlam && 'font-adlam')}>{t.noProjectsSubtitle}</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  <div className="flex flex-col gap-2">
                     {projects.slice(0, 6).map(p => (
-                      <motion.div key={p.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                        className="group relative cursor-pointer rounded-2xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
-                        style={{ background: '#131313' }} onClick={() => openProject(p)}>
-                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                        <div className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${P}18`, color: P }}>
-                              <Sparkles className="w-5 h-5" />
-                            </div>
-                            <button onClick={e => { e.stopPropagation(); deleteProject(p.id); }}
-                              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                          <h3 className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{p.name}</h3>
-                          <p className={cn('text-zinc-500 text-xs mb-4 line-clamp-2', isAdlam && 'font-adlam')}>{p.description}</p>
-                          <div className="flex justify-between items-center">
-                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full" style={{ background: `${T}15`, color: T }}>
-                              {p.language}
-                            </span>
-                            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors" />
-                          </div>
+                      <motion.div key={p.id} className="group flex items-center gap-3 cursor-pointer transition-all"
+                        style={{ padding: '14px 16px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)', background: 'transparent' }}
+                        onClick={() => openProject(p)}
+                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Sparkles className="w-4 h-4" style={{ color: P }} />
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn('font-black text-white text-sm truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{p.name}</p>
+                          <p className={cn('text-zinc-500 text-xs truncate', isAdlam && 'font-adlam')}>{p.description}</p>
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0" style={{ background: `${T}15`, color: T }}>{p.language}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }} />
+                          <span className="text-xs font-bold text-zinc-400">Active</span>
+                        </div>
+                        <button onClick={e => { e.stopPropagation(); deleteProject(p.id); }}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all flex-shrink-0">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                        <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors flex-shrink-0" />
                       </motion.div>
                     ))}
                   </div>

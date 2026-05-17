@@ -263,6 +263,10 @@ export const Chat: React.FC<ChatProps> = ({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-[#0e0e0e] relative">
+      {/* Header bar */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 10 }}>
+        <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12, color: '#fff' }}>Chat with Gando</span>
+      </div>
       {/* Background Glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#ff8b9b]/5 blur-[120px] rounded-full" />
@@ -433,13 +437,22 @@ export const Chat: React.FC<ChatProps> = ({
                           "relative group/message transition-all",
                           m.role === 'user' && "flex flex-col items-end"
                         )}>
-                          <div className={cn(
-                            "p-4 rounded-2xl text-[15px] leading-relaxed shadow-lg border transition-all hover:shadow-xl",
-                            m.role === 'user' 
-                              ? "bg-white text-black border-white rounded-tr-none font-medium" 
-                              : "bg-zinc-900/60 backdrop-blur-sm border-white/10 text-zinc-100 rounded-tl-none hover:bg-zinc-900/80 hover:border-white/20",
-                            languageCode === 'ff-adlm' && "font-adlam"
-                          )}>
+                          <div className={cn("p-4 transition-all", languageCode === 'ff-adlm' && "font-adlam")}
+                            style={m.role === 'user' ? {
+                              background: 'linear-gradient(135deg, rgba(255,139,155,0.14), rgba(253,139,0,0.08))',
+                              border: '1px solid rgba(255,139,155,0.25)',
+                              borderRadius: '14px 14px 4px 14px',
+                              fontSize: 13,
+                              lineHeight: 1.6,
+                              color: '#fff',
+                            } : {
+                              background: '#131313',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                              borderRadius: '14px 14px 14px 4px',
+                              fontSize: 13,
+                              lineHeight: 1.6,
+                              color: '#e5e5e5',
+                            }}>
                             {m.role === 'assistant' ? (
                               <div className="prose prose-invert max-w-none">
                                 <ReactMarkdown>{m.content}</ReactMarkdown>
@@ -474,54 +487,23 @@ export const Chat: React.FC<ChatProps> = ({
                 ))}
                 
                 {isGenerating && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="group"
+                    className="flex items-start gap-3"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ff8b9b] to-[#fd8b00] text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xl border border-[#ff8b9b]/30 animate-pulse">
-                        <Bot className="w-5 h-5" />
-                      </div>
-                      <div className="flex flex-col gap-2 flex-1">
-                        <div className="bg-zinc-900/60 backdrop-blur-sm border border-white/10 p-4 rounded-2xl rounded-tl-none shadow-lg">
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-3 text-[#ff8b9b] flex-wrap">
-                              <div className="relative flex-shrink-0">
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <div className="absolute inset-0 bg-[#ff8b9b]/20 blur-sm rounded-full animate-pulse" />
-                              </div>
-                              <span className={cn(
-                                "text-[11px] font-bold tracking-[0.2em] uppercase break-words",
-                                languageCode === 'ff-adlm' && "font-adlam"
-                              )}>
-                                {generationStatus || t.generating}
-                              </span>
-                            </div>
-
-                            {/* Progress Bar */}
-                            <div className="w-full h-1 bg-zinc-800/50 rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: '70%' }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                                className="h-full bg-gradient-to-r from-[#ff8b9b] to-[#fd8b00] rounded-full"
-                              />
-                            </div>
-
-                            {/* Status Text */}
-                            <p className="text-[11px] text-zinc-500 font-medium break-words line-clamp-2">
-                              {generationStatus === 'analyzing' && 'Analyzing your requirements...'}
-                              {generationStatus === 'generating' && 'Generating beautiful code...'}
-                              {generationStatus === 'styling' && 'Adding stunning styles...'}
-                              {generationStatus === 'finalizing' && 'Finalizing your project...'}
-                              {!generationStatus && 'Processing your request...'}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-[11px] text-zinc-600 font-medium">
-                          {t.gandoAI}
-                        </span>
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8b9b] to-[#fd8b00] flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: '#131313', border: '1px solid rgba(255,139,155,0.2)' }}>
+                      <div className="flex items-center gap-1.5">
+                        {[0, 1, 2].map(i => (
+                          <motion.div key={i}
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                            style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff8b9b' }}
+                          />
+                        ))}
                       </div>
                     </div>
                   </motion.div>
@@ -534,17 +516,14 @@ export const Chat: React.FC<ChatProps> = ({
       </div>
 
       {!isEmpty && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 md:p-8 bg-gradient-to-t from-[#030303] via-[#030303]/80 to-transparent"
+          style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,10,10,0.7)', flexShrink: 0 }}
         >
-          <div className="max-w-4xl mx-auto relative group">
-            {/* Glow effect - more prominent on focus */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#ff8b9b]/30 via-blue-500/30 to-purple-500/30 rounded-2xl blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-            
-            <div className="relative bg-gradient-to-b from-zinc-900/60 to-zinc-900/40 backdrop-blur-xl rounded-2xl p-4 md:p-5 flex flex-col gap-4 border border-white/10 shadow-2xl group-focus-within:border-[#ff8b9b]/40 transition-all duration-300 hover:border-white/20">
-              <textarea 
+          <div className="relative">
+            <div style={{ padding: '10px 14px', borderRadius: 14, background: '#131313', border: '1.5px solid rgba(255,139,155,0.2)', boxShadow: '0 0 0 3px rgba(255,139,155,0.04)' }}>
+              <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value.slice(0, maxChars))}
@@ -556,12 +535,12 @@ export const Chat: React.FC<ChatProps> = ({
                 }}
                 placeholder={t.chatPlaceholder.replace('{language}', selectedLanguage)}
                 className={cn(
-                  "gando-input w-full bg-transparent border-none rounded-xl p-4 pr-16 text-sm focus:outline-none focus:ring-0 transition-all resize-none min-h-[120px] text-zinc-100 placeholder:text-zinc-500 font-medium leading-relaxed scroll-smooth",
+                  "gando-input w-full bg-transparent border-none rounded-xl px-0 py-2 text-sm focus:outline-none focus:ring-0 transition-all resize-none min-h-[80px] text-zinc-100 placeholder:text-zinc-500 font-medium leading-relaxed scroll-smooth",
                   languageCode === 'ff-adlm' && "font-adlam"
                 )}
               />
-              
-              <div className="flex items-center justify-between px-2">
+
+              <div className="flex items-center justify-between mt-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Mic Button */}
                   <motion.button
@@ -569,31 +548,29 @@ export const Chat: React.FC<ChatProps> = ({
                     whileTap={{ scale: 0.95 }}
                     onClick={toggleListening}
                     className={cn(
-                      "p-2.5 rounded-lg transition-all",
-                      isListening 
-                        ? "bg-red-500/30 text-red-400 border border-red-500/40 shadow-lg shadow-red-500/20 animate-pulse" 
+                      "p-2 rounded-lg transition-all",
+                      isListening
+                        ? "bg-red-500/30 text-red-400 border border-red-500/40 animate-pulse"
                         : isTranscribing
                         ? "bg-[#ff8b9b]/30 text-[#ff8b9b] border border-[#ff8b9b]/40 animate-spin"
-                        : "bg-white/10 text-zinc-400 hover:bg-white/20 hover:text-white border border-white/10 hover:border-white/20"
+                        : "bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white border border-white/10"
                     )}
                     title={isListening ? "Stop recording" : "Start voice input"}
                   >
                     {isTranscribing ? <Loader2 className="w-4 h-4" /> : isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </motion.button>
-                  
+
                   {/* Character Counter */}
                   <motion.div
-                    animate={{
-                      backgroundColor: charCount > maxChars * 0.9 ? "rgb(239, 68, 68, 0.1)" : "transparent",
-                    }}
+                    animate={{ backgroundColor: charCount > maxChars * 0.9 ? "rgb(239, 68, 68, 0.1)" : "transparent" }}
                     transition={{ duration: 0.2 }}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0",
-                      charCount > maxChars * 0.8 
-                        ? "bg-orange-500/10 border-orange-500/30 text-orange-400" 
+                      "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-wide whitespace-nowrap flex-shrink-0",
+                      charCount > maxChars * 0.8
+                        ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
                         : charCount > maxChars * 0.9
                         ? "bg-red-500/10 border-red-500/30 text-red-400"
-                        : "bg-white/5 border-white/10 text-zinc-500 hover:bg-white/10"
+                        : "bg-white/5 border-white/10 text-zinc-500"
                     )}
                   >
                     <span className="font-mono">{charCount}</span>
@@ -602,48 +579,40 @@ export const Chat: React.FC<ChatProps> = ({
                   </motion.div>
 
                   {/* Language Badge */}
-                  <motion.div 
+                  <motion.div
                     whileHover={{ scale: 1.05 }}
-                    className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-default"
+                    className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all cursor-default"
                   >
                     <Globe className="w-3 h-3 text-blue-400" />
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{selectedLanguage}</span>
                   </motion.div>
                 </div>
-                
+
                 {/* Send Button */}
-                <motion.button 
-                  whileHover={input.trim() && !isGenerating ? { scale: 1.08 } : {}}
+                <motion.button
+                  whileHover={input.trim() && !isGenerating ? { scale: 1.05 } : {}}
                   whileTap={input.trim() && !isGenerating ? { scale: 0.95 } : {}}
                   onClick={onSend}
                   disabled={!input.trim() || isGenerating}
-                  className={cn(
-                    "p-2.5 rounded-lg transition-all shadow-lg active:shadow-md group/btn overflow-hidden relative font-semibold",
-                    input.trim() && !isGenerating 
-                      ? "bg-gradient-to-r from-[#ff8b9b] to-[#fd8b00] text-white hover:shadow-[#ff8b9b]/40 hover:from-[#f07585] hover:to-[#e07d00]" 
-                      : "bg-white/5 text-zinc-600 cursor-not-allowed border border-white/10"
-                  )}
+                  style={{
+                    width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                    background: input.trim() && !isGenerating ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
+                    color: input.trim() && !isGenerating ? '#0a0a0a' : '#52525b',
+                    border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
                   title={isGenerating ? "Generating..." : input.trim() ? "Send message" : "Type a message first"}
                 >
-                  {isGenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <motion.div
-                      animate={input.trim() ? { x: [0, 2, 0] } : {}}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    >
-                      <Send className="w-4 h-4" />
-                    </motion.div>
-                  )}
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </motion.button>
               </div>
 
-              {/* Helpful Tips */}
-              <motion.div 
+              {/* Tips */}
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="px-2 py-2 flex flex-wrap items-center gap-2 border-t border-white/5"
+                className="mt-2 pt-2 flex flex-wrap items-center gap-2 border-t border-white/5"
               >
                 <div className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest flex items-center gap-1.5">
                   <Sparkles className="w-3 h-3 text-[#ff8b9b]" />
