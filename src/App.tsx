@@ -207,7 +207,7 @@ const TEMPLATES_META = [
   { id: 'legal',      category: 'Legal',      city: 'Casablanca', color: '#1c1a16', previewUrl: '/templates/legal-casablanca/index.html' },
 ];
 
-/* ── ADLaM UI string map (English/French → Pulaar ADLaM) ── */
+/* ── UI translation maps for iframe injection ── */
 const ADLAM_UI: Record<string, string> = {
   'Home':         '𞤖𞤮𞤪𞤮𞤲𞤣𞤫',
   'Accueil':      '𞤖𞤮𞤪𞤮𞤲𞤣𞤫',
@@ -216,11 +216,13 @@ const ADLAM_UI: Record<string, string> = {
   'Shop':         '𞤐𞤢𞥄𞤺𞤫',
   'Boutique':     '𞤐𞤢𞥄𞤺𞤫',
   'Contact':      '𞤐𞤭𞤲𞤣𞤫',
+  'Contact Us':   '𞤐𞤭𞤲𞤣𞤫',
   'Search':       '𞤅𞤫𞤳𞤭𞤼𞤮𞤤',
   'Rechercher':   '𞤅𞤫𞤳𞤭𞤼𞤮𞤤',
   'Discover':     '𞤁𞤫𞤬𞤪𞤭𞤲𞤣𞤫',
   'Découvrir':    '𞤁𞤫𞤬𞤪𞤭𞤲𞤣𞤫',
   'Sign Up':      '𞤁𞤢𞤤𞤢𞤤',
+  'Sign In':      '𞤁𞤵𞤺𞤭𞤲𞤣𞤫',
   'Login':        '𞤁𞤵𞤺𞤭𞤲𞤣𞤫',
   'Connexion':    '𞤁𞤵𞤺𞤭𞤲𞤣𞤫',
   'Get Started':  '𞤄𞤫𞤫𞤼𞤭𞤪',
@@ -235,7 +237,6 @@ const ADLAM_UI: Record<string, string> = {
   'News':         '𞤖𞤮𞤤𞤤𞤭𞤲𞤣𞤫',
   'Actualités':   '𞤖𞤮𞤤𞤤𞤭𞤲𞤣𞤫',
   'Events':       '𞤖𞤭𞤼𞤼𞤢𞤲𞤣𞤫',
-  'Événements':   '𞤖𞤭𞤼𞤼𞤢𞤲𞤣𞤫',
   'Artists':      '𞤕𞤭𞤤𞥆𞤮𞤱𞤮𞤤',
   'Artistes':     '𞤕𞤭𞤤𞥆𞤮𞤱𞤮𞤤',
   'Charts':       '𞤂𞤭𞤧𞤼𞤮 𞤑𞤵𞤤𞤢𞤤',
@@ -246,6 +247,86 @@ const ADLAM_UI: Record<string, string> = {
   'Technology':   '𞤚𞤫𞤳𞤲𞤮𞤤𞤮𞤶𞤭',
   'Culture':      '𞤑𞤮𞤤𞤼𞤵𞤪𞤫',
   'Sports':       '𞤅𞤮𞤪𞤼𞤭',
+  'Breaking':     '𞤆𞤮𞤤𞤭𞤼𞤭𞤳𞤭',
+  'Trending':     '𞤖𞤮𞤤𞤤𞤭𞤲𞤣𞤫',
+  'Tendances':    '𞤖𞤮𞤤𞤤𞤭𞤲𞤣𞤫',
+  'Genres':       '𞤓𞤮𞤤𞤵𞤯𞤫',
+  'Couture':      '𞤊𞤢𞤼𞤮',
+  'Équipe':       '𞤔𞤭𞤤𞥆𞤭 𞤌𞤲',
+  'Expertise':    '𞤑𞤮𞤤𞤮𞤤𞤭',
+  'Consultation': '𞤒𞤤𞤥𞤭',
+};
+
+/* English → French (for French lang on English templates) */
+const FRENCH_UI: Record<string, string> = {
+  'Home':          'Accueil',
+  'About':         'À propos',
+  'About Us':      'À propos',
+  'Services':      'Services',
+  'Products':      'Produits',
+  'Contact':       'Contact',
+  'Contact Us':    'Contactez-nous',
+  'Sign In':       'Connexion',
+  'Sign Up':       "S'inscrire",
+  'Get Started':   'Commencer',
+  'Learn More':    'En savoir plus',
+  'Shop Now':      'Acheter',
+  'Work':          'Portfolio',
+  'Politics':      'Politique',
+  'Business':      'Affaires',
+  'Technology':    'Technologie',
+  'Sports':        'Sports',
+  'Culture':       'Culture',
+  'Breaking':      'Alerte',
+  'Latest Stories':'Dernières nouvelles',
+  'Events':        'Événements',
+  'Community':     'Communauté',
+  'Education':     'Éducation',
+  'Music':         'Musique',
+  'Fashion':       'Mode',
+  'News':          'Actualités',
+  'Legal':         'Juridique',
+  'Artists':       'Artistes',
+  'Charts':        'Classements',
+  'Trending':      'Tendances',
+  'Discover':      'Découvrir',
+  'Search':        'Rechercher',
+  'Login':         'Connexion',
+  'Women':         'Femme',
+  'Men':           'Homme',
+  'Radio':         'Radio',
+};
+
+/* French → English (for English lang on French templates) */
+const ENGLISH_UI: Record<string, string> = {
+  'Accueil':              'Home',
+  'À propos':             'About',
+  'Boutique':             'Shop',
+  'Découvrir':            'Discover',
+  'Femme':                'Women',
+  'Homme':                'Men',
+  'Couture':              'Couture',
+  'Connexion':            'Login',
+  'Artistes':             'Artists',
+  'Tendances':            'Trending',
+  'Genres':               'Genres',
+  'Rechercher':           'Search',
+  'Musique':              'Music',
+  'Équipe':               'Team',
+  'Actualités':           'News',
+  'Expertise':            'Expertise',
+  'Prendre Rendez-vous':  'Book Appointment',
+  'Nos Domaines':         'Our Practice Areas',
+  'Consultation':         'Consultation',
+  'Nouveautés':           'New Arrivals',
+  'Mode Africaine':       'African Fashion',
+  'Politique':            'Politics',
+  'Affaires':             'Business',
+  'Sports':               'Sports',
+  'Culture':              'Culture',
+  'Breaking':             'Breaking',
+  'Radio':                'Radio',
+  'Charts':               'Charts',
 };
 
 /* ── tiny helpers ───────────────────────────────── */
@@ -338,27 +419,32 @@ export default function App() {
     el.style.overflowY = el.scrollHeight > 200 ? 'auto' : 'hidden';
   };
 
-  const injectAdlamTranslations = useCallback((iframe: HTMLIFrameElement) => {
+  const injectTemplateI18n = useCallback((iframe: HTMLIFrameElement) => {
     try {
       const doc = iframe.contentDocument;
       if (!doc || !doc.body) return;
-      const style = doc.createElement('style');
-      style.textContent = `@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Adlam:wght@400;700&display=swap');body,nav,h1,h2,h3,p,button,a,li,span,div{font-family:'Noto Sans Adlam',sans-serif!important}`;
-      doc.head.appendChild(style);
+      const lang = selectedLang.code;
+      const uiMap = lang === 'ff-adlm' ? ADLAM_UI : lang === 'fr' ? FRENCH_UI : ENGLISH_UI;
+      if (lang === 'ff-adlm') {
+        const style = doc.createElement('style');
+        style.textContent = `@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Adlam:wght@400;700&display=swap');body,nav,h1,h2,h3,p,button,a,li,span,div{font-family:'Noto Sans Adlam',sans-serif!important}`;
+        doc.head.appendChild(style);
+      }
+      const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
       let node: Text | null;
       while ((node = walker.nextNode() as Text | null)) {
         const orig = node.textContent || '';
         let text = orig;
-        for (const [src, adlam] of Object.entries(ADLAM_UI)) {
-          text = text.replace(new RegExp(`\\b${src}\\b`, 'gi'), adlam);
+        for (const [src, target] of Object.entries(uiMap)) {
+          text = text.replace(new RegExp(esc(src), 'gi'), target);
         }
         if (text !== orig) node.textContent = text;
       }
     } catch {
       // cross-origin or doc not ready — silently skip
     }
-  }, []);
+  }, [selectedLang.code]);
 
   /* system status */
   const [sysStatus, setSysStatus] = useState<{
@@ -1235,7 +1321,7 @@ export default function App() {
                             title={tr.name}
                             className="w-full h-full border-none"
                             sandbox="allow-scripts allow-same-origin"
-                            onLoad={isAdlam ? (e) => injectAdlamTranslations(e.currentTarget) : undefined}
+                            onLoad={(e) => injectTemplateI18n(e.currentTarget)}
                           />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center gap-3">
