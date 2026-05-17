@@ -1,0 +1,220 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<link rel="stylesheet" href="_card.css"/>
+<style>
+  body.card { padding:0; }
+  .wrap { padding:20px; }
+  .hero {
+    display:flex; align-items:center; gap:28px;
+    padding:24px 22px;
+    background:
+      radial-gradient(80% 120% at 0% 0%, rgba(255,139,155,0.08), transparent 60%),
+      radial-gradient(80% 120% at 100% 100%, rgba(253,139,0,0.08), transparent 60%),
+      #0a0a0a;
+    border:1px solid rgba(255,139,155,0.2);
+    border-radius:18px;
+    margin-bottom:16px;
+    position:relative; overflow:hidden;
+  }
+  .hero .mark { flex:0 0 auto; }
+  .hero .meta { flex:1; min-width:0; }
+  .eyebrow {
+    font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:0.2em;
+    text-transform:uppercase; color:#ff8b9b; margin-bottom:8px;
+  }
+  .name {
+    font-family:Manrope; font-weight:900; font-size:28px; letter-spacing:-0.04em;
+    color:#fff; line-height:1;
+  }
+  .story {
+    font-family:Inter; font-size:12px; color:#adaaaa; line-height:1.6;
+    margin-top:10px; max-width:420px;
+  }
+  .story b { color:#fff; font-weight:600; }
+
+  .section {
+    font-family:Manrope; font-weight:900; font-size:10px; letter-spacing:0.18em;
+    text-transform:uppercase; color:#767575; margin:14px 4px 10px;
+  }
+
+  .row {
+    display:flex; gap:10px; align-items:stretch;
+  }
+  .tile {
+    flex:1; padding:14px; border-radius:12px;
+    background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .tile.dark { background:#0a0a0a; }
+  .tile.light { background:#f5f4f2; }
+  .tile .s-lbl { font-family:Inter; font-size:9px; color:#52525b; letter-spacing:0.1em; text-transform:uppercase; }
+  .tile.light .s-lbl { color:#767575; }
+  .tile .swatch { height:56px; display:flex; align-items:center; justify-content:center; }
+
+  .lockup-row {
+    display:flex; gap:12px;
+  }
+  .lockup {
+    flex:1; display:flex; align-items:center; gap:12px;
+    padding:18px 20px;
+    background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+    border-radius:14px;
+  }
+  .lockup.vertical { flex-direction:column; gap:10px; }
+  .wordmark {
+    font-family:Manrope; font-weight:900; font-size:26px; letter-spacing:-0.04em;
+    background:linear-gradient(135deg,#ff8b9b,#fd8b00);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; line-height:1;
+  }
+  .spec {
+    display:grid; grid-template-columns:1fr 1fr; gap:8px 18px;
+    font-family:Inter; font-size:11px; color:#adaaaa; line-height:1.5;
+  }
+  .spec .k { color:#767575; }
+  .spec .v { color:#fff; font-weight:500; }
+  .spec .v code { font-family:'JetBrains Mono',monospace; font-size:10.5px; background:rgba(255,255,255,0.04); padding:1px 6px; border-radius:4px; color:#ff8b9b; }
+
+  .rules {
+    font-family:Inter; font-size:11px; color:#adaaaa; line-height:1.65;
+    padding:14px 16px;
+    background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+    border-radius:12px;
+  }
+  .rules ul { margin:0; padding-left:16px; }
+  .rules li + li { margin-top:4px; }
+  .rules code { font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#ff8b9b; background:rgba(255,139,155,0.08); padding:1px 6px; border-radius:4px; }
+</style>
+</head>
+<body class="card">
+<div class="wrap">
+
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#ff8b9b"/>
+        <stop offset="100%" stop-color="#fd8b00"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- Hero: big mark + story -->
+  <div class="hero">
+    <div class="mark">
+      <svg viewBox="0 0 64 64" width="100" height="100" fill="none">
+        <rect x="2" y="2" width="60" height="60" rx="16" stroke="url(#g)" stroke-width="2.5"/>
+        <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22"
+              stroke="url(#g)" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="22" r="2.5" fill="#fd8b00"/>
+      </svg>
+    </div>
+    <div class="meta">
+      <div class="eyebrow">The Ga Hook</div>
+      <div class="name">Gando Logomark</div>
+      <div class="story">
+        An abstracted <b style="font-family:'Noto Sans Adlam',sans-serif">𞤘</b> — the ADLaM letter "ga" — enclosed in a soft-cornered square. It honors the product's African-language-first identity and cannot be confused with any existing AI brand. The terminal dot in secondary orange is the one permanent accent.
+      </div>
+    </div>
+  </div>
+
+  <!-- Size scale -->
+  <div class="section">Size scale</div>
+  <div class="row">
+    <div class="tile dark">
+      <div class="swatch">
+        <svg viewBox="0 0 64 64" width="64" height="64" fill="none">
+          <rect x="2" y="2" width="60" height="60" rx="16" stroke="url(#g)" stroke-width="2.5"/>
+          <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <circle cx="34" cy="22" r="2.5" fill="#fd8b00"/>
+        </svg>
+      </div>
+      <div class="s-lbl">64 px</div>
+    </div>
+    <div class="tile dark">
+      <div class="swatch">
+        <svg viewBox="0 0 64 64" width="32" height="32" fill="none">
+          <rect x="2" y="2" width="60" height="60" rx="14" stroke="url(#g)" stroke-width="3.5"/>
+          <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <circle cx="34" cy="22" r="3" fill="#fd8b00"/>
+        </svg>
+      </div>
+      <div class="s-lbl">32 px</div>
+    </div>
+    <div class="tile dark">
+      <div class="swatch">
+        <svg viewBox="0 0 64 64" width="24" height="24" fill="none">
+          <rect x="2" y="2" width="60" height="60" rx="12" stroke="url(#g)" stroke-width="4.5"/>
+          <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <circle cx="34" cy="22" r="3.5" fill="#fd8b00"/>
+        </svg>
+      </div>
+      <div class="s-lbl">24 px</div>
+    </div>
+    <div class="tile dark">
+      <div class="swatch">
+        <svg viewBox="0 0 64 64" width="16" height="16" fill="none">
+          <rect x="2" y="2" width="60" height="60" rx="10" stroke="url(#g)" stroke-width="6"/>
+          <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <circle cx="34" cy="22" r="4" fill="#fd8b00"/>
+        </svg>
+      </div>
+      <div class="s-lbl">16 px (favicon)</div>
+    </div>
+    <div class="tile light">
+      <div class="swatch">
+        <svg viewBox="0 0 64 64" width="32" height="32" fill="none" style="color:#0a0a0a">
+          <rect x="2" y="2" width="60" height="60" rx="14" stroke="currentColor" stroke-width="3.5"/>
+          <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <circle cx="34" cy="22" r="3" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="s-lbl">Mono on light</div>
+    </div>
+  </div>
+
+  <!-- Lockups -->
+  <div class="section">Lockups</div>
+  <div class="lockup-row">
+    <div class="lockup">
+      <svg viewBox="0 0 64 64" width="36" height="36" fill="none">
+        <rect x="2" y="2" width="60" height="60" rx="14" stroke="url(#g)" stroke-width="3"/>
+        <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="22" r="3" fill="#fd8b00"/>
+      </svg>
+      <span class="wordmark">Gando</span>
+    </div>
+    <div class="lockup">
+      <svg viewBox="0 0 64 64" width="36" height="36" fill="none">
+        <rect x="2" y="2" width="60" height="60" rx="14" stroke="url(#g)" stroke-width="3"/>
+        <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+        <circle cx="34" cy="22" r="3" fill="#fd8b00"/>
+      </svg>
+      <span class="wordmark" style="font-family:'Noto Sans Adlam',sans-serif; font-weight:700; font-size:22px;">𞤘𞤢𞤲𞤣𞤮</span>
+    </div>
+  </div>
+
+  <!-- Spec -->
+  <div class="section">Spec</div>
+  <div class="rules">
+    <div class="spec">
+      <div class="k">Shape</div><div class="v">60×60 rounded rect, <code>rx=16</code>, 2.5px stroke</div>
+      <div class="k">Hook</div><div class="v">4px stroke, round caps, abstracted ADLaM 𞤘</div>
+      <div class="k">Accent dot</div><div class="v">Solid <code>#fd8b00</code>, r=2.5</div>
+      <div class="k">Gradient</div><div class="v"><code>135°, #ff8b9b → #fd8b00</code></div>
+      <div class="k">Min size</div><div class="v">16px (favicon) — strokes thicken to 6–8px</div>
+      <div class="k">Clear space</div><div class="v">≥ 25% of mark height on all sides</div>
+    </div>
+  </div>
+
+  <div class="section">Rules</div>
+  <div class="rules">
+    <ul>
+      <li>Use the gradient version on dark (<code>#0e0e0e</code>) and the <b>mono</b> version on light or busy photography.</li>
+      <li>Never change the gradient colors, rotate the mark, or squish the rounded-square frame.</li>
+      <li>Pair with the wordmark at <b>mark height ≈ wordmark cap-height</b>; gap = 0.35× mark height.</li>
+      <li>Files: <code>assets/logo.svg</code>, <code>assets/logo-mono.svg</code>, <code>assets/favicon.svg</code>.</li>
+    </ul>
+  </div>
+
+</div>
+</body></html>
