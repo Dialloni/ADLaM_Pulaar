@@ -328,7 +328,7 @@ export const Chat: React.FC<ChatProps> = ({
                       }}
                       placeholder={t.chatPlaceholder.replace('{language}', selectedLanguage)}
                       className={cn(
-                        "w-full bg-transparent border-none rounded-3xl px-6 pt-6 pb-20 pr-20 text-lg focus:outline-none focus:ring-0 transition-all resize-none min-h-[200px] text-zinc-100 placeholder:text-zinc-600 font-medium leading-relaxed",
+                        "gando-input w-full bg-transparent border-none rounded-3xl px-6 pt-6 pb-20 pr-20 text-lg focus:outline-none focus:ring-0 transition-all resize-none min-h-[200px] text-zinc-100 placeholder:text-zinc-600 font-medium leading-relaxed",
                         languageCode === 'ff-adlm' && "font-adlam"
                       )}
                     />
@@ -556,7 +556,7 @@ export const Chat: React.FC<ChatProps> = ({
                 }}
                 placeholder={t.chatPlaceholder.replace('{language}', selectedLanguage)}
                 className={cn(
-                  "w-full bg-transparent border-none rounded-xl p-4 pr-16 text-sm focus:outline-none focus:ring-0 transition-all resize-none min-h-[120px] text-zinc-100 placeholder:text-zinc-500 font-medium leading-relaxed scroll-smooth",
+                  "gando-input w-full bg-transparent border-none rounded-xl p-4 pr-16 text-sm focus:outline-none focus:ring-0 transition-all resize-none min-h-[120px] text-zinc-100 placeholder:text-zinc-500 font-medium leading-relaxed scroll-smooth",
                   languageCode === 'ff-adlm' && "font-adlam"
                 )}
               />
