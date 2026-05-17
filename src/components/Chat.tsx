@@ -562,7 +562,8 @@ export const Chat: React.FC<ChatProps> = ({
               className={languageCode === 'ff-adlm' ? 'font-adlam' : ''}
               style={{
                 width: '100%',
-                minHeight: 52,
+                minHeight: 80,
+                maxHeight: 200,
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
