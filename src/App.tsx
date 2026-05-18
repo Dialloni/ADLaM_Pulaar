@@ -5,12 +5,12 @@ import {
   Search, Bell, LayoutDashboard, FolderKanban, Globe2, Settings,
   Users, BookOpen, Activity, Sparkles, LogOut, ChevronRight,
   RotateCcw, CheckCircle2, XCircle, AlertCircle, X, PanelLeft,
-  HelpCircle, Gift, Globe, Layers,
+  HelpCircle, Gift, Globe, Layers, Github, Figma,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
 import {
-  collection, addDoc, updateDoc, doc, query, where,
+  collection, addDoc, updateDoc, doc, query, where, orderBy,
   onSnapshot, deleteDoc, db, serverTimestamp,
   handleFirestoreError, OperationType,
 } from './firebase';
@@ -388,6 +388,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput]     = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [inputShake, setInputShake] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [selectedLang, setSelectedLang] = useState(LANGS[0]);
@@ -407,9 +408,19 @@ export default function App() {
   const [projectFilter, setProjectFilter] = useState<'all' | 'live' | 'building' | 'draft'>('all');
   const [headerSearch, setHeaderSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [importMode, setImportMode] = useState<'describe' | 'github' | 'figma'>('describe');
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [landingInput, setLandingInput] = useState('');
+  const [twText, setTwText] = useState('');
+  const [twIdx, setTwIdx] = useState(0);
+  const [twDel, setTwDel] = useState(false);
+  const [twCursor, setTwCursor] = useState(true);
+  const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const heroTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const landingTextareaRef = useRef<HTMLTextAreaElement>(null);
   const handleHeroInput = () => {
     const el = heroTextareaRef.current;
     if (!el) return;
@@ -459,6 +470,7 @@ export default function App() {
     const h = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
       if (!(e.target as Element).closest('.user-menu-container')) setUserMenuOpen(false);
     };
     document.addEventListener('mousedown', h);
@@ -470,7 +482,7 @@ export default function App() {
   /* projects listener */
   useEffect(() => {
     if (!user) { setProjects([]); return; }
-    const q = query(collection(db, 'projects'), where('userId', '==', user.uid));
+    const q = query(collection(db, 'projects'), where('userId', '==', user.uid), orderBy('createdAt', 'desc'));
     return onSnapshot(q, snap => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as Project));
       setProjects(list);
@@ -484,7 +496,7 @@ export default function App() {
   /* messages listener */
   useEffect(() => {
     if (!currentProject) { setMessages([]); return; }
-    const q = query(collection(db, 'projects', currentProject.id, 'messages'));
+    const q = query(collection(db, 'projects', currentProject.id, 'messages'), orderBy('timestamp', 'asc'));
     return onSnapshot(q, snap => setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Message))),
       err => setGlobalError(`Messages Error: ${err.message}`));
   }, [currentProject?.id]);
@@ -508,6 +520,25 @@ export default function App() {
   }, [user]);
 
   useEffect(() => { if (page === 'status') fetchStatus(); }, [page]);
+
+  /* typewriter */
+  useEffect(() => {
+    const active = user ? input : landingInput;
+    if (active) return;
+    const phrase = t.twPhrases[twIdx % t.twPhrases.length];
+    const timer = !twDel
+      ? twText.length < phrase.length
+        ? setTimeout(() => setTwText(phrase.slice(0, twText.length + 1)), 52)
+        : setTimeout(() => setTwDel(true), 2200)
+      : twText.length > 0
+        ? setTimeout(() => setTwText(phrase.slice(0, twText.length - 1)), 28)
+        : (() => { setTwDel(false); setTwIdx(i => (i + 1) % t.twPhrases.length); return undefined; })();
+    return () => { if (timer) clearTimeout(timer); };
+  }, [twText, twDel, twIdx, input, landingInput, user]);
+  useEffect(() => {
+    const t = setInterval(() => setTwCursor(c => !c), 530);
+    return () => clearInterval(t);
+  }, []);
 
   /* ── handlers ─────────────────────────────────── */
   const handleLogin = async () => {
@@ -546,9 +577,19 @@ export default function App() {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || !user) return;
+    if (!input.trim()) {
+      setInputShake(true);
+      setTimeout(() => setInputShake(false), 500);
+      return;
+    }
+    if (!user) return;
     setIsGenerating(true);
-    const prompt = input; setInput('');
+    const prompt = importMode === 'github'
+      ? `Clone and recreate a web app inspired by this GitHub repository: ${input}`
+      : importMode === 'figma'
+      ? `Build a pixel-perfect web UI matching this Figma design: ${input}`
+      : input;
+    setInput('');
     try {
       if (!currentProject) await createNewProject(prompt);
       else await updateExistingProject(prompt);
@@ -602,7 +643,6 @@ export default function App() {
   /* ── derived metrics ──────────────────────────── */
   const completionPct = Math.min(projects.length * 12, 96);
   const tokenPct = Math.min(messages.length * 2.5, 90);
-  const perfPct = 94;
   const userMessages = messages.filter(m => m.role === 'user').length;
   const filteredProjects = projects
     .filter(p => projectFilter === 'all' || p.status === projectFilter)
@@ -627,160 +667,280 @@ export default function App() {
   );
 
   /* ═════════════════════════════════════════════════
-     LOGIN
+     LANDING PAGE
   ═════════════════════════════════════════════════ */
   if (!user) return (
-    <div className={cn('min-h-screen flex items-center relative overflow-hidden', isAdlam && 'font-adlam')}
-      style={{ background: '#0e0e0e', padding: '48px 64px' }}>
-      {/* ambient blobs */}
-      <div className="absolute w-[55%] h-[55%] rounded-full top-[-15%] left-[-10%] pointer-events-none"
-        style={{ background: P, filter: 'blur(120px)', opacity: 0.1 }} />
-      <div className="absolute w-[55%] h-[55%] rounded-full bottom-[-15%] right-[-10%] pointer-events-none"
-        style={{ background: S, filter: 'blur(120px)', opacity: 0.1 }} />
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ backgroundImage: 'linear-gradient(to right,#80808006 1px,transparent 1px),linear-gradient(to bottom,#80808006 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
-      <div className="absolute top-8 right-8 z-50">
-        <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
+    <div className={cn('min-h-screen relative overflow-x-hidden', isAdlam && 'font-adlam')}
+      style={{ background: '#0e0e0e', color: '#fff' }}>
+
+      {/* ambient blobs + grid */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute w-[65%] h-[65%] rounded-full top-[-20%] left-[-10%]"
+          style={{ background: P, filter: 'blur(120px)', opacity: 0.07 }} />
+        <div className="absolute w-[65%] h-[65%] rounded-full bottom-[-20%] right-[-10%]"
+          style={{ background: S, filter: 'blur(120px)', opacity: 0.07 }} />
+        <div className="absolute inset-0"
+          style={{ backgroundImage: 'linear-gradient(to right,#80808006 1px,transparent 1px),linear-gradient(to bottom,#80808006 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
-        className="relative z-10 w-full flex items-center gap-16">
+      {/* ── NAVBAR ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 h-16 border-b border-white/5"
+        style={{ background: 'rgba(14,14,14,0.88)', backdropFilter: 'blur(20px)' }}>
+        <div className="flex items-center gap-2.5">
+          <GandoLogo size={22} />
+          <span style={{ fontFamily: MANROPE, fontSize: 18, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginLeft: 2 }}>BETA</span>
+        </div>
+        <div className="hidden md:flex items-center gap-7">
+          {['Community', 'Pricing', 'Status'].map(lbl => (
+            <button key={lbl} className="text-sm font-medium text-zinc-500 hover:text-white transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>{lbl}</button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
+          <button onClick={() => { setAuthMode('login'); setAuthError(null); setAuthModalOpen(true); }}
+            className="hidden md:block text-sm font-bold text-zinc-400 hover:text-white transition-colors px-4 py-2 rounded-xl hover:bg-white/5"
+            style={{ fontFamily: MANROPE }}>
+            Sign in
+          </button>
+          <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl font-black text-black text-sm transition-all hover:scale-[1.03] active:scale-95"
+            style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, whiteSpace: 'nowrap' }}>
+            Get started →
+          </button>
+        </div>
+      </nav>
 
-        {/* ── LEFT COLUMN ── */}
-        <div className="flex-1 flex flex-col" style={{ gap: 28 }}>
-
-          {/* logo + wordmark + beta chip */}
-          <div className="flex items-center gap-3">
-            <GandoLogo size={28} />
-            <span style={{ fontFamily: MANROPE, fontSize: 22, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Gando
-            </span>
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/10"
-              style={{ background: 'rgba(255,255,255,0.04)', fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: '#adaaaa', textTransform: 'uppercase' }}>
-              <GandoLogo size={11} />
-              PUBLIC BETA
-            </span>
-          </div>
-
-          {/* eyebrow */}
-          <p style={{ fontFamily: MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: P, textTransform: 'uppercase', margin: 0 }}>
+      {/* ── HERO ── */}
+      <section className="relative z-10 pt-32 pb-20 px-5 flex flex-col items-center text-center">
+        <div style={{ maxWidth: 820, width: '100%' }}>
+          <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase', marginBottom: 20 }}>
             {t.loginEyebrow}
           </p>
-
-          {/* hero h1 */}
-          <h1 className={cn(isAdlam && 'font-adlam')}
-            style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(48px,5.5vw,72px)', lineHeight: 1.0, color: '#fff', margin: 0 }}>
+          <h1 className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(40px,7vw,82px)', lineHeight: 1.0, letterSpacing: isAdlam ? 0 : '-0.03em', color: '#fff', marginBottom: 22 }}>
             {t.loginLine1}<br />
             {t.loginLine2}<br />
-            <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              {t.loginLine3}
-            </span>
+            <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
           </h1>
-
-          {/* subtext */}
-          <p className={cn(isAdlam && 'font-adlam')}
-            style={{ fontFamily: 'Inter, sans-serif', fontSize: 16, color: '#767575', lineHeight: 1.6, maxWidth: 460, margin: 0 }}>
+          <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : 'Inter, sans-serif', fontSize: 16, color: '#767575', lineHeight: 1.65, maxWidth: 520, margin: '0 auto 40px' }}>
             {t.heroSubtitle}
           </p>
 
-          {/* auth section */}
-          <div className="flex flex-col" style={{ gap: 10, maxWidth: 380 }}>
-            {authMode === 'google' ? (
-              <button onClick={handleLogin}
-                className="flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
-                style={{ padding: '16px 32px', borderRadius: 9999, background: '#ffffff', color: '#000000', fontFamily: MANROPE, fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer', width: '100%' }}>
-                <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-                <span className={cn(isAdlam && 'font-adlam')}>{t.loginWithGoogle}</span>
-              </button>
-            ) : (
-              <div className="space-y-3 rounded-2xl p-5 border border-white/10" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <h3 className="text-base font-black text-white text-left" style={{ fontFamily: MANROPE }}>
-                  {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
-                </h3>
-                <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-                  className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
-                <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-                  className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
-                {authError && <p className="text-red-400 text-xs">{authError}</p>}
-                <button onClick={handleLogin} className="w-full py-3 rounded-xl font-black text-black transition-all hover:scale-[1.01]"
-                  style={{ fontFamily: MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
-                  {authMode === 'login' ? 'Sign In' : 'Sign Up'}
-                </button>
-                <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-                  className="w-full text-xs font-bold transition-colors" style={{ color: P }}>
-                  {authMode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
-                </button>
+          {/* textarea card */}
+          <div style={{ borderRadius: 20, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 80px -12px rgba(0,0,0,0.7)', padding: '18px 18px 14px', textAlign: 'left' }}>
+            <textarea
+              ref={landingTextareaRef}
+              value={landingInput}
+              onChange={e => setLandingInput(e.target.value)}
+              onInput={() => {
+                const el = landingTextareaRef.current;
+                if (!el) return;
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+              }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setAuthMode('google'); setAuthModalOpen(true); } }}
+              placeholder={!landingInput ? (twText + (twCursor ? '|' : ' ')) : ''}
+              className="gando-input"
+              style={{ width: '100%', minHeight: 100, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: '#fff', fontSize: 16, lineHeight: 1.6, fontFamily: 'var(--font-sans)', display: 'block', boxSizing: 'border-box', overflowY: 'hidden' }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center gap-1.5">
+                <span style={{ fontSize: 11, color: '#52525b', fontFamily: 'Inter, sans-serif', marginRight: 4 }}>or import from</span>
+                {([{ Icon: Github, label: 'GitHub' }, { Icon: Figma, label: 'Figma' }] as const).map(({ Icon, label }) => (
+                  <button key={label} onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:border-white/20 hover:text-white"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#767575', fontFamily: MANROPE }}>
+                    <Icon className="w-3 h-3" />{label}
+                  </button>
+                ))}
               </div>
-            )}
-            {authError && authMode === 'google' && <p className="text-red-400 text-xs">{authError}</p>}
-            <button onClick={() => { setAuthMode(authMode === 'google' ? 'login' : 'google'); setAuthError(null); }}
-              className="text-sm font-medium transition-colors hover:text-white text-center" style={{ color: '#767575' }}>
-              {authMode === 'google' ? 'Or use email & password' : '← Back to Google Login'}
-            </button>
+              <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-black text-sm transition-all hover:scale-[1.03] active:scale-95"
+                style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, flexShrink: 0 }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
+                <Sparkles className="w-4 h-4" />
+                <span className={cn(isAdlam && 'font-adlam')}>{t.generateLabel}</span>
+              </button>
+            </div>
           </div>
 
-          {/* trust badges */}
-          <div className="flex items-center gap-3 flex-wrap" style={{ fontSize: 12, color: '#52525b' }}>
-            <span>🔒 SOC 2 Type II</span>
-            <span style={{ color: '#3f3f46' }}>•</span>
-            <span>Data stays in-region</span>
-            <span style={{ color: '#3f3f46' }}>•</span>
+          {/* trust row */}
+          <div className="flex items-center justify-center gap-4 flex-wrap mt-5" style={{ fontSize: 12, color: '#52525b' }}>
+            <span>🔒 SOC 2 Type II</span><span style={{ color: '#3f3f46' }}>·</span>
+            <span>Data stays in-region</span><span style={{ color: '#3f3f46' }}>·</span>
             <span>Free during Beta</span>
           </div>
         </div>
+      </section>
 
-        {/* ── RIGHT COLUMN — stacked cards ── */}
-        <div className="flex-1 hidden md:flex items-center justify-center relative" style={{ height: 520 }}>
-          {/* card 3 — back-left, deep purple */}
-          <div className="absolute" style={{
-            width: 300, height: 380, borderRadius: 24,
-            background: 'linear-gradient(145deg,#6B21A8,#581C87)',
-            transform: 'rotate(-8deg) translate(-90px,24px)',
-            zIndex: 1, boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
-          }}>
-            <div style={{ padding: 24 }}><GandoLogo size={32} mono /></div>
-            <div style={{ position: 'absolute', top: 24, right: 24 }}>
-              <span style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', borderRadius: 9999, padding: '4px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#fff', textTransform: 'uppercase' }}>YORUBA</span>
-            </div>
-          </div>
-
-          {/* card 2 — mid, lighter purple */}
-          <div className="absolute" style={{
-            width: 300, height: 380, borderRadius: 24,
-            background: 'linear-gradient(145deg,#7C3AED,#6D28D9)',
-            transform: 'rotate(-3deg) translate(-28px,12px)',
-            zIndex: 2, boxShadow: '0 40px 80px rgba(0,0,0,0.55)',
-          }}>
-            <div style={{ padding: 24 }}><GandoLogo size={32} mono /></div>
-            <div style={{ position: 'absolute', top: 24, right: 24 }}>
-              <span style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', borderRadius: 9999, padding: '4px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#fff', textTransform: 'uppercase' }}>ADLAM</span>
-            </div>
-          </div>
-
-          {/* card 1 — front, brown/rust */}
-          <div className="absolute" style={{
-            width: 300, height: 380, borderRadius: 24,
-            background: 'linear-gradient(145deg,#92400E,#78350F)',
-            transform: 'rotate(3deg) translate(44px,0px)',
-            zIndex: 3, boxShadow: '0 40px 80px rgba(0,0,0,0.5)',
-          }}>
-            <div style={{ padding: 24 }}><GandoLogo size={32} mono /></div>
-            <div style={{ position: 'absolute', top: 24, right: 24 }}>
-              <span style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', borderRadius: 9999, padding: '4px 12px', fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#fff', textTransform: 'uppercase' }}>FRANÇAIS</span>
-            </div>
-            <div style={{ position: 'absolute', bottom: 32, left: 24, right: 24 }}>
-              <p style={{ color: '#fff', fontFamily: MANROPE, fontWeight: 900, fontSize: 22, margin: '0 0 4px 0' }}>Marché Bamako</p>
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, margin: '0 0 10px 0' }}>100% built</p>
-              <div style={{ height: 4, borderRadius: 9999, background: 'rgba(255,255,255,0.12)' }}>
-                <div style={{ height: '100%', borderRadius: 9999, width: '100%', background: 'var(--gradient-brand)' }} />
+      {/* ── TEMPLATES ── */}
+      {(() => {
+        const tl = TEMPLATE_I18N[selectedLang.code] || TEMPLATE_I18N.en;
+        return (
+          <section className="relative z-10 px-5 md:px-10 pb-24" style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 24, color: '#fff', margin: 0 }}>{tl.pageTitle}</h2>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#767575', marginTop: 4 }}>{tl.pageSubtitle}</p>
               </div>
+              <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+                style={{ fontSize: 11, fontWeight: 900, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: MANROPE }}>
+                {tl.viewAll} →
+              </button>
             </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {TEMPLATES_META.slice(0, 6).map(tmpl => {
+                const tr = tl.templates[tmpl.id] || TEMPLATE_I18N.en.templates[tmpl.id];
+                return (
+                  <motion.div key={tmpl.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                    onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+                    className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
+                    style={{ background: '#131313' }}>
+                    <div className="relative overflow-hidden" style={{ height: 160, background: tmpl.color }}>
+                      {tmpl.previewUrl ? (
+                        <iframe src={tmpl.previewUrl} title={tr.name} className="border-none pointer-events-none"
+                          style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Layers className="w-10 h-10 opacity-20 text-white" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Use template →</span>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
+                        <span style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
+                      </div>
+                      <h3 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: '#fff', marginBottom: 4 }}>{tr.name}</h3>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#71717a', lineHeight: 1.5 }}>{tr.description}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* ── FOOTER ── */}
+      <footer className="relative z-10 border-t border-white/5" style={{ padding: '48px 40px 32px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <GandoLogo size={20} />
+                <span style={{ fontFamily: MANROPE, fontSize: 16, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
+              </div>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#52525b', lineHeight: 1.6 }}>
+                AI app builder for West Africa. Build in ADLaM, French, English, and more.
+              </p>
+            </div>
+            {[
+              { title: 'Resources', links: ['Documentation', 'API Reference', 'Templates', 'Changelog'] },
+              { title: 'Company',   links: ['About', 'Blog', 'Careers', 'Press'] },
+              { title: 'Community', links: ['Discord', 'Twitter / X', 'GitHub', 'Support'] },
+            ].map(col => (
+              <div key={col.title}>
+                <p style={{ fontFamily: MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: '#52525b', textTransform: 'uppercase', marginBottom: 14 }}>{col.title}</p>
+                <div className="space-y-2.5">
+                  {col.links.map(lnk => (
+                    <p key={lnk}
+                      style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#767575', cursor: 'default', transition: 'color 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLParagraphElement).style.color = '#fff'}
+                      onMouseLeave={e => (e.currentTarget as HTMLParagraphElement).style.color = '#767575'}>
+                      {lnk}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-6 border-t border-white/5">
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#3f3f46' }}>© 2025 Gando AI. All rights reserved.</p>
+            <p style={{ fontFamily: MANROPE, fontSize: 11, fontWeight: 700, color: '#52525b', letterSpacing: '0.08em' }}>BUILT FOR WEST AFRICA 🌍</p>
           </div>
         </div>
+      </footer>
 
-      </motion.div>
+      {/* ── AUTH MODAL ── */}
+      <AnimatePresence>
+        {authModalOpen && (
+          <motion.div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(20px)' }}
+              onClick={() => { setAuthModalOpen(false); setAuthError(null); }} />
+            <motion.div className="relative z-10 w-full rounded-3xl border border-white/10 p-8"
+              style={{ maxWidth: 420, background: '#0f0f0f', boxShadow: '0 40px 100px rgba(0,0,0,0.85)' }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}>
+
+              <button onClick={() => { setAuthModalOpen(false); setAuthError(null); }}
+                className="absolute top-4 right-4 p-2 rounded-lg text-zinc-600 hover:text-white hover:bg-white/5 transition-all">
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-6">
+                <GandoLogo size={22} />
+                <span style={{ fontFamily: MANROPE, fontSize: 17, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
+              </div>
+
+              <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 26, color: '#fff', marginBottom: 6 }}>
+                {authMode === 'login' ? 'Welcome back' : authMode === 'signup' ? 'Create account' : 'Get started free'}
+              </h2>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#767575', marginBottom: 24 }}>
+                {authMode === 'login' ? 'Sign in to continue building.' : authMode === 'signup' ? 'Build your first app in minutes.' : 'One click to start building.'}
+              </p>
+
+              {authMode === 'google' ? (
+                <div className="space-y-3">
+                  <button onClick={handleLogin}
+                    className="w-full flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
+                    style={{ padding: '15px 24px', borderRadius: 14, background: '#ffffff', color: '#000', fontFamily: MANROPE, fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer' }}>
+                    <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+                    Continue with Google
+                  </button>
+                  {authError && <p className="text-red-400 text-xs text-center">{authError}</p>}
+                  <button onClick={() => { setAuthMode('login'); setAuthError(null); }}
+                    className="w-full text-sm font-medium transition-colors hover:text-white text-center"
+                    style={{ color: '#767575', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
+                    Or use email & password
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
+                    className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
+                  <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+                    className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all"
+                    onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }} />
+                  {authError && <p className="text-red-400 text-xs">{authError}</p>}
+                  <button onClick={handleLogin}
+                    className="w-full py-3.5 rounded-xl font-black text-black transition-all hover:scale-[1.01]"
+                    style={{ fontFamily: MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
+                    {authMode === 'login' ? 'Sign In' : 'Sign Up'}
+                  </button>
+                  <div className="flex flex-col gap-2 pt-1">
+                    <button onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(null); }}
+                      className="text-xs font-bold transition-colors" style={{ color: P, fontFamily: MANROPE }}>
+                      {authMode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
+                    </button>
+                    <button onClick={() => { setAuthMode('google'); setAuthError(null); }}
+                      className="text-xs font-medium transition-colors hover:text-white text-center" style={{ color: '#52525b' }}>
+                      ← Back to Google login
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 
@@ -815,18 +975,8 @@ export default function App() {
             onClick={() => { setCurrentProject(null); setPage('dashboard'); }}>
             {t.appName.toUpperCase()}
           </span>
-          <nav className="hidden md:flex items-center">
-            {([['dashboard', t.dashboardNav], ['projects', t.projectsNav], ['assets', t.assetsNav]] as [NavPage, string][]).map(([p, label]) => (
-              <button key={p} onClick={() => { setPage(p); setCurrentProject(null); }}
-                className={cn('px-4 py-2 text-sm font-bold transition-all', isAdlam && 'font-adlam')}
-                style={page === p && !currentProject
-                  ? { color: P, borderBottom: `2px solid ${P}`, borderRadius: 0 }
-                  : { color: '#767575' }}>
-                {label}
-              </button>
-            ))}
-          </nav>
         </div>
+
 
         {/* search + icons + profile */}
         <div className="flex items-center gap-4">
@@ -921,10 +1071,23 @@ export default function App() {
               )}
             </AnimatePresence>
           </div>
-          <button className="p-2 rounded-xl text-zinc-400 hover:text-white transition-colors relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: P }} />
-          </button>
+          <div ref={notifRef} className="relative">
+            <button onClick={() => setNotifOpen(o => !o)} className="p-2 rounded-xl text-zinc-400 hover:text-white transition-colors relative">
+              <Bell className="w-5 h-5" />
+            </button>
+            <AnimatePresence>
+              {notifOpen && (
+                <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-12 w-72 rounded-2xl shadow-2xl border border-white/10 z-50 p-6 flex flex-col items-center gap-3"
+                  style={{ background: '#131313' }}>
+                  <Bell className="w-8 h-8 text-zinc-600" />
+                  <p className="text-sm font-bold text-zinc-500 text-center">No notifications yet</p>
+                  <p className="text-xs text-zinc-600 text-center">Activity on your projects will show up here.</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* profile dropdown */}
           <div ref={profileRef} className="relative">
@@ -987,136 +1150,130 @@ export default function App() {
       {/* ════════ BODY ════════ */}
       <div className="flex flex-1 overflow-hidden pt-20">
 
+
         {/* ════ SIDEBAR ════ */}
         <aside className="flex-shrink-0 flex flex-col border-r border-white/5"
-          style={{
-            background: '#0e0e0e',
-            boxShadow: '20px 0 40px rgba(0,0,0,0.4)',
-            width: sidebarCollapsed ? 64 : 288,
-            transition: 'width 200ms cubic-bezier(0.16,1,0.3,1)',
-            overflowX: 'visible',
-            overflowY: userMenuOpen ? 'visible' : 'auto',
-          }}>
+          style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, transition: 'width 200ms cubic-bezier(0.16,1,0.3,1)', overflowX: 'hidden', overflowY: 'auto' }}>
 
-          {/* toggle button */}
-          <div className="flex px-4 pt-5 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-end' }}>
+          {/* collapse toggle */}
+          <div className="flex items-center px-3 pt-4 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-end' }}>
             <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              <PanelLeft className="w-4 h-4" style={{ color: '#767575' }} />
+              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all">
+              <PanelLeft className="w-4 h-4" />
             </button>
           </div>
 
-          {/* user — hidden when collapsed */}
+          {/* user / workspace */}
           {!sidebarCollapsed && (
-            <div className="user-menu-container px-8 pt-4 pb-6" style={{ position: 'relative', cursor: 'pointer' }}
-              onClick={() => setUserMenuOpen(o => !o)}>
-              <p className={cn('text-white font-black text-lg', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                {user.displayName || user.email?.split('@')[0] || 'Builder'}
-              </p>
-              <p className={cn('text-zinc-500 text-xs font-bold uppercase tracking-widest mt-0.5', isAdlam && 'font-adlam')}>
-                {projects.length} {t.projectsCreatedLabel}
-              </p>
-
+            <div className="px-3 mb-3 user-menu-container" style={{ position: 'relative' }}>
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 transition-all"
+                onClick={() => setUserMenuOpen(o => !o)}>
+                {user.photoURL
+                  ? <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+                  : <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-black flex-shrink-0"
+                      style={{ background: `linear-gradient(135deg,${P},${S})` }}>
+                      {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                    </div>
+                }
+                <span className={cn('flex-1 min-w-0 text-sm font-bold text-white truncate', isAdlam && 'font-adlam')}
+                  style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                  {user.displayName || user.email?.split('@')[0] || 'Builder'}
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" style={{ transform: 'rotate(90deg)' }} />
+              </div>
               {userMenuOpen && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 8, width: 260, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, overflow: 'hidden', zIndex: 100, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                  {/* email */}
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>
-                    {user.email}
-                  </div>
-                  {/* items */}
-                  {[
-                    { icon: Settings,    label: 'Settings',    color: '#e5e5e5', arrow: false },
-                    { icon: Globe,       label: 'Language',    color: '#e5e5e5', arrow: true  },
-                    { icon: HelpCircle,  label: 'Help',        color: '#e5e5e5', arrow: false },
-                    { icon: Gift,        label: "What's new",  color: '#e5e5e5', arrow: false },
-                  ].map(({ icon: Icon, label, color, arrow }) => (
-                    <button key={label}
-                      onClick={(e) => { e.stopPropagation(); setUserMenuOpen(false); }}
+                <div style={{ position: 'absolute', top: '100%', left: 12, right: 12, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                  <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
+                  {([
+                    { icon: Settings,   label: 'Settings'  },
+                    { icon: Globe,      label: 'Language'  },
+                    { icon: HelpCircle, label: 'Help'      },
+                  ]).map(({ icon: Icon, label }) => (
+                    <button key={label} onClick={e => { e.stopPropagation(); setUserMenuOpen(false); }}
                       onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'}
                       onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
-                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', fontSize: 13, color, fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
-                      <Icon size={14} />
-                      {label}
-                      {arrow && <ChevronRight size={12} style={{ marginLeft: 'auto', color: '#767575' }} />}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                      <Icon size={14} /> {label}
                     </button>
                   ))}
-                  {/* divider */}
                   <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-                  {/* sign out */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); logout(); setUserMenuOpen(false); }}
+                  <button onClick={e => { e.stopPropagation(); logout(); setUserMenuOpen(false); }}
                     onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'}
                     onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
-                    <LogOut size={14} />
-                    Sign out
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                    <LogOut size={14} /> {t.signOut}
                   </button>
                 </div>
               )}
             </div>
           )}
 
+          {/* search */}
+          <div className="px-3 mb-3">
+            <button onClick={() => searchRef.current?.querySelector('input')?.focus()}
+              className={cn('w-full flex items-center rounded-xl transition-all text-zinc-500 hover:text-zinc-300 hover:bg-white/5', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2')}
+              style={{ background: sidebarCollapsed ? 'transparent' : 'rgba(255,255,255,0.03)', border: sidebarCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+              <Search className="w-4 h-4 flex-shrink-0" />
+              {!sidebarCollapsed && (
+                <>
+                  <span className="flex-1 text-left text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Search…</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded text-zinc-600" style={{ background: 'rgba(255,255,255,0.06)', fontFamily: 'Inter, sans-serif' }}>⌘K</span>
+                </>
+              )}
+            </button>
+          </div>
+
           {/* nav */}
-          <nav className="flex-1 space-y-0.5">
+          <nav className="px-3 space-y-0.5 flex-shrink-0">
             {([
-              { icon: LayoutDashboard, label: t.dashboardNav,        pg: 'dashboard'  as NavPage },
-              { icon: FolderKanban,   label: t.myProjectsLabel,     pg: 'projects'   as NavPage },
-              { icon: Layers,         label: t.templatesNav,         pg: 'templates'  as NavPage },
-              { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'     as NavPage },
-              { icon: Settings,       label: t.settingsNav,          pg: null },
-              { icon: Users,          label: t.teamHubLabel,         pg: null },
+              { icon: LayoutDashboard, label: t.dashboardNav,       pg: 'dashboard' as NavPage },
+              { icon: FolderKanban,   label: t.myProjectsLabel,     pg: 'projects'  as NavPage },
+              { icon: Layers,         label: t.templatesNav,         pg: 'templates' as NavPage },
+              { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
+              { icon: BookOpen,       label: t.documentationLabel,   pg: 'docs'      as NavPage },
+              { icon: Activity,       label: t.systemStatusLabel,    pg: 'status'    as NavPage },
             ]).map(({ icon: Icon, label, pg }) => {
-              const active = pg && page === pg && !currentProject;
+              const active = page === pg && !currentProject;
               return (
-                <button key={label} onClick={() => { if (pg) { setPage(pg); setCurrentProject(null); } }}
-                  className={cn('w-full flex items-center py-4 text-sm font-bold', !sidebarCollapsed && 'gap-4', isAdlam && 'font-adlam')}
-                  style={{
-                    color: active ? 'var(--fg-1)' : 'var(--fg-3)',
-                    background: active ? 'linear-gradient(to right, rgba(255,139,155,0.12), transparent)' : 'transparent',
-                    border: 'none',
-                    borderLeft: active ? '4px solid var(--color-primary)' : '4px solid transparent',
-                    transition: 'all 150ms cubic-bezier(0.16,1,0.3,1)',
-                    justifyContent: sidebarCollapsed ? 'center' : undefined,
-                    paddingLeft: sidebarCollapsed ? 0 : '28px',
-                    paddingRight: sidebarCollapsed ? 0 : '24px',
-                  }}>
-                  <Icon className="w-4 h-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>}
+                <button key={pg} onClick={() => { setPage(pg); setCurrentProject(null); }}
+                  className={cn('w-full flex items-center rounded-xl transition-all', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2', isAdlam && 'font-adlam')}
+                  style={{ background: active ? 'rgba(255,255,255,0.07)' : 'transparent', color: active ? '#fff' : '#71717a', border: 'none', fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 600, fontSize: 13 }}>
+                  <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? P : undefined }} />
+                  {!sidebarCollapsed && <span>{label}</span>}
                 </button>
               );
             })}
           </nav>
 
+          {/* recents */}
+          {!sidebarCollapsed && projects.length > 0 && (
+            <div className="mt-5 px-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 px-3 mb-1.5" style={{ fontFamily: MANROPE }}>Recents</p>
+              <div className="space-y-0.5">
+                {projects.slice(0, 5).map(p => (
+                  <button key={p.id} onClick={() => openProject(p)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all hover:bg-white/5"
+                    style={{ color: '#adaaaa' }}>
+                    <Sparkles className="w-3 h-3 flex-shrink-0 opacity-60" style={{ color: P }} />
+                    <span className="text-xs font-medium truncate" style={{ fontFamily: 'Inter, sans-serif' }}>{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* spacer */}
+          <div className="flex-1" />
+
           {/* new project */}
-          <div className="py-5" style={{ paddingLeft: sidebarCollapsed ? 12 : 24, paddingRight: sidebarCollapsed ? 12 : 24 }}>
-            <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); }}
-              className={cn('w-full py-4 rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', isAdlam && 'font-adlam')}
-              style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
-              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
-              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
+          <div className="p-3">
+            <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); setImportMode('describe'); }}
+              className={cn('w-full rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', isAdlam && 'font-adlam')}
+              style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: isAdlam ? undefined : MANROPE, fontSize: 12, padding: sidebarCollapsed ? '8px 4px' : '12px' }}>
               {sidebarCollapsed ? '+' : `+ ${t.newProject}`}
             </button>
           </div>
 
-          {/* footer */}
-          <div className="py-5 border-t border-white/5 space-y-3"
-            style={{ paddingLeft: sidebarCollapsed ? 12 : 32, paddingRight: sidebarCollapsed ? 12 : 32 }}>
-            <button onClick={() => { setPage('docs'); setCurrentProject(null); }}
-              className={cn('flex items-center text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-zinc-300 transition-colors w-full', sidebarCollapsed ? 'justify-center' : 'gap-3 text-left', isAdlam && 'font-adlam')}>
-              <BookOpen className="w-4 h-4 flex-shrink-0" />
-              {!sidebarCollapsed && t.documentationLabel}
-            </button>
-            <button onClick={() => { setPage('status'); setCurrentProject(null); }}
-              className={cn('flex items-center text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-zinc-300 transition-colors w-full', sidebarCollapsed ? 'justify-center' : 'gap-3 text-left', isAdlam && 'font-adlam')}>
-              <Activity className="w-4 h-4 flex-shrink-0" style={{ color: S }} />
-              {!sidebarCollapsed && t.systemStatusLabel}
-            </button>
-            <button onClick={() => logout()}
-              className={cn('flex items-center text-xs font-black uppercase tracking-tight text-zinc-600 hover:text-red-400 transition-colors mt-2 w-full', sidebarCollapsed ? 'justify-center' : 'gap-3 text-left', isAdlam && 'font-adlam')}>
-              <LogOut className="w-4 h-4 flex-shrink-0" />
-              {!sidebarCollapsed && t.signOut}
-            </button>
-          </div>
         </aside>
 
         {/* ════ MAIN ════ */}
@@ -1243,8 +1400,23 @@ export default function App() {
               </div>
 
               {filteredProjects.length === 0 ? (
-                <div className="flex items-center justify-center py-16">
-                  <p style={{ color: '#767575', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>No projects found</p>
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: `${P}15` }}>
+                    <Sparkles className="w-8 h-8" style={{ color: P }} />
+                  </div>
+                  <p className={cn('text-white font-black text-lg', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                    {projectSearch ? 'No projects match your search' : t.noProjectsTitle}
+                  </p>
+                  <p className="text-zinc-500 text-sm text-center max-w-xs">
+                    {projectSearch ? 'Try a different search term.' : 'Describe an app in any language and Gando will build it for you.'}
+                  </p>
+                  {!projectSearch && (
+                    <button onClick={() => { setPage('dashboard'); setCurrentProject(null); }}
+                      className={cn('flex items-center gap-2 px-6 py-3 rounded-xl font-black text-black text-sm', isAdlam && 'font-adlam')}
+                      style={{ background: 'var(--gradient-brand)', fontFamily: isAdlam ? undefined : MANROPE }}>
+                      <Sparkles className="w-4 h-4" /> {t.noProjectsTitle} →
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -1453,6 +1625,246 @@ export default function App() {
                 </div>
               );
             })()
+
+          ) : page === 'assets' ? (
+            /* ══ LANGUAGES PAGE ══ */
+            <div className="flex-1 overflow-y-auto relative z-10 p-8 md:p-10 space-y-10">
+
+              {/* header */}
+              <div>
+                <h1 className={cn('text-4xl font-black text-white tracking-tighter mb-2', isAdlam && 'font-adlam')}
+                  style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.languageAssetsLabel}</h1>
+                <p className={cn('text-zinc-500', isAdlam && 'font-adlam')} style={{ fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+                  Supported languages in Gando AI — switch your active language below.
+                </p>
+              </div>
+
+              {/* ── ACTIVE LANGUAGES ── */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4" style={{ fontFamily: MANROPE }}>AVAILABLE NOW</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {LANGS.map(lang => {
+                    const active = selectedLang.code === lang.code;
+                    const meta: Record<string, { script: string; region: string; speakers: string; sample: string; sampleLabel: string }> = {
+                      'ff-adlm': { script: 'ADLaM Script', region: 'West Africa (Guinea, Senegal, Mali, Nigeria)', speakers: '40M+', sample: '𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢', sampleLabel: '"Build your app"' },
+                      'fr':      { script: 'Latin Script',  region: 'Francophone Africa + Europe',                speakers: '300M+', sample: 'Créez votre app', sampleLabel: '"Build your app"' },
+                      'en':      { script: 'Latin Script',  region: 'Global',                                      speakers: '1.5B+', sample: 'Build your app',  sampleLabel: '"Build your app"' },
+                    };
+                    const m = meta[lang.code];
+                    return (
+                      <div key={lang.code}
+                        className="relative rounded-2xl border transition-all overflow-hidden"
+                        style={{ background: active ? `${P}0c` : '#131313', border: `1px solid ${active ? `${P}40` : 'rgba(255,255,255,0.08)'}`, boxShadow: active ? `var(--glow-primary-sm)` : 'none' }}>
+                        {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />}
+                        <div className="p-5">
+                          {/* language name + active badge */}
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <p className={cn('font-black text-white text-sm mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
+                                style={{ fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{lang.name}</p>
+                              <p style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.script}</p>
+                            </div>
+                            {active && (
+                              <span style={{ padding: '2px 10px', borderRadius: 9999, background: `${P}20`, color: P, fontSize: 10, fontWeight: 800, fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Active</span>
+                            )}
+                          </div>
+
+                          {/* sample text */}
+                          <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <p className={cn('text-white font-bold mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
+                              style={{ fontSize: lang.code === 'ff-adlm' ? 15 : 14, fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{m.sample}</p>
+                            <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>{m.sampleLabel}</p>
+                          </div>
+
+                          {/* stats row */}
+                          <div className="flex gap-4 mb-4">
+                            <div>
+                              <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Speakers</p>
+                              <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e5e5', fontFamily: MANROPE }}>{m.speakers}</p>
+                            </div>
+                            <div>
+                              <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Region</p>
+                              <p style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}>{m.region}</p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setSelectedLang(lang)}
+                            disabled={active}
+                            className="w-full py-2.5 rounded-xl font-black text-sm transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:scale-100 disabled:cursor-default"
+                            style={{ background: active ? 'rgba(255,255,255,0.06)' : 'var(--gradient-brand)', color: active ? '#fff' : '#000', fontFamily: MANROPE, boxShadow: active ? 'none' : 'var(--glow-primary-sm)' }}>
+                            {active ? 'Currently Active' : `Switch to ${lang.code === 'ff-adlm' ? 'ADLaM' : lang.name}`}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── COMING SOON ── */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4" style={{ fontFamily: MANROPE }}>COMING SOON</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  {[
+                    { name: 'Wolof',    region: 'Senegal',    flag: '🇸🇳' },
+                    { name: 'Yoruba',   region: 'Nigeria',    flag: '🇳🇬' },
+                    { name: 'Hausa',    region: 'West Africa', flag: '🌍' },
+                    { name: 'Bambara',  region: 'Mali',        flag: '🇲🇱' },
+                    { name: 'Swahili',  region: 'East Africa', flag: '🌍' },
+                    { name: 'Igbo',     region: 'Nigeria',     flag: '🇳🇬' },
+                  ].map(({ name, region, flag }) => (
+                    <div key={name} className="rounded-xl p-4 text-center border border-white/5 opacity-50"
+                      style={{ background: '#131313' }}>
+                      <p style={{ fontSize: 22, marginBottom: 6 }}>{flag}</p>
+                      <p style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: '#e5e5e5', marginBottom: 2 }}>{name}</p>
+                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#52525b' }}>{region}</p>
+                      <span style={{ marginTop: 8, display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 9, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Soon</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── ADLAM SCRIPT REFERENCE ── */}
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4" style={{ fontFamily: MANROPE }}>ADLAM SCRIPT REFERENCE</p>
+                <div className="rounded-2xl border border-white/8 overflow-hidden relative" style={{ background: '#131313' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
+                  <div className="p-6 space-y-6">
+
+                    {/* header */}
+                    <div className="flex items-start gap-4">
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: `${P}18`, border: `1px solid ${P}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span className="font-adlam text-2xl" style={{ color: P }}>𞤀</span>
+                      </div>
+                      <div>
+                        <h3 className="font-black text-white mb-1" style={{ fontFamily: MANROPE }}>ADLaM Alphabet — Complete Reference</h3>
+                        <p style={{ fontSize: 13, color: '#767575', fontFamily: 'Inter, sans-serif' }}>
+                          Unicode U+1E900–U+1E95F · RTL script by Ibrahima & Abdoulaye Barry · 28 core letters + 6 loan · 40M+ Fulani speakers
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* column legend */}
+                    <div className="grid grid-cols-5 gap-1 px-1" style={{ fontSize: 9, fontWeight: 700, color: '#3f3f46', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      <span>Capital</span><span>Small</span><span>Latin</span><span>Name</span><span>IPA</span>
+                    </div>
+
+                    {/* VOWELS */}
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                        VOWELS <span style={{ color: '#3f3f46', fontWeight: 500 }}>(5)</span>
+                      </p>
+                      <div className="space-y-1.5">
+                        {[
+                          { cap: '𞤀', sml: '𞤢', latin: 'a',  name: 'Alif',  ipa: '/a/'  },
+                          { cap: '𞤉', sml: '𞤫', latin: 'e',  name: 'E',     ipa: '/e/'  },
+                          { cap: '𞤋', sml: '𞤭', latin: 'i',  name: 'I',     ipa: '/i/'  },
+                          { cap: '𞤌', sml: '𞤮', latin: 'o',  name: 'O',     ipa: '/ɔ/'  },
+                          { cap: '𞤓', sml: '𞤵', latin: 'u',  name: 'U',     ipa: '/u/'  },
+                        ].map(({ cap, sml, latin, name, ipa }) => (
+                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl hover:bg-white/4 transition-all" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
+                            <span className="font-adlam text-lg" style={{ color: '#adaaaa', lineHeight: 1 }}>{sml}</span>
+                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: '#e5e5e5' }}>{latin}</span>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#767575' }}>{name}</span>
+                            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* CONSONANTS */}
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                        CORE CONSONANTS <span style={{ color: '#3f3f46', fontWeight: 500 }}>(23)</span>
+                      </p>
+                      <div className="space-y-1.5">
+                        {[
+                          { cap: '𞤁', sml: '𞤣', latin: 'd',      name: 'Daali',      ipa: '/d/'   },
+                          { cap: '𞤂', sml: '𞤤', latin: 'l',      name: 'Laam',       ipa: '/l/'   },
+                          { cap: '𞤃', sml: '𞤥', latin: 'm',      name: 'Miim',       ipa: '/m/'   },
+                          { cap: '𞤄', sml: '𞤦', latin: 'b',      name: 'Baa',        ipa: '/b/'   },
+                          { cap: '𞤅', sml: '𞤧', latin: 's',      name: 'Sinnyiiyhe', ipa: '/s/'   },
+                          { cap: '𞤆', sml: '𞤨', latin: 'p',      name: 'Puu',        ipa: '/p/'   },
+                          { cap: '𞤇', sml: '𞤩', latin: 'ɓ / bh', name: 'Bhee',       ipa: '/ɓ/'   },
+                          { cap: '𞤈', sml: '𞤪', latin: 'r',      name: 'Raa',        ipa: '/r/ɾ/' },
+                          { cap: '𞤊', sml: '𞤬', latin: 'f',      name: 'Faa',        ipa: '/f/'   },
+                          { cap: '𞤍', sml: '𞤯', latin: 'ɗ / dh', name: 'Dha',        ipa: '/ɗ/'   },
+                          { cap: '𞤎', sml: '𞤰', latin: 'ƴ / yh', name: 'Yhe',        ipa: '/ʔʲ/'  },
+                          { cap: '𞤏', sml: '𞤱', latin: 'w',      name: 'Waw',        ipa: '/w/'   },
+                          { cap: '𞤐', sml: '𞤲', latin: 'n',      name: 'Nun',        ipa: '/n/'   },
+                          { cap: '𞤑', sml: '𞤳', latin: 'k',      name: 'Kaf',        ipa: '/k/'   },
+                          { cap: '𞤒', sml: '𞤴', latin: 'y',      name: 'Yaa',        ipa: '/j/'   },
+                          { cap: '𞤔', sml: '𞤶', latin: 'j',      name: 'Jiim',       ipa: '/dʒ/'  },
+                          { cap: '𞤕', sml: '𞤷', latin: 'c',      name: 'Chi',        ipa: '/tʃ/'  },
+                          { cap: '𞤖', sml: '𞤸', latin: 'h',      name: 'Haa',        ipa: '/h/'   },
+                          { cap: '𞤗', sml: '𞤹', latin: 'ɠ / q',  name: 'Qaaf',       ipa: '/q/'   },
+                          { cap: '𞤘', sml: '𞤺', latin: 'g',      name: 'Gaa',        ipa: '/ɡ/'   },
+                          { cap: '𞤙', sml: '𞤻', latin: 'ñ / ny', name: 'Nya',        ipa: '/ɲ/'   },
+                          { cap: '𞤚', sml: '𞤼', latin: 't',      name: 'Tuu',        ipa: '/t/'   },
+                          { cap: '𞤛', sml: '𞤽', latin: 'ŋ / nh', name: 'Nha',        ipa: '/ŋ/'   },
+                        ].map(({ cap, sml, latin, name, ipa }) => (
+                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl hover:bg-white/4 transition-all" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
+                            <span className="font-adlam text-lg" style={{ color: '#adaaaa', lineHeight: 1 }}>{sml}</span>
+                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: '#e5e5e5' }}>{latin}</span>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#767575' }}>{name}</span>
+                            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* SUPPLEMENTAL / LOAN */}
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>
+                        SUPPLEMENTAL — LOAN CONSONANTS <span style={{ color: '#3f3f46', fontWeight: 500 }}>(6 · for loanwords)</span>
+                      </p>
+                      <div className="space-y-1.5 opacity-60">
+                        {[
+                          { cap: '𞤜', sml: '𞤾', latin: 'v',  name: 'Vaa',  ipa: '/v/'   },
+                          { cap: '𞤝', sml: '𞤿', latin: 'x',  name: 'Kha',  ipa: '/x/'   },
+                          { cap: '𞤞', sml: '𞥀', latin: 'ɡb', name: 'Gbe',  ipa: '/ɡ͡b/' },
+                          { cap: '𞤟', sml: '𞥁', latin: 'z',  name: 'Zal',  ipa: '/z/'   },
+                          { cap: '𞤠', sml: '𞥂', latin: 'kp', name: 'Kpo',  ipa: '/k͡p/' },
+                          { cap: '𞤡', sml: '𞥃', latin: 'sh', name: 'Sha',  ipa: '/ʃ/'   },
+                        ].map(({ cap, sml, latin, name, ipa }) => (
+                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                            <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
+                            <span className="font-adlam text-lg" style={{ color: '#adaaaa', lineHeight: 1 }}>{sml}</span>
+                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: '#e5e5e5' }}>{latin}</span>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#767575' }}>{name}</span>
+                            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* sample words */}
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>SAMPLE WORDS</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                          { adlam: '𞤘𞤢𞤲𞤣𞤮',   latin: 'Gando',   meaning: 'Bridge / Connection' },
+                          { adlam: '𞤆𞤵𞤤𞤢𞥄𞤪',   latin: 'Pulaar',  meaning: 'Fula language' },
+                          { adlam: '𞤀𞤬𞤪𞤭𞤳𞤢',   latin: 'Afirika', meaning: 'Africa' },
+                          { adlam: '𞤃𞤢𞤸𞤵',     latin: 'Mahu',    meaning: 'Build / Create' },
+                        ].map(({ adlam, latin, meaning }) => (
+                          <div key={latin} className="p-3 rounded-xl border border-white/6" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                            <p className="font-adlam text-white font-bold mb-0.5" style={{ fontSize: 20 }}>{adlam}</p>
+                            <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 12, color: '#adaaaa', marginBottom: 2 }}>{latin}</p>
+                            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#52525b' }}>{meaning}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+            </div>
 
           ) : page === 'docs' ? (
             /* ══ DOCUMENTATION PAGE ══ */
@@ -1679,187 +2091,172 @@ export default function App() {
             </div>
 
           ) : (
-            /* ══ DASHBOARD ══ */
-            <div className="flex-1 overflow-y-auto relative z-10 p-8 md:p-10 space-y-8">
+            /* ══ DASHBOARD (Bolt-style) ══ */
+            <div className="flex-1 overflow-y-auto relative z-10">
 
-              {/* ── HERO/WELCOME CARD ── */}
-              <div style={{ background: 'linear-gradient(135deg, rgba(255,139,155,0.08), rgba(253,139,0,0.04))', border: '1px solid rgba(255,139,155,0.2)', borderRadius: 22, padding: '28px 32px', position: 'relative', overflow: 'hidden' }}>
-                <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: '#ff8b9b', textTransform: 'uppercase', marginBottom: 16, fontFamily: MANROPE }}>OVERVIEW</p>
-                <h1 className={cn('text-4xl md:text-5xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')}
-                  style={{ fontFamily: isAdlam ? undefined : MANROPE, marginBottom: 4 }}>
-                  {t.gandoViewTitle}
-                </h1>
-                <p className={cn('text-zinc-500 font-medium', isAdlam && 'font-adlam')} style={{ marginBottom: 20 }}>{t.gandoViewSubtitle}</p>
-                {/* inline prompt */}
-                <div style={{ borderRadius: 20, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px' }}>
-                  <textarea
-                    ref={heroTextareaRef}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onInput={handleHeroInput}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder={t.inputPlaceholder}
-                    className={cn('gando-input', isAdlam && 'font-adlam')}
-                    style={{
-                      width: '100%', minHeight: 80, maxHeight: 200,
-                      background: 'transparent', border: 'none', outline: 'none', resize: 'none',
-                      color: '#fff', fontSize: 15, lineHeight: 1.6,
-                      fontFamily: isAdlam ? undefined : 'var(--font-sans)',
-                      overflowY: 'hidden', display: 'block', boxSizing: 'border-box',
-                    }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
-                    <button onClick={handleSend} disabled={isGenerating || !input.trim()}
-                      className={cn('flex items-center gap-2 px-5 py-2 rounded-xl font-black text-black transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:scale-100 text-sm flex-shrink-0', isAdlam && 'font-adlam')}
-                      style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
-                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      {isGenerating ? (generationStatus || t.generating) : t.generateLabel}
-                    </button>
+              {/* radial glow background */}
+              <div className="pointer-events-none fixed inset-0 z-0" style={{ background: `radial-gradient(ellipse 80% 50% at 50% 25%, ${P}14 0%, transparent 70%)` }} />
+              <div className="pointer-events-none fixed inset-0 z-0" style={{ background: `radial-gradient(ellipse 50% 40% at 70% 60%, ${S}09 0%, transparent 65%)` }} />
+
+              {/* ── HERO SECTION ── */}
+              <div className="flex flex-col items-center px-6 pt-16 pb-10 relative z-10">
+                <div style={{ maxWidth: 760, width: '100%' }}>
+
+                  {/* eyebrow */}
+                  <p className={cn('text-center text-[11px] font-black uppercase tracking-widest mb-4', isAdlam && 'font-adlam')}
+                    style={{ color: P, fontFamily: isAdlam ? undefined : MANROPE }}>GANDO AI</p>
+
+                  {/* headline */}
+                  <h1 className={cn('text-center font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
+                    style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(30px, 5vw, 58px)', lineHeight: 1.05 }}>
+                    {t.gandoViewTitle}
+                  </h1>
+                  <p className={cn('text-center text-zinc-500 mb-8', isAdlam && 'font-adlam')} style={{ fontSize: 15 }}>
+                    {t.gandoViewSubtitle}
+                  </p>
+
+                  {/* import mode tabs */}
+                  <div className="flex items-center gap-1 mb-3">
+                    {([
+                      { mode: 'describe' as const, Icon: Sparkles, label: 'Prompt' },
+                      { mode: 'github'   as const, Icon: Github,   label: 'GitHub' },
+                      { mode: 'figma'    as const, Icon: Figma,    label: 'Figma'  },
+                    ]).map(({ mode, Icon, label }) => (
+                      <button key={mode} onClick={() => { setImportMode(mode); setInput(''); }}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all"
+                        style={{
+                          fontFamily: MANROPE,
+                          color: importMode === mode ? '#fff' : '#71717a',
+                          background: importMode === mode ? 'rgba(255,255,255,0.08)' : 'transparent',
+                          border: importMode === mode ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                        }}>
+                        <Icon className="w-3 h-3" />{label}
+                      </button>
+                    ))}
                   </div>
-                </div>
-              </div>
 
-              {/* ── STAT CARDS ROW ── */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {/* Projects — gradient variant */}
-                <div style={{ padding: 20, borderRadius: 18, background: 'linear-gradient(135deg, rgba(255,139,155,0.12), rgba(253,139,0,0.06))', border: '1px solid rgba(255,139,155,0.25)' }}>
-                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: P, fontFamily: MANROPE, marginBottom: 8 }}>{t.projectsLabel}</p>
-                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1, marginBottom: 8 }}>{projects.length}</p>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 9999, background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontSize: 11, fontWeight: 700 }}>+{projects.length} total</span>
-                </div>
-                {/* Apps Built */}
-                <div style={{ padding: 20, borderRadius: 18, background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: S, fontFamily: MANROPE, marginBottom: 8 }}>{t.appsBuiltLabel}</p>
-                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1 }}>{projects.length}</p>
-                </div>
-                {/* Prompts */}
-                <div style={{ padding: 20, borderRadius: 18, background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: T, fontFamily: MANROPE, marginBottom: 8 }}>{t.totalPromptsLabel}</p>
-                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1 }}>{userMessages}</p>
-                </div>
-                {/* Performance */}
-                <div style={{ padding: 20, borderRadius: 18, background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <p className={cn('text-[10px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ color: '#4ade80', fontFamily: MANROPE, marginBottom: 8 }}>{t.appPerformanceLabel}</p>
-                  <p style={{ fontSize: 36, fontWeight: 900, letterSpacing: '-0.03em', color: '#fff', fontFamily: MANROPE, lineHeight: 1, marginBottom: 8 }}>{perfPct}%</p>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 9999, background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontSize: 11, fontWeight: 700 }}>{t.excellentLabel}</span>
-                </div>
-              </div>
-
-              {/* ── ANALYTICS GRID (donut + gauges) ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <div className="lg:col-span-7 rounded-2xl p-6 flex items-center justify-between gap-4 relative overflow-hidden shadow-2xl"
-                  style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                  <div className="adinkra-mask absolute inset-0 opacity-[0.025]" />
-                  <div className="relative z-10 flex-1">
-                    <h2 className={cn('text-2xl font-black text-white tracking-tight mb-1', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                      {t.projectCompletionLabel}
-                    </h2>
-                    <p className={cn('text-zinc-500 text-sm max-w-xs mb-6', isAdlam && 'font-adlam')}>{t.completionSubtitle}</p>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: P, boxShadow: `0 0 8px ${P}` }} />
-                        <span className={cn('text-xs font-black text-white uppercase tracking-wider', isAdlam && 'font-adlam')}>
-                          {t.appsGeneratedLabel}: {projects.length}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: S, boxShadow: `0 0 8px ${S}` }} />
-                        <span className={cn('text-xs font-black text-white uppercase tracking-wider', isAdlam && 'font-adlam')}>
-                          {t.totalPromptsLabel}: {userMessages}
-                        </span>
-                      </div>
+                  {/* big textarea card */}
+                  <div style={{ borderRadius: 20, background: '#1a1a1a', border: `1px solid ${inputShake ? 'rgba(255,139,155,0.6)' : 'rgba(255,255,255,0.1)'}`, boxShadow: '0 24px 80px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)', padding: '18px 18px 14px', transition: 'border-color 0.2s' }}
+                    className={inputShake ? 'animate-shake' : ''}>
+                    <textarea
+                      ref={heroTextareaRef}
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      onInput={handleHeroInput}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                      placeholder={
+                        importMode === 'github' ? 'Paste a GitHub repository URL to clone…' :
+                        importMode === 'figma'  ? 'Paste a Figma design link to build from…' :
+                        !input ? (twText + (twCursor ? '|' : ' ')) : t.inputPlaceholder
+                      }
+                      className={cn('gando-input', isAdlam && 'font-adlam')}
+                      style={{ width: '100%', minHeight: 110, maxHeight: 260, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: '#fff', fontSize: 16, lineHeight: 1.6, fontFamily: isAdlam ? undefined : 'var(--font-sans)', overflowY: 'hidden', display: 'block', boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      {importMode === 'describe'
+                        ? <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
+                        : <span style={{ fontSize: 11, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>
+                            {importMode === 'github' ? 'github.com/user/repo' : 'figma.com/design/…'}
+                          </span>
+                      }
+                      <button onClick={handleSend} disabled={isGenerating || !input.trim()}
+                        className={cn('flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:scale-100', isAdlam && 'font-adlam')}
+                        style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontSize: 14, flexShrink: 0 }}
+                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
+                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : importMode === 'github' ? <Github className="w-4 h-4" /> : importMode === 'figma' ? <Figma className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                        {isGenerating ? (generationStatus || t.generating) : importMode === 'github' ? 'Clone' : importMode === 'figma' ? 'Build from Figma' : t.generateLabel}
+                      </button>
                     </div>
                   </div>
-                  <DonutChart pct={completionPct || 3} label={t.totalFlowLabel} />
-                </div>
-                <div className="lg:col-span-5 flex flex-col gap-4">
-                  <div className="flex-1 rounded-2xl p-6 shadow-xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className={cn('font-black text-white text-sm', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.tokenUsageLabel}</h3>
-                      <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: `${P}15`, color: P }}>
-                        {messages.length * 200} / 50k
-                      </span>
-                    </div>
-                    <Gauge pct={tokenPct} from={P} to={S} shadow={`0 0 12px ${P}80`} />
-                    <p className={cn('text-xs text-zinc-600 mt-3 leading-relaxed', isAdlam && 'font-adlam')}>
-                      {t.tokenResetHint} <span style={{ color: S, fontWeight: 700 }}>{t.healthyLabel}.</span>
-                    </p>
-                  </div>
-                  <div className="flex-1 rounded-2xl p-6 shadow-xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className={cn('font-black text-white text-sm', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.appPerformanceLabel}</h3>
-                      <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: `${T}15`, color: T }}>{t.excellentLabel}</span>
-                    </div>
-                    <Gauge pct={perfPct} from={T} to={P} shadow={`0 0 12px ${T}80`} />
-                    <div className="flex justify-between mt-3">
-                      {([['~20ms', t.latencyLabel], ['99.9%', t.uptimeLabel], ['Vite', t.runtimeLabel]] as [string, string][]).map(([v, l]) => (
-                        <div key={l} className="text-center">
-                          <p className="text-lg font-black text-white" style={{ fontFamily: MANROPE }}>{v}</p>
-                          <p className={cn('text-[9px] font-black text-zinc-600 uppercase tracking-widest', isAdlam && 'font-adlam')}>{l}</p>
-                        </div>
+
+                  {/* suggestion chips — prompt mode only */}
+                  {importMode === 'describe' && (
+                    <div className="flex flex-wrap gap-2.5 justify-center mt-6">
+                      {['E-commerce store', 'Portfolio site', 'Restaurant menu', 'Event landing page'].map(ex => (
+                        <button key={ex} onClick={() => { setInput(ex); heroTextareaRef.current?.focus(); }}
+                          className="px-4 py-2 rounded-full text-sm font-bold text-zinc-400 hover:text-white transition-all hover:border-white/20"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          {ex}
+                        </button>
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* ── RECENT PROJECTS (list rows) ── */}
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className={cn('text-xl font-black text-white flex items-center gap-3', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                    {t.activeSiteBuildsLabel}
-                    <span className="w-8 h-1 rounded-full" style={{ background: `linear-gradient(to right,${P},transparent)` }} />
-                  </h2>
-                  {projects.length > 3 && (
-                    <button onClick={() => setPage('projects')}
-                      className={cn('text-xs font-black uppercase tracking-widest hover:opacity-80 transition-opacity', isAdlam && 'font-adlam')} style={{ color: P }}>
-                      {t.viewAllLabel}
-                    </button>
-                  )}
-                </div>
-
-                {projects.length === 0 ? (
-                  <div className="rounded-2xl p-12 text-center border border-dashed border-white/10" style={{ background: 'rgba(255,255,255,0.01)' }}>
-                    <Sparkles className="w-8 h-8 mx-auto mb-4" style={{ color: P }} />
-                    <p className={cn('text-white font-black text-lg mb-2', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.noProjectsTitle}</p>
-                    <p className={cn('text-zinc-600 text-sm', isAdlam && 'font-adlam')}>{t.noProjectsSubtitle}</p>
+              {/* ── RECENT PROJECTS ── */}
+              {projects.length > 0 && (
+                <div className="relative z-10 px-6 pb-10" style={{ maxWidth: 960, width: '100%', margin: '0 auto' }}>
+                  <div className="flex justify-between items-center mb-5">
+                    <h2 className={cn('text-xl font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.activeSiteBuildsLabel}</h2>
+                    <button onClick={() => setPage('projects')} className={cn('text-xs font-black uppercase tracking-widest hover:opacity-80 transition-opacity', isAdlam && 'font-adlam')} style={{ color: P }}>{t.viewAllLabel} →</button>
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {projects.slice(0, 6).map(p => (
-                      <motion.div key={p.id} className="group flex items-center gap-3 cursor-pointer transition-all"
-                        style={{ padding: '14px 16px', borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)', background: 'transparent' }}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {projects.slice(0, 3).map(p => (
+                      <motion.div key={p.id} whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         onClick={() => openProject(p)}
-                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}>
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <Sparkles className="w-4 h-4" style={{ color: P }} />
+                        className="group cursor-pointer rounded-2xl overflow-hidden border border-white/8 hover:border-white/15 transition-all"
+                        style={{ background: '#131313' }}>
+                        <div style={{ height: 2, background: 'var(--gradient-horizontal)' }} />
+                        <div className="p-5">
+                          <div className="flex items-start justify-between mb-3">
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: `${P}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Sparkles className="w-4 h-4" style={{ color: P }} />
+                            </div>
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: `${T}15`, color: T, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{p.language}</span>
+                          </div>
+                          <p className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{p.name}</p>
+                          <p className={cn('text-zinc-500 text-xs line-clamp-2', isAdlam && 'font-adlam')}>{p.description}</p>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={cn('font-black text-white text-sm truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{p.name}</p>
-                          <p className={cn('text-zinc-500 text-xs truncate', isAdlam && 'font-adlam')}>{p.description}</p>
-                        </div>
-                        <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full flex-shrink-0" style={{ background: `${T}15`, color: T }}>{p.language}</span>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80' }} />
-                          <span className="text-xs font-bold text-zinc-400">Active</span>
-                        </div>
-                        <button onClick={e => { e.stopPropagation(); deleteProject(p.id); }}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all flex-shrink-0">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                        <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors flex-shrink-0" />
                       </motion.div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* ── TEMPLATE GRID ── */}
+              {(() => {
+                const tl = TEMPLATE_I18N[selectedLang.code] || TEMPLATE_I18N.en;
+                return (
+                  <div className="relative z-10 px-6 pb-24" style={{ maxWidth: 960, width: '100%', margin: '0 auto' }}>
+                    <div className="flex justify-between items-center mb-5">
+                      <h2 className={cn('text-xl font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{tl.pageTitle}</h2>
+                      <button onClick={() => { setPage('templates'); setCurrentProject(null); }} className={cn('text-xs font-black uppercase tracking-widest hover:opacity-80 transition-opacity', isAdlam && 'font-adlam')} style={{ color: P }}>{tl.viewAll} →</button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {TEMPLATES_META.slice(0, 4).map(tmpl => {
+                        const tr = tl.templates[tmpl.id] || TEMPLATE_I18N.en.templates[tmpl.id];
+                        return (
+                          <motion.div key={tmpl.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            onClick={() => { setPage('templates'); setSelectedTemplate(tmpl); }}
+                            className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
+                            style={{ background: '#131313' }}>
+                            <div style={{ height: 140, background: tmpl.color, position: 'relative', overflow: 'hidden' }}>
+                              {tmpl.previewUrl ? (
+                                <iframe src={tmpl.previewUrl} title={tr.name} className="border-none pointer-events-none"
+                                  style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Layers className="w-8 h-8 opacity-20" style={{ color: '#fff' }} />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '6px 14px', borderRadius: 6, fontSize: 11, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Preview →</span>
+                              </div>
+                            </div>
+                            <div className="p-3">
+                              <p className={cn('font-black text-white text-xs mb-0.5 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{tr.name}</p>
+                              <p className="text-zinc-500 text-[10px] line-clamp-1" style={{ fontFamily: 'Inter, sans-serif' }}>{tr.description}</p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
             </div>
           )}
         </main>

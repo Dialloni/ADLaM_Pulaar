@@ -28,3 +28,10 @@ npm-debug.log*
 
 # vite cache
 .vite/
+
+# Firebase config — contains API keys, never commit
+firebase-applet-config.json
+
+# Firebase Admin service account — server secret, never commit
+service-account.json
+firebase-service-account.json

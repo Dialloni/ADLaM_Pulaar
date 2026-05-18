@@ -1,13 +1,31 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // TEMPORARY: Allow all authenticated users to read/write everything
-    // This is for troubleshooting the "Missing or insufficient permissions" error.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    // ── Users ────────────────────────────────────────────────────────────────
+    // Users can only read/write their own profile document.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Health check
+
+    // ── Projects ─────────────────────────────────────────────────────────────
+    // Users can only access projects they own.
+    match /projects/{projectId} {
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+
+      // ── Messages (subcollection) ──────────────────────────────────────────
+      // Only the project owner can read/write messages on their project.
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.userId;
+      }
+    }
+
+    // ── Health check (unauthenticated ping) ──────────────────────────────────
     match /test/connection {
       allow read: if true;
     }

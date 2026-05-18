@@ -1,13 +1,19 @@
 import { GenerationResult, Message } from '../types';
+import { auth } from '../firebase';
 
 export interface GenerationResponse extends GenerationResult {
   language: string;
 }
 
+async function authHeaders(): Promise<Record<string, string>> {
+  const token = await auth.currentUser?.getIdToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   });
   if (!res.ok) {

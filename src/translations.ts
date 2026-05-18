@@ -83,6 +83,7 @@ export interface UIStrings {
   chatPlaceholder: string;
   aiDisclaimer: string;
   inputPlaceholder: string;
+  twPhrases: string[];
   generating: string;
   copy: string;
   copied: string;
@@ -226,6 +227,12 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     chatPlaceholder: "𞤖𞤢𞥄𞤤𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 {language}...",
     aiDisclaimer: "𞤘𞤢𞤲𞤣𞤮 𞤲𞤮 𞤥𞤢𞤱𞤲𞤭 𞤱𞤮𞤶𞥆𞤫. 𞤐𞤣𞤢𞥄𞤪 𞤳𞤮 𞤸𞤢𞥄𞤲𞤭.",
     inputPlaceholder: "𞤖𞤢𞥄𞤤𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 𞤆𞤵𞤤𞤢𞥄𞤪...",
+    twPhrases: [
+      "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 𞤆𞤵𞤤𞤢𞥄𞤪 𞤫 𞤀𞤁𞤂𞤀𞤃…",
+      "𞤃𞤢𞤸𞤵 𞤤𞤢 𞤥𞤼𞤢𞤲𞤣𞤢𞤱𞤭 𞤲𞤺𞤢𞤥 𞤀𞤬𞤪𞤭𞤳𞤢…",
+      "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤶𞤢𞤲𞤺𞤵𞤺𞤮 𞤯𞤫𞤲𞤯𞤢𞤤 𞤥𞤢𞥄𞤯𞤢…",
+      "𞤃𞤢𞤸𞤵 𞤨𞤤𞤢𞤼𞤬𞤮𞤪𞤥 𞤲𞤺𞤢𞤥 𞤀𞤬𞤪𞤭𞤳𞤢…",
+    ],
     generating: "𞤘𞤢𞤲𞤣𞤮 𞤲𞤮 𞤥𞤢𞤸𞤢...",
     copy: "𞤐𞤢𞤼𞤵",
     copied: "𞤐𞤢𞤼𞤢𞥄𞤥𞤢",
@@ -359,6 +366,13 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     chatPlaceholder: "Décrivez votre application en {language}...",
     aiDisclaimer: "Gando AI peut faire des erreurs. Vérifiez les informations importantes.",
     inputPlaceholder: "Décrivez votre application en Français...",
+    twPhrases: [
+      "Créez une marketplace avec support ADLaM et français…",
+      "Construisez un site e-commerce pour artisans d'Afrique…",
+      "Créez un portail d'actualités en script Pular…",
+      "Concevez une app de streaming pour Bamako Sound…",
+      "Lancez une plateforme d'apprentissage pour l'Afrique…",
+    ],
     generating: "Gando construit...",
     copy: "Copier",
     copied: "Copié",
@@ -489,6 +503,13 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     chatPlaceholder: "Describe your app in {language}...",
     aiDisclaimer: "Gando AI can make mistakes. Check important info.",
     inputPlaceholder: "Describe your app in English...",
+    twPhrases: [
+      "Build a marketplace with ADLaM & French support…",
+      "Create an e-commerce site for West African artisans…",
+      "Build a news portal in Pular script…",
+      "Design a music streaming app for Bamako Sound…",
+      "Launch a learning platform for African students…",
+    ],
     generating: "Gando is building...",
     copy: "Copy",
     copied: "Copied",

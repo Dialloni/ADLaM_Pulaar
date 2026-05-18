@@ -1,8 +1,9 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
+import { verifyIdToken } from './lib/firebaseAdmin';
 
 dotenv.config();
 
@@ -137,6 +138,17 @@ function sendGeminiError(res: Response, err: unknown) {
   });
 }
 
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    await verifyIdToken(token);
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
@@ -180,7 +192,7 @@ async function startServer() {
     });
   });
 
-  app.post('/api/generate', async (req: Request, res: Response) => {
+  app.post('/api/generate', requireAuth, async (req: Request, res: Response) => {
     const { prompt, preferredLanguage } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
@@ -198,7 +210,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/edit', async (req: Request, res: Response) => {
+  app.post('/api/edit', requireAuth, async (req: Request, res: Response) => {
     const { prompt, currentCode, history, preferredLanguage } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
@@ -223,7 +235,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/transcribe', async (req: Request, res: Response) => {
+  app.post('/api/transcribe', requireAuth, async (req: Request, res: Response) => {
     const { audio, mimeType, language } = req.body ?? {};
     if (!audio || !mimeType) {
       return res.status(400).json({ error: 'audio and mimeType required' });
