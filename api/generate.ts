@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI, Type } from '@google/genai';
+import { verifyIdToken } from '../lib/firebaseAdmin';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -82,6 +83,10 @@ async function callGemini(userContent: string) {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const token = (req.headers.authorization ?? '').split('Bearer ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  try { await verifyIdToken(token); } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
 
   const { prompt, preferredLanguage } = req.body ?? {};
   if (!prompt || typeof prompt !== 'string') {
