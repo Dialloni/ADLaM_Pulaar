@@ -1,12 +1,27 @@
 @import "tailwindcss";
 
+/* Tailwind v4 theme — registers font-* utility classes */
+@theme {
+  --font-adlam:         "Noto Sans Adlam", sans-serif;
+  --font-adlam-display: "ADLaM Display", "Noto Sans Adlam", sans-serif;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Gando AI — Design Tokens
    Pink/orange neon on obsidian dark — "Nexus Builder" aesthetic
 ═══════════════════════════════════════════════════════════════ */
 
-/* Fonts — loaded from Google Fonts (Manrope, Inter, JetBrains Mono, Noto Sans Adlam) */
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Adlam:wght@400;500;600;700&display=swap");
+/* Google Fonts loaded via <link> in index.html — not here (avoids PostCSS @import ordering error) */
+
+/* ADLaM Display — Microsoft OFL font, self-hosted */
+@font-face {
+  font-family: "ADLaM Display";
+  src: url("/fonts/ADLaMDisplay-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+1E900-U+1E95F, U+0020-U+007E;
+}
 
 :root {
   /* ── BRAND PALETTE ── Nexus Builder neon */
@@ -99,7 +114,8 @@
   --font-display:  "Manrope", "Noto Sans Adlam", sans-serif;
   --font-headline: "Manrope", "Noto Sans Adlam", sans-serif;
   --font-mono:     "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-adlam:    "Noto Sans Adlam", sans-serif;  /* Fulani ADLaM script fallback */
+  --font-adlam:         "Noto Sans Adlam", sans-serif;        /* body / UI ADLaM text */
+  --font-adlam-display: "ADLaM Display", "Noto Sans Adlam", sans-serif; /* display headings */
 
   /* ── TYPE SCALE ── display-first, bold by default */
   --fs-xs:   10px;   /* uppercase eyebrows, meta, chips */
@@ -226,6 +242,12 @@
 /* ADLaM — Fulani script utility. Kicks in when language is ff-adlm. */
 .ds-adlam {
   font-family: var(--font-adlam);
+}
+
+/* ADLaM Display — Microsoft display typeface for hero headings */
+.ds-adlam-display {
+  font-family: var(--font-adlam-display);
+  font-weight: 400;
 }
 
 /* Gradient text — iconic Gando treatment */

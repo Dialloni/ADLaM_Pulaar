@@ -20,6 +20,7 @@ import { Chat } from './components/Chat';
 import { Preview } from './components/Preview';
 import { CodeEditor } from './components/CodeEditor';
 import { LanguageSelector } from './components/LanguageSelector';
+import { AdminPortal } from './components/AdminPortal';
 import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode } from './translations';
 
@@ -34,7 +35,7 @@ const S = '#fd8b00';
 const T = '#bca2ff';
 const MANROPE = 'Manrope, sans-serif';
 
-type NavPage = 'dashboard' | 'projects' | 'assets' | 'templates' | 'docs' | 'status';
+type NavPage = 'dashboard' | 'projects' | 'assets' | 'templates' | 'docs' | 'status' | 'admin';
 
 const TEMPLATE_I18N: Record<string, { pageTitle: string; pageSubtitle: string; viewAll: string; preview: string; useTemplate: string; credit: string; templates: Record<string, { name: string; description: string; starterPrompt: string }> }> = {
   en: {
@@ -717,7 +718,7 @@ export default function App() {
           <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase', marginBottom: 20 }}>
             {t.loginEyebrow}
           </p>
-          <h1 className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(40px,7vw,82px)', lineHeight: 1.0, letterSpacing: isAdlam ? 0 : '-0.03em', color: '#fff', marginBottom: 22 }}>
+          <h1 className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(40px,7vw,82px)', lineHeight: 1.0, letterSpacing: isAdlam ? 0 : '-0.03em', color: '#fff', marginBottom: 22 }}>
             {t.loginLine1}<br />
             {t.loginLine2}<br />
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
@@ -1232,6 +1233,7 @@ export default function App() {
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
               { icon: BookOpen,       label: t.documentationLabel,   pg: 'docs'      as NavPage },
               { icon: Activity,       label: t.systemStatusLabel,    pg: 'status'    as NavPage },
+              ...(user?.email === 'abd9735@nyu.edu' ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
             ]).map(({ icon: Icon, label, pg }) => {
               const active = page === pg && !currentProject;
               return (
@@ -2089,6 +2091,10 @@ export default function App() {
                 </p>
               )}
             </div>
+
+          ) : page === 'admin' && user?.email === 'abd9735@nyu.edu' ? (
+            /* ══ ADMIN PORTAL ══ */
+            <AdminPortal user={user} />
 
           ) : (
             /* ══ DASHBOARD (Bolt-style) ══ */

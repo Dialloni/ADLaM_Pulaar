@@ -153,7 +153,7 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json({ limit: '25mb' }));
+  app.use(express.json({ limit: '50mb' }));
 
   const startTime = Date.now();
 
@@ -232,6 +232,73 @@ async function startServer() {
     } catch (err) {
       console.error('edit error:', err);
       sendGeminiError(res, err);
+    }
+  });
+
+  app.post('/api/decode', requireAuth, async (req: Request, res: Response) => {
+    const { text } = req.body ?? {};
+    if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text required' });
+    if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: `You are a Unicode expert for the ADLaM script (Fulani/Pulaar language).
+
+The following text was typed or exported from a document using a pre-Unicode ADLaM font. In these fonts, ADLaM glyphs were mapped to Arabic Unicode codepoints (U+0600–U+06FF) or Arabic Presentation Forms (U+FB50–U+FEFF) instead of the official ADLaM Unicode block (U+1E900–U+1E95F).
+
+Your task: re-encode this text so every character uses the correct ADLaM Unicode block (U+1E900–U+1E95F). The language is Fulani/Pulaar.
+
+Rules:
+- Map each Arabic character to its phonetically equivalent ADLaM character
+- Preserve spaces, punctuation, and line breaks exactly
+- Output ONLY the re-encoded ADLaM Unicode text — no explanation, no transliteration, no Latin
+
+Input text:
+${text}`,
+      });
+      const decoded = response.text?.trim() ?? '';
+      res.json({ decoded });
+    } catch (err) {
+      console.error('decode error:', err);
+      sendGeminiError(res, err);
+    }
+  });
+
+  app.post('/api/ocr', requireAuth, async (req: Request, res: Response) => {
+    const { imageBase64, mimeType = 'image/png' } = req.body ?? {};
+    if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
+    if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+
+    const OCR_PROMPT = `Extract ALL text from this document. It may contain ADLaM script (Fulani/Pulaar, Unicode block U+1E900–U+1E95F), French, Arabic, or Latin text.
+
+Output the extracted text exactly as it appears, preserving:
+- ADLaM characters in Unicode (𞤀-𞥋 range) — do NOT convert to Latin
+- Line breaks where they occur in the document
+- Paragraph structure
+
+If the document contains a mix of scripts, include all of it.
+Output ONLY the extracted text, nothing else.`;
+
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+    for (let attempt = 0; attempt <= 3; attempt++) {
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents: { parts: [{ inlineData: { data: imageBase64, mimeType } }, { text: OCR_PROMPT }] },
+        });
+        return res.json({ text: response.text?.trim() || '' });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const is429 = /429|quota|rate|RESOURCE_EXHAUSTED|Too Many/i.test(msg);
+        if (is429 && attempt < 3) {
+          await sleep(2000 * (attempt + 1));
+          continue;
+        }
+        console.error('ocr error:', err);
+        sendGeminiError(res, err);
+        return;
+      }
     }
   });
 
