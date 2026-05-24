@@ -135,6 +135,8 @@ export function AdminPortal({ user }: { user: User }) {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<SubmissionDomain>('casual');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState<string>('');
 
   /* ── UPLOAD STATE ── */
   const [results, setResults] = useState<PdfResult[]>([]);
@@ -197,6 +199,19 @@ export function AdminPortal({ user }: { user: User }) {
       verified_at: serverTimestamp(),
     });
     setApprovingId(null);
+    setActionLoading(null);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editText.trim()) return;
+    setActionLoading(id);
+    await updateDoc(doc(db, 'corpus_submissions', id), {
+      raw_text: editText.trim(),
+      edited_by: user.uid,
+      edited_at: serverTimestamp(),
+    });
+    setEditingId(null);
+    setEditText('');
     setActionLoading(null);
   }
 
@@ -681,15 +696,44 @@ export function AdminPortal({ user }: { user: User }) {
                   </div>
 
                   <div className="px-5 py-4">
-                    <p className="text-sm text-zinc-300 leading-relaxed line-clamp-4 font-adlam" dir="rtl"
-                      style={{ fontSize: 15 }}>
-                      {s.raw_text}
-                    </p>
+                    {editingId === s.id ? (
+                      <textarea
+                        value={editText}
+                        onChange={e => setEditText(e.target.value)}
+                        rows={6}
+                        className="w-full rounded-xl px-3 py-2 text-sm text-zinc-200 leading-relaxed resize-y"
+                        dir="rtl"
+                        style={{
+                          fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif',
+                          fontSize: 15,
+                          background: 'rgba(0,0,0,0.4)',
+                          border: '1px solid rgba(255,139,155,0.3)',
+                          outline: 'none',
+                        }}
+                      />
+                    ) : (
+                      <p className="text-sm text-zinc-300 leading-relaxed line-clamp-4" dir="rtl"
+                        style={{ fontSize: 15, fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif' }}>
+                        {s.raw_text}
+                      </p>
+                    )}
                   </div>
 
                   {s.status === 'pending' && (
-                    <div className="px-5 pb-4 flex items-center gap-3">
-                      {approvingId === s.id ? (
+                    <div className="px-5 pb-4 flex items-center gap-3 flex-wrap">
+                      {editingId === s.id ? (
+                        <>
+                          <button onClick={() => saveEdit(s.id)} disabled={actionLoading === s.id}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                            style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                            Save Edit
+                          </button>
+                          <button onClick={() => { setEditingId(null); setEditText(''); }}
+                            className="text-xs text-zinc-600 hover:text-white transition-colors">
+                            Cancel
+                          </button>
+                        </>
+                      ) : approvingId === s.id ? (
                         <>
                           <select value={selectedDomain} onChange={e => setSelectedDomain(e.target.value as SubmissionDomain)}
                             className="text-xs rounded-lg px-3 py-2 font-bold"
@@ -712,6 +756,11 @@ export function AdminPortal({ user }: { user: User }) {
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
                             style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                          </button>
+                          <button onClick={() => { setEditingId(s.id); setEditText(s.raw_text); }}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                            style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                            ✏️ Edit
                           </button>
                           <button onClick={() => reject(s.id)} disabled={actionLoading === s.id}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
