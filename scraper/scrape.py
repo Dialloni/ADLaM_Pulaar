@@ -41,6 +41,27 @@ GROUPS = [
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 
+# Safe emoji regex — explicitly excludes ADLaM block (U+1E900–U+1E95F)
+EMOJI_RE = re.compile(
+    "["
+    "\U0001F600-\U0001F64F"   # emoticons
+    "\U0001F300-\U0001F5FF"   # symbols & pictographs
+    "\U0001F680-\U0001F6FF"   # transport & map
+    "\U0001F700-\U0001F77F"   # alchemical
+    "\U0001F780-\U0001F7FF"   # geometric extended
+    "\U0001F800-\U0001F8FF"   # supplemental arrows
+    "\U0001F900-\U0001F9FF"   # supplemental symbols
+    "\U0001FA00-\U0001FA6F"   # chess symbols
+    "\U0001FA70-\U0001FAFF"   # symbols extended-a
+    "\U00002702-\U000027B0"   # dingbats
+    "\U000024C2-\U0001E8FF"   # enclosed chars — STOP before ADLaM
+    "\U0001E960-\U0001F251"   # resume AFTER ADLaM block ends at U+1E95F
+    "]+", flags=re.UNICODE
+)
+
+def strip_emoji(text: str) -> str:
+    return EMOJI_RE.sub("", text).strip()
+
 def adlam_ratio(text: str) -> float:
     """Fraction of non-whitespace characters in the ADLaM Unicode block."""
     chars = [c for c in text if not c.isspace()]
@@ -104,14 +125,18 @@ async def scrape_group(client: TelegramClient, group: str) -> None:
                 continue
 
             total += 1
-            ratio = adlam_ratio(msg.text)
+            clean = strip_emoji(msg.text)
+            if not clean:
+                skipped += 1
+                continue
+            ratio = adlam_ratio(clean)
 
             if ratio < ADLAM_MIN_RATIO:
                 skipped += 1
                 continue
 
             record = {
-                "text":       msg.text,
+                "text":       clean,
                 "source":     group,
                 "message_id": msg.id,
                 "date":       msg.date.astimezone(timezone.utc).isoformat(),
