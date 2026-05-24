@@ -28,6 +28,8 @@ except ImportError:
 parser = argparse.ArgumentParser()
 parser.add_argument("--file",  default="output/corpus.jsonl", help="JSONL file to upload")
 parser.add_argument("--batch", type=int, default=400, help="Firestore batch size (max 500)")
+parser.add_argument("--db",         default="(default)",        help="Firestore database ID")
+parser.add_argument("--collection", default="corpus_submissions", help="Firestore collection name")
 args = parser.parse_args()
 
 CORPUS_FILE = Path(args.file)
@@ -43,13 +45,13 @@ if not firebase_admin._apps:
     cred = credentials.Certificate(json.loads(raw))
     firebase_admin.initialize_app(cred)
 
-db = firestore.client()
+db = firestore.client(database_id=args.db)
 
 # ── DEDUP CHECK ───────────────────────────────────────────────────────────────
 
 print("Fetching existing message IDs from Firestore (dedup check)…")
 existing = set()
-for doc in db.collection("corpus_entries").stream():
+for doc in db.collection(args.collection).stream():
     d = doc.to_dict()
     key = f"{d.get('source','')}:{d.get('message_id','')}"
     existing.add(key)
@@ -79,7 +81,7 @@ if not records:
 # ── UPLOAD IN BATCHES ─────────────────────────────────────────────────────────
 
 total    = 0
-col_ref  = db.collection("corpus_entries")
+col_ref  = db.collection(args.collection)
 
 for i in range(0, len(records), BATCH_SIZE):
     chunk = records[i : i + BATCH_SIZE]
@@ -87,18 +89,24 @@ for i in range(0, len(records), BATCH_SIZE):
     for rec in chunk:
         doc_ref = col_ref.document()
         batch.set(doc_ref, {
-            "text":        rec["text"],
-            "source":      rec["source"],
+            "raw_text":    rec["text"],
+            "source":      f"telegram:{rec['source']}",
             "message_id":  rec["message_id"],
             "date":        rec["date"],
             "adlam_ratio": rec["adlam_ratio"],
-            "status":      "pending",          # admin review queue
-            "created_at":  firestore.SERVER_TIMESTAMP,
+            "status":      "pending",
+            "domain":      None,
+            "submitted_at": firestore.SERVER_TIMESTAMP,
+            "source_meta": {
+                "submitted_by":   "scraper",
+                "needs_decoding": False,
+                "message_id":     rec["message_id"],
+            },
         })
     batch.commit()
     total += len(chunk)
     print(f"  Uploaded {total}/{len(records)}…")
     time.sleep(0.5)   # avoid Firestore rate limits
 
-print(f"\n✓ Done — {total} entries uploaded to corpus_entries (status=pending)")
+print(f"\n✓ Done — {total} entries uploaded to {args.collection} (status=pending)")
 print("  Go to Admin Portal → Review Queue to verify them.")
