@@ -679,7 +679,7 @@ export function AdminPortal({ user }: { user: User }) {
                       style={{ background: `${ratioColor(s.adlam_ratio)}20`, color: ratioColor(s.adlam_ratio) }}>
                       𞤀𞤁𞤂 {Math.round(s.adlam_ratio * 100)}%
                     </span>
-                    <span className="text-xs text-zinc-600">{s.word_count} words</span>
+                    <span className="text-xs text-zinc-600">{s.word_count ?? s.raw_text?.trim().split(/\s+/).filter(Boolean).length ?? 0} words</span>
                     {s.domain && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                         style={{ background: `${DOMAIN_COLORS[s.domain]}20`, color: DOMAIN_COLORS[s.domain] }}>
