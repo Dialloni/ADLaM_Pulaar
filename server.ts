@@ -46,7 +46,7 @@ ADLaM (Fulani) rules — CRITICAL:
 - Correct ADLaM characters look like: 𞤆, 𞤢, 𞤯, 𞤫, 𞤲, 𞤺.
 - Include in <head>: <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Adlam&display=swap" rel="stylesheet">
 - Apply font-family: 'Noto Sans Adlam', sans-serif to the body.
-- Text direction is LTR.
+- Text direction is RTL. Set dir="rtl" on the body or ADLaM text containers.
 
 Incremental edits:
 - If "Current Code" is provided, make MINIMAL changes. Preserve layout, colors, structure. Only change what the user asked for.
