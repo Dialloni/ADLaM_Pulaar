@@ -17,11 +17,11 @@ Powered by Google Gemini 2.5 · Built with React + TypeScript + Firebase
 
 ## What is Gando AI?
 
-Gando AI is a **Replit/Lovable-style app builder** where the entire experience — prompts, explanations, and UI chrome — happens in **African languages first**.
+Gando AI is a **Bolt/Lovable/v0-style app builder** where the entire experience — landing page, prompts, explanations, and UI chrome — happens in **African languages first**.
 
 Most AI coding tools are English-only, creating a barrier for people who think and create in languages like Fulani, Swahili, Yoruba, or Hausa. Gando removes that barrier:
 
-- **Input** → describe your app in your language (Fulani ADLaM script, Swahili, English, French, and more)
+- **Input** → describe your app in your language (Fulani ADLaM script, French, English, and more)
 - **Output** → a working single-file web app with explanations in your language
 - **Iterate** → keep chatting to refine, with full version history and one-click revert
 
@@ -31,7 +31,7 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 
 ### Core
 
-- 🌍 African-language generation — describe your app in Fulani (ADLaM), Swahili, Yoruba, Hausa, Wolof, and more
+- 🌍 African-language generation — describe your app in Fulani (ADLaM), English, French, and more
 - ⚡ Single-call AI pipeline — one Gemini request detects language + generates app + writes explanation
 - 👁 Live preview — generated HTML/CSS/JS renders in a sandboxed browser frame
 - 💬 Iterative chat — refine your app through conversation; AI makes incremental edits
@@ -39,10 +39,12 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 
 ### UI / UX
 
-- 𞤆𞤓𞤂𞤀𞥄𞤈 Full ADLaM script support — all nav, buttons, and labels switch to Fulani script (Noto Sans Adlam)
+- 🏠 Bolt-style marketing landing page — navbar, animated typewriter hero, templates grid, 3-column footer
+- 𞤆𞤓𞤂𞤀𞥄𞤈 Full ADLaM script support — nav, buttons, landing page headline all switch to Fulani script
+- 🔤 ADLaM Display font — Microsoft's OFL display typeface rendered in the hero heading
 - 🔍 Live project search — header search with instant results dropdown
-- 📊 Real-time dashboard — project completion donut, token usage gauge, performance metrics
-- 🎨 Nexus Builder design — dark theme, pink/orange neon gradients, Manrope font
+- 🎨 Nexus Builder design — dark obsidian theme, pink/orange neon gradients, Manrope font
+- ✍️ Typewriter placeholder — animated cycling phrases on landing page and dashboard textarea
 
 ### Platform
 
@@ -50,7 +52,16 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 - 💾 Firestore persistence — projects and chat history saved automatically
 - 📖 Documentation page — in-app translated docs (EN / FR / ADLaM)
 - 🟢 System status page — real backend health check (server uptime, Gemini latency, Firebase)
-- 📥 Download — export any generated app as a standalone `.html` file
+- 🌐 Languages page — active language switcher, coming-soon languages, full ADLaM alphabet reference (28 core letters + 6 loan, with IPA)
+
+### ADLaM Corpus Pipeline (Admin)
+
+- 📄 PDF OCR — upload PDF books/documents; Gemini 2.0 Flash extracts ADLaM text as proper Unicode
+- 📋 Paste Text — paste ADLaM text directly; auto-detects encoding, flags pre-Unicode Arabic-mapped text
+- 🔍 Encoding inspector — shows Unicode range of pasted text (ADLaM block, Arabic block, or unknown)
+- 🤖 AI decode — re-encodes pre-Unicode font text (Arabic codepoints) → correct ADLaM Unicode block
+- ✅ Review queue — admin verification workflow; approve / reject / export as JSONL
+- 📤 JSONL export — one-click download of verified corpus entries for fine-tuning
 
 ---
 
@@ -59,39 +70,56 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 | Layer      | Technology                                               |
 | ---------- | -------------------------------------------------------- |
 | Frontend   | React 19, TypeScript, Vite 6, Tailwind CSS v4            |
-| UI         | Manrope + Noto Sans Adlam, Lucide icons, Motion (Framer) |
+| UI         | Manrope + Noto Sans Adlam + ADLaM Display, Lucide icons  |
 | Backend    | Express + tsx (Node.js dev server)                       |
-| AI         | Google Gemini 2.5 Flash via `@google/genai`              |
-| Auth & DB  | Firebase Authentication + Firestore                      |
+| AI         | Google Gemini 2.5 Flash + 2.0 Flash via `@google/genai` |
+| Auth & DB  | Firebase Authentication + Firestore + Storage            |
+| Deploy     | Vercel (frontend + serverless API)                       |
 
 ---
 
 ## Project Structure
 
 ```text
-gando-ai_coA/
-├── server.ts                     # Express + Gemini proxy (/api/generate, /api/edit, /api/status)
+ADLaM_Pulaar/
+├── server.ts                     # Express entry — mounts /api/* routes, serves Vite in dev
+├── api/
+│   ├── generate.ts               # POST /api/generate   — Gemini app generation
+│   ├── edit.ts                   # POST /api/edit       — Gemini iterative edits
+│   ├── ocr.ts                    # POST /api/ocr        — Gemini multimodal PDF/image OCR
+│   ├── transcribe.ts             # POST /api/transcribe — voice-to-text
+│   └── status.ts                 # GET  /api/status     — health check
+├── lib/
+│   └── firebaseAdmin.ts          # Firebase Admin SDK init (server-side)
+├── public/
+│   └── fonts/
+│       └── ADLaMDisplay-Regular.woff2  # Microsoft ADLaM Display font (OFL-1.1)
 ├── src/
-│   ├── App.tsx                   # Root — all pages (Dashboard, Projects, Docs, Status, Workspace)
-│   ├── translations.ts           # UI strings in English, Français, Fulani (ADLaM)
+│   ├── main.tsx                  # React entry point
+│   ├── App.tsx                   # Root — landing page, auth modal, all app pages
+│   ├── index.css                 # Design tokens (CSS vars), Tailwind v4, global styles
+│   ├── translations.ts           # UI strings in English, Français, Fulani ADLaM + twPhrases[]
 │   ├── types.ts                  # TypeScript types (Project, Message, GenerationResult)
-│   ├── firebase.ts               # Firebase init + helpers
+│   ├── firebase.ts               # Firebase client SDK init + Firestore helpers
 │   ├── components/
+│   │   ├── AdminPortal.tsx       # Corpus admin — PDF OCR, paste text, review queue, JSONL export
+│   │   ├── GandoLogo.tsx         # SVG logo component (color + mono variants)
 │   │   ├── Chat.tsx              # Chat panel (messages, input, voice, revert buttons)
 │   │   ├── Preview.tsx           # Sandboxed iframe browser preview
 │   │   ├── CodeEditor.tsx        # Syntax-highlighted code editor
-│   │   ├── LanguageSelector.tsx  # Portal-based dropdown (escapes CSS transforms)
+│   │   ├── LanguageSelector.tsx  # Portal-based language dropdown
 │   │   └── ErrorBoundary.tsx
 │   ├── services/
 │   │   └── geminiService.ts      # Fetch client → /api/generate, /api/edit, /api/transcribe
 │   ├── contexts/
-│   │   └── AuthContext.tsx       # Firebase auth state
+│   │   └── AuthContext.tsx       # Firebase auth state (Google + email/password)
 │   └── lib/
-│       └── utils.ts              # cn() helper
+│       └── utils.ts              # cn() Tailwind class helper
 ├── .env.example                  # Required env vars template
-├── firebase-applet-config.json
-├── firestore.rules
-└── vite.config.ts
+├── .firebaserc                   # Firebase project alias
+├── firebase.json                 # Firebase config (Firestore rules path)
+├── firestore.rules               # Firestore security rules
+└── vite.config.ts                # Vite + Tailwind v4 plugin config
 ```
 
 ---
@@ -119,13 +147,11 @@ npm install
 
 ### 3. Set up environment variables
 
-Copy `.env.example` to `.env` and fill in your key:
+Copy `.env.example` to `.env` and fill in your keys:
 
 ```bash
 cp .env.example .env
 ```
-
-Open `.env` and add:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -136,7 +162,28 @@ GEMINI_MODEL=gemini-2.5-flash
 
 ### 4. Configure Firebase
 
-Edit `firebase-applet-config.json` with your Firebase project credentials. Enable **Google sign-in** in Firebase Console → Authentication → Sign-in method.
+Add your Firebase client credentials to `.env`:
+
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+For server-side Firebase Admin (Firestore writes), also add:
+
+```env
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
+```
+
+Enable **Google sign-in** in Firebase Console → Authentication → Sign-in method.
+
+**Vercel deployment:** add `https://your-app.vercel.app` to:
+1. Firebase Console → Authentication → Authorized Domains
+2. Google Cloud Console → APIs & Services → Credentials → OAuth Web Client → Authorized JavaScript Origins + Redirect URIs (`/__/auth/handler`)
 
 ### 5. Run locally
 
@@ -169,9 +216,26 @@ Explanation shown in chat
 
 No separate translation round-trips. Language detection, generation, and explanation happen in one structured JSON response.
 
+### Corpus OCR Pipeline
+
+```text
+PDF upload (browser)
+        ↓
+Encode entire PDF → base64
+        ↓
+POST /api/ocr
+        ↓
+Gemini 2.0 Flash (multimodal)
+  · Reads all pages in one call
+  · Outputs ADLaM Unicode text (U+1E900–U+1E95F)
+        ↓
+Saved to Firestore corpus collection
+Admin review → approve → JSONL export
+```
+
 ### Template Intelligence
 
-When a prompt mentions a known category (e-commerce, restaurant, portfolio, booking, blog, dashboard), the server injects a structural hint — similar to Lovable/Framer starter templates — so the AI generates a complete, realistic app instead of a skeleton.
+When a prompt mentions a known category (e-commerce, restaurant, portfolio, booking, blog, dashboard), the server injects a structural hint so the AI generates a complete, realistic app instead of a skeleton.
 
 ---
 
@@ -192,12 +256,12 @@ When a prompt mentions a known category (e-commerce, restaurant, portfolio, book
 
 ## Environment Variables
 
-| Variable                   | Required | Default            | Description               |
-| -------------------------- | -------- | ------------------ | ------------------------- |
-| `GEMINI_API_KEY`           | Yes      | —                  | Google AI Studio API key  |
-| `GEMINI_MODEL`             | No       | `gemini-2.5-flash` | Gemini model to use       |
-| `GEMINI_MAX_OUTPUT_TOKENS` | No       | `32768`            | Max tokens per generation |
-| `PORT`                     | No       | `3000`             | Server port               |
+| Variable                   | Required | Default            | Description                        |
+| -------------------------- | -------- | ------------------ | ---------------------------------- |
+| `GEMINI_API_KEY`           | Yes      | —                  | Google AI Studio API key           |
+| `GEMINI_MODEL`             | No       | `gemini-2.5-flash` | Gemini model for app generation    |
+| `GEMINI_MAX_OUTPUT_TOKENS` | No       | `32768`            | Max tokens per generation          |
+| `PORT`                     | No       | `3000`             | Server port                        |
 
 ---
 
@@ -218,10 +282,19 @@ npm run lint     # TypeScript type check
 - [ ] Public share URLs (deploy generated apps to a subdomain)
 - [ ] Anonymous first-use (generate before login)
 - [ ] More African language UI translations (Swahili, Yoruba, Hausa)
-- [ ] Template gallery on empty state
+- [ ] Telethon scraper — pull ADLaM messages from Telegram groups for corpus
+- [ ] RAG pipeline — inject verified ADLaM corpus into Gemini system prompt (Pinecone / pgvector)
+- [ ] LoRA fine-tune on Llama 3.2 3B with verified ADLaM corpus
+- [ ] GANDO Collector — in-app labeled image upload for real-world ADLaM data
 - [ ] Mobile-responsive layout
-- [ ] Voice-to-text polish with visual waveform feedback
 - [ ] Export to GitHub Gist
+- [x] Template gallery (landing page + dashboard)
+- [x] Language switcher UI (ADLaM / FR / EN) with live landing page translation
+- [x] ADLaM Display font (Microsoft OFL) in hero heading
+- [x] PDF OCR via Gemini 2.0 Flash multimodal
+- [x] Admin corpus portal — review queue, paste text, JSONL export
+- [x] Pre-Unicode ADLaM font decoder (Arabic-mapped → Unicode ADLaM)
+- [x] Vercel production deployment with Firebase Auth
 
 ---
 
