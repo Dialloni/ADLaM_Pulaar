@@ -1,0 +1,159 @@
+"""
+Gando AI — Telegram ADLaM Corpus Scraper
+Scrapes messages from Pulaar/ADLaM Telegram groups and saves as JSONL.
+Only keeps messages with ADLaM ratio >= 0.70.
+Supports resuming from last scraped message ID.
+"""
+
+import asyncio
+import json
+import os
+import re
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+from telethon import TelegramClient
+from telethon.errors import FloodWaitError
+from telethon.tl.types import Message
+
+# ── CONFIG ────────────────────────────────────────────────────────────────────
+
+API_ID   = int(os.environ.get("TELEGRAM_API_ID",   ""))   # from my.telegram.org
+API_HASH = os.environ.get("TELEGRAM_API_HASH",     "")    # from my.telegram.org
+
+SESSION_FILE = "gando_scraper"          # creates gando_scraper.session locally
+OUTPUT_DIR   = Path("output")
+OUTPUT_DIR.mkdir(exist_ok=True)
+
+ADLAM_MIN_RATIO = 0.70   # drop messages with < 70% ADLaM chars
+BATCH_SIZE      = 200    # messages per API call (Telegram max = 200)
+DELAY_BETWEEN   = 1.5    # seconds between batches (avoid flood)
+
+GROUPS = [
+    "defteadlam",
+    "adlampular",
+    "adlamadlam",
+    "+cLcZc6X3uMI5ZGJk",   # private invite link
+    "defterebaaheyrenden",
+    "Adlamsaradeben",
+]
+
+# ── HELPERS ───────────────────────────────────────────────────────────────────
+
+def adlam_ratio(text: str) -> float:
+    """Fraction of non-whitespace characters in the ADLaM Unicode block."""
+    chars = [c for c in text if not c.isspace()]
+    if not chars:
+        return 0.0
+    adlam = sum(1 for c in chars if 0x1E900 <= ord(c) <= 0x1E95F)
+    return adlam / len(chars)
+
+
+def state_file(group: str) -> Path:
+    safe = re.sub(r"[^a-zA-Z0-9_+]", "_", group)
+    return OUTPUT_DIR / f".state_{safe}.json"
+
+
+def load_last_id(group: str) -> int:
+    sf = state_file(group)
+    if sf.exists():
+        return json.loads(sf.read_text()).get("last_id", 0)
+    return 0
+
+
+def save_last_id(group: str, msg_id: int) -> None:
+    state_file(group).write_text(json.dumps({"last_id": msg_id}))
+
+
+def output_path(group: str) -> Path:
+    safe = re.sub(r"[^a-zA-Z0-9_+]", "_", group)
+    return OUTPUT_DIR / f"{safe}.jsonl"
+
+
+# ── SCRAPER ───────────────────────────────────────────────────────────────────
+
+async def scrape_group(client: TelegramClient, group: str) -> None:
+    print(f"\n{'─'*60}")
+    print(f"  Group : {group}")
+
+    try:
+        entity = await client.get_entity(
+            f"https://t.me/{group}" if not group.startswith("+") else f"https://t.me/{group}"
+        )
+    except Exception as e:
+        print(f"  ✗ Could not resolve '{group}': {e}")
+        return
+
+    last_id   = load_last_id(group)
+    out_path  = output_path(group)
+    saved     = 0
+    skipped   = 0
+    total     = 0
+
+    print(f"  Resuming from message ID > {last_id}" if last_id else "  Starting fresh")
+
+    with open(out_path, "a", encoding="utf-8") as f:
+        async for msg in client.iter_messages(
+            entity,
+            limit=None,
+            min_id=last_id,
+            wait_time=DELAY_BETWEEN,
+        ):
+            if not isinstance(msg, Message) or not msg.text:
+                continue
+
+            total += 1
+            ratio = adlam_ratio(msg.text)
+
+            if ratio < ADLAM_MIN_RATIO:
+                skipped += 1
+                continue
+
+            record = {
+                "text":       msg.text,
+                "source":     group,
+                "message_id": msg.id,
+                "date":       msg.date.astimezone(timezone.utc).isoformat(),
+                "adlam_ratio": round(ratio, 4),
+            }
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            saved += 1
+
+            if saved % 100 == 0:
+                save_last_id(group, msg.id)
+                print(f"  … {saved} saved / {total} seen")
+
+    save_last_id(group, 0)   # reset so next run re-scans (or remove to never re-scrape)
+    print(f"  ✓ Done — {saved} saved, {skipped} skipped ({total} total)")
+
+
+async def main() -> None:
+    if not API_ID or not API_HASH:
+        raise SystemExit(
+            "Set TELEGRAM_API_ID and TELEGRAM_API_HASH env vars.\n"
+            "Get them at https://my.telegram.org"
+        )
+
+    print("Gando AI — ADLaM Corpus Scraper")
+    print(f"Groups  : {len(GROUPS)}")
+    print(f"Min ADLaM ratio : {ADLAM_MIN_RATIO}")
+    print(f"Output  : {OUTPUT_DIR.resolve()}")
+
+    async with TelegramClient(SESSION_FILE, API_ID, API_HASH) as client:
+        for group in GROUPS:
+            try:
+                await scrape_group(client, group)
+            except FloodWaitError as e:
+                print(f"  FloodWait {e.seconds}s — waiting…")
+                await asyncio.sleep(e.seconds + 5)
+                await scrape_group(client, group)   # retry once
+            except Exception as e:
+                print(f"  ✗ Error on '{group}': {e}")
+
+    print("\n✓ All groups done.")
+    print(f"Output files in: {OUTPUT_DIR.resolve()}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
