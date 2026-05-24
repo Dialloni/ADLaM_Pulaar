@@ -49,11 +49,15 @@ db = firestore.client(database_id=args.db)
 
 # ── DEDUP CHECK ───────────────────────────────────────────────────────────────
 
+def normalize_source(src: str) -> str:
+    """Strip 'telegram:' prefix for consistent dedup comparison."""
+    return src.removeprefix("telegram:")
+
 print("Fetching existing message IDs from Firestore (dedup check)…")
 existing = set()
 for doc in db.collection(args.collection).stream():
     d = doc.to_dict()
-    key = f"{d.get('source','')}:{d.get('message_id','')}"
+    key = f"{normalize_source(d.get('source',''))}:{d.get('message_id','')}"
     existing.add(key)
 print(f"  {len(existing)} existing entries found")
 
@@ -68,7 +72,7 @@ for line in CORPUS_FILE.read_text(encoding="utf-8").splitlines():
     if not line:
         continue
     rec = json.loads(line)
-    key = f"{rec['source']}:{rec['message_id']}"
+    key = f"{normalize_source(rec['source'])}:{rec['message_id']}"
     if key not in existing:
         records.append(rec)
 
