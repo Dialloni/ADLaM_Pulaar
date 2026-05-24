@@ -33,12 +33,23 @@ BATCH_SIZE      = 200    # messages per API call (Telegram max = 200)
 DELAY_BETWEEN   = 1.5    # seconds between batches (avoid flood)
 
 GROUPS = [
+    # original groups
     "defteadlam",
     "adlampular",
     "adlamadlam",
-    "+cLcZc6X3uMI5ZGJk",   # private invite link
+    "+cLcZc6X3uMI5ZGJk",        # private invite link
     "defterebaaheyrenden",
     "Adlamsaradeben",
+    # private groups (joined, scrape by numeric ID)
+    -1001476533616,              # 𞤏𞤋𞤐𞤁𞤓 𞤀𞤁𞤂𞤢𞤃 (52 members)
+    # new public groups
+    "Fulfulde",                  # 377 members, ADLaM title
+    "SukabeAdlamcameroun",       # 149 members, Cameroon ADLaM
+    "SUKAABE",                   # 75 members, Guinea ADLaM
+    "cheikhyeroabousy",          # 709 members, Pulaar
+    "diagndediina_pulaar",       # 343 members, Pulaar
+    "bpulaar",                   # 40 members, Binndol Pulaar
+    "oumarbk",                   # 37 members, ADLaM
 ]
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -73,37 +84,44 @@ def adlam_ratio(text: str) -> float:
     return adlam / len(chars)
 
 
-def state_file(group: str) -> Path:
-    safe = re.sub(r"[^a-zA-Z0-9_+]", "_", group)
+def group_key(group) -> str:
+    """Stable string key for state/output files."""
+    return str(group)
+
+def state_file(group) -> Path:
+    safe = re.sub(r"[^a-zA-Z0-9_+]", "_", group_key(group))
     return OUTPUT_DIR / f".state_{safe}.json"
 
 
-def load_last_id(group: str) -> int:
+def load_last_id(group) -> int:
     sf = state_file(group)
     if sf.exists():
         return json.loads(sf.read_text()).get("last_id", 0)
     return 0
 
 
-def save_last_id(group: str, msg_id: int) -> None:
+def save_last_id(group, msg_id: int) -> None:
     state_file(group).write_text(json.dumps({"last_id": msg_id}))
 
 
-def output_path(group: str) -> Path:
-    safe = re.sub(r"[^a-zA-Z0-9_+]", "_", group)
+def output_path(group) -> Path:
+    safe = re.sub(r"[^a-zA-Z0-9_+]", "_", group_key(group))
     return OUTPUT_DIR / f"{safe}.jsonl"
 
 
 # ── SCRAPER ───────────────────────────────────────────────────────────────────
 
-async def scrape_group(client: TelegramClient, group: str) -> None:
+async def scrape_group(client: TelegramClient, group) -> None:
     print(f"\n{'─'*60}")
     print(f"  Group : {group}")
 
     try:
-        entity = await client.get_entity(
-            f"https://t.me/{group}" if not group.startswith("+") else f"https://t.me/{group}"
-        )
+        if isinstance(group, int):
+            entity = await client.get_entity(group)
+        elif group.startswith("+"):
+            entity = await client.get_entity(f"https://t.me/{group}")
+        else:
+            entity = await client.get_entity(f"https://t.me/{group}")
     except Exception as e:
         print(f"  ✗ Could not resolve '{group}': {e}")
         return
@@ -139,7 +157,7 @@ async def scrape_group(client: TelegramClient, group: str) -> None:
 
             record = {
                 "text":       clean,
-                "source":     group,
+                "source":     group_key(group),
                 "message_id": msg.id,
                 "date":       msg.date.astimezone(timezone.utc).isoformat(),
                 "adlam_ratio": round(ratio, 4),
@@ -151,7 +169,6 @@ async def scrape_group(client: TelegramClient, group: str) -> None:
                 save_last_id(group, msg.id)
                 print(f"  … {saved} saved / {total} seen")
 
-    save_last_id(group, 0)   # reset so next run re-scans (or remove to never re-scrape)
     print(f"  ✓ Done — {saved} saved, {skipped} skipped ({total} total)")
 
 
