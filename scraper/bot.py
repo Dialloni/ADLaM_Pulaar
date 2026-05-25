@@ -117,9 +117,8 @@ def run_sync():
 # ── BOT ───────────────────────────────────────────────────────────────────────
 
 async def main():
-    session_str = os.environ.get("TELEGRAM_SESSION", "")
-    session = StringSession(session_str) if session_str else "gando_bot"
-    client = TelegramClient(session, API_ID, API_HASH)
+    # Bot uses bot_token auth — no user session needed (StringSession("") = fresh bot session)
+    client = TelegramClient(StringSession(""), API_ID, API_HASH)
     await client.start(bot_token=BOT_TOKEN)
     print(f"✓ Gando bot running. Listening for commands from chat {CHAT_ID}...")
 
