@@ -25,7 +25,19 @@ import sys
 from datetime import datetime
 
 try:
+    import google.generativeai as genai
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+    if GEMINI_API_KEY:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_model = genai.GenerativeModel("gemini-2.5-flash")
+    else:
+        gemini_model = None
+except ImportError:
+    gemini_model = None
+
+try:
     from telethon import TelegramClient, events
+    from telethon.sessions import StringSession
 except ImportError:
     sys.exit("Run: pip install telethon")
 
@@ -105,7 +117,9 @@ def run_sync():
 # ── BOT ───────────────────────────────────────────────────────────────────────
 
 async def main():
-    client = TelegramClient("gando_bot", API_ID, API_HASH)
+    session_str = os.environ.get("TELEGRAM_SESSION", "")
+    session = StringSession(session_str) if session_str else "gando_bot"
+    client = TelegramClient(session, API_ID, API_HASH)
     await client.start(bot_token=BOT_TOKEN)
     print(f"✓ Gando bot running. Listening for commands from chat {CHAT_ID}...")
 
@@ -125,6 +139,7 @@ async def main():
                 "/approve <id> — verify entry\n"
                 "/reject <id> — reject entry\n"
                 "/sync — trigger manual sync\n"
+                "/ask <question> — ask Gemini anything\n"
                 "/help — this message"
             )
 
@@ -254,6 +269,42 @@ async def main():
                 await event.respond("✅ <b>Sync complete!</b>\nUse /status to see updated counts.", parse_mode="html")
             else:
                 await event.respond(f"❌ <b>Sync failed.</b>\n<pre>{output[-500:]}</pre>", parse_mode="html")
+
+        elif text.startswith("/ask") or (not text.startswith("/") and len(raw_msg) > 2):
+            if not gemini_model:
+                await event.respond("Gemini not configured. Set GEMINI_API_KEY env var.")
+                return
+            # Build context from Firestore
+            context = ""
+            if db:
+                try:
+                    docs = list(db.collection("corpus_submissions").stream())
+                    total    = len(docs)
+                    pending  = sum(1 for d in docs if d.to_dict().get("status") == "pending")
+                    verified = sum(1 for d in docs if d.to_dict().get("status") == "verified")
+                    rejected = sum(1 for d in docs if d.to_dict().get("status") == "rejected")
+                    context = (
+                        f"Gando AI corpus stats: {total} total entries, "
+                        f"{verified} verified, {pending} pending review, {rejected} rejected. "
+                        f"Sources: Telegram ADLaM groups + tabalde.com articles + PDF books. "
+                        f"Goal: build ADLaM/Pulaar corpus for fine-tuning African language AI."
+                    )
+                except Exception:
+                    context = "Gando AI corpus stats unavailable."
+
+            question = raw_msg[5:].strip() if text.startswith("/ask") else raw_msg
+            prompt = (
+                f"You are the Gando AI assistant bot running on Telegram. "
+                f"You help Abubakar manage his ADLaM/Pulaar corpus pipeline for Gando AI.\n\n"
+                f"Current context: {context}\n\n"
+                f"Answer this question concisely (under 200 words): {question}"
+            )
+            await event.respond("🤔 Thinking…")
+            try:
+                response = gemini_model.generate_content(prompt)
+                await event.respond(response.text.strip())
+            except Exception as e:
+                await event.respond(f"❌ Gemini error: {e}")
 
         else:
             await event.respond("Unknown command. Send /help to see available commands.")
