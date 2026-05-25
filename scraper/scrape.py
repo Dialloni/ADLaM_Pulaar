@@ -10,19 +10,21 @@ import json
 import os
 import re
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timez20
+one
 from pathlib import Path
 
 from telethon import TelegramClient
 from telethon.errors import FloodWaitError
 from telethon.tl.types import Message
+from telethon.sessions import StringSession
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
 API_ID   = int(os.environ.get("TELEGRAM_API_ID",   ""))   # from my.telegram.org
 API_HASH = os.environ.get("TELEGRAM_API_HASH",     "")    # from my.telegram.org
 
-SESSION_FILE = "gando_scraper"          # creates gando_scraper.session locally
+SESSION_FILE = StringSession(os.environ.get("TELEGRAM_SESSION", ""))  # use session string from env
 OUTPUT_DIR   = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
