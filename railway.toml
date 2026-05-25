@@ -1,0 +1,6 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python scraper/bot.py"
+restartPolicyType = "always"
