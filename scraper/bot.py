@@ -369,8 +369,9 @@ async def main():
             if not body:
                 await event.respond("Usage: /note <your text>")
                 return
-            timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-            date_slug  = datetime.utcnow().strftime("%Y-%m-%d")
+            now = datetime.utcnow()
+            timestamp = now.strftime("%Y-%m-%d %H:%M UTC")
+            date_slug  = now.strftime("%Y-%m-%d-%H%M%S")
             filename   = f"01 - Inbox/{date_slug}-quick-note.md"
             md_content = f"---\ncreated: {timestamp}\nsource: telegram\n---\n\n{body}\n"
             await event.respond("📝 Saving to Obsidian inbox…")
