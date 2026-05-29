@@ -27,6 +27,7 @@ from datetime import datetime
 
 import urllib.request
 import urllib.error
+import urllib.parse
 
 try:
     import google.generativeai as genai
@@ -110,7 +111,8 @@ def push_to_github(file_path: str, content: str, commit_msg: str) -> tuple[bool,
     """Push a file to the gando-brain GitHub repo via REST API."""
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "GITHUB_TOKEN or GITHUB_REPO not set in env vars."
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}"
+    encoded_path = urllib.parse.quote(file_path, safe="/")
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{encoded_path}"
     headers = {
         "Authorization": f"Bearer {GITHUB_TOKEN}",
         "Accept": "application/vnd.github+json",
