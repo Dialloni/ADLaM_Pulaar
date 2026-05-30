@@ -189,10 +189,39 @@ async def main():
             transcribed = response.text.strip()
             await event.respond(f"📝 Heard: {transcribed}\n\nProcessing…")
 
-            # Route transcribed text as a command
-            t = transcribed.lower()
-            if t.startswith("note ") or t.startswith("note,"):
-                body = transcribed[5:].strip()
+            # Smart intent detection via Gemini
+            intent_prompt = f"""You are a command router for the Gando AI Telegram bot.
+
+The user sent this voice message: "{transcribed}"
+
+Classify the intent into exactly one of these JSON responses:
+- {{"intent": "note", "body": "<the note content to save>"}}
+- {{"intent": "research", "topic": "<the research topic>"}}
+- {{"intent": "status"}}
+- {{"intent": "corpus", "text": "<the ADLaM text to add>"}}
+- {{"intent": "ask", "question": "<the question to answer>"}}
+
+Rules:
+- "note" = user wants to save a reminder, thought, or idea
+- "research" = user wants a research note on a topic saved to Obsidian
+- "status" = user wants corpus stats
+- "corpus" = user wants to add ADLaM text to the corpus
+- "ask" = anything else, general question
+
+Return ONLY valid JSON. No markdown, no explanation."""
+
+            intent_res = gemini_model.generate_content(intent_prompt)
+            intent_raw = intent_res.text.strip().replace("```json", "").replace("```", "").strip()
+
+            try:
+                intent = json.loads(intent_raw)
+            except Exception:
+                intent = {"intent": "ask", "question": transcribed}
+
+            action = intent.get("intent", "ask")
+
+            if action == "note":
+                body = intent.get("body", transcribed)
                 now = datetime.utcnow()
                 slug = now.strftime("%Y-%m-%d-%H%M%S")
                 filename = f"01 - Inbox/{slug}-voice-note.md"
@@ -203,8 +232,8 @@ async def main():
                 else:
                     await event.respond(f"❌ Failed: {result}")
 
-            elif t.startswith("research "):
-                topic = transcribed[9:].strip()
+            elif action == "research":
+                topic = intent.get("topic", transcribed)
                 prompt = (
                     f"Write a structured Markdown research note about: {topic}\n"
                     f"Context: Gando AI — African-language-first app builder, ADLaM/Pulaar focus.\n"
@@ -221,10 +250,33 @@ async def main():
                 else:
                     await event.respond(f"❌ Failed: {result}")
 
+            elif action == "status":
+                stats = get_corpus_stats()
+                await event.respond(stats, parse_mode="html")
+
+            elif action == "corpus":
+                text_body = intent.get("text", transcribed)
+                if not db:
+                    await event.respond("Firebase not connected.")
+                else:
+                    adlam_chars = sum(1 for c in text_body if 0x1E900 <= ord(c) <= 0x1E95F)
+                    ratio = adlam_chars / max(len(text_body), 1)
+                    db.collection("corpus_submissions").add({
+                        "raw_text": text_body,
+                        "source": "telegram_voice",
+                        "adlam_ratio": ratio,
+                        "word_count": len(text_body.split()),
+                        "status": "pending",
+                        "submitted_at": firestore.SERVER_TIMESTAMP,
+                    })
+                    await event.respond(f"✅ Added to corpus pipeline.\nADLaM ratio: {ratio:.0%}")
+
             else:
-                # Free-form question — answer with Gemini
+                # ask — general question
+                question = intent.get("question", transcribed)
                 res = gemini_model.generate_content(
-                    f"You are the Gando AI assistant. Answer concisely (under 150 words): {transcribed}"
+                    f"You are the Gando AI assistant helping Abubakar Diallo build an African-language-first app. "
+                    f"Answer concisely (under 150 words): {question}"
                 )
                 await event.respond(res.text.strip())
 
