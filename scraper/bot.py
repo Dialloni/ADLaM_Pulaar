@@ -171,8 +171,71 @@ async def main():
     print(f"✓ Gando bot running. Listening for commands from chat {CHAT_ID}...")
 
     @client.on(events.NewMessage(chats=CHAT_ID))
+    async def voice_handler(event):
+        """Handle voice messages — transcribe then process as command."""
+        if not event.message.voice and not event.message.audio:
+            return
+        if not gemini_model:
+            await event.respond("Gemini not configured. Set GEMINI_API_KEY.")
+            return
+        await event.respond("🎤 Transcribing voice message…")
+        try:
+            audio_bytes = await event.message.download_media(bytes)
+            audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+            response = gemini_model.generate_content([
+                {"mime_type": "audio/ogg", "data": audio_b64},
+                "Transcribe this audio exactly as spoken. Return only the transcribed text, no commentary."
+            ])
+            transcribed = response.text.strip()
+            await event.respond(f"📝 Heard: {transcribed}\n\nProcessing…")
+
+            # Route transcribed text as a command
+            t = transcribed.lower()
+            if t.startswith("note ") or t.startswith("note,"):
+                body = transcribed[5:].strip()
+                now = datetime.utcnow()
+                slug = now.strftime("%Y-%m-%d-%H%M%S")
+                filename = f"01 - Inbox/{slug}-voice-note.md"
+                md = f"---\ncreated: {now.strftime('%Y-%m-%d %H:%M UTC')}\nsource: telegram_voice\n---\n\n{body}\n"
+                ok, result = push_to_github(filename, md, f"note: voice capture {slug}")
+                if ok:
+                    await event.respond(f"✅ Voice note saved to Obsidian.\n{result}")
+                else:
+                    await event.respond(f"❌ Failed: {result}")
+
+            elif t.startswith("research "):
+                topic = transcribed[9:].strip()
+                prompt = (
+                    f"Write a structured Markdown research note about: {topic}\n"
+                    f"Context: Gando AI — African-language-first app builder, ADLaM/Pulaar focus.\n"
+                    f"Format: # title\n## Overview\n## Key Facts\n## Relevance to ADLaM\n## Resources\n## Next Steps"
+                )
+                res = gemini_model.generate_content(prompt)
+                note_md = res.text.strip()
+                now = datetime.utcnow()
+                slug = re.sub(r"[^a-z0-9]+", "-", topic.lower())[:40]
+                filename = f"03 - Areas/ADLaM Language/{now.strftime('%Y-%m-%d')}-{slug}.md"
+                ok, result = push_to_github(filename, note_md, f"research: {topic[:60]}")
+                if ok:
+                    await event.respond(f"✅ Research note saved to Obsidian.\n{result}\n\nPreview:\n{note_md[:300]}…")
+                else:
+                    await event.respond(f"❌ Failed: {result}")
+
+            else:
+                # Free-form question — answer with Gemini
+                res = gemini_model.generate_content(
+                    f"You are the Gando AI assistant. Answer concisely (under 150 words): {transcribed}"
+                )
+                await event.respond(res.text.strip())
+
+        except Exception as e:
+            await event.respond(f"❌ Voice processing error: {e}")
+
+    @client.on(events.NewMessage(chats=CHAT_ID))
     async def handler(event):
         global sync_running, last_pending_id
+        if event.message.voice or event.message.audio:
+            return  # handled by voice_handler
         raw_msg = event.message.text.strip()
         text = raw_msg.lower()
 
