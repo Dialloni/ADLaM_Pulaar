@@ -25,6 +25,18 @@ service cloud.firestore {
       }
     }
 
+    // ── Corpus submissions (admin only) ──────────────────────────────────────
+    match /corpus_submissions/{docId} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'abd9735@nyu.edu';
+    }
+
+    // ── ADLaM dictionary (admin only) ────────────────────────────────────────
+    match /adlam_dict/{docId} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'abd9735@nyu.edu';
+    }
+
     // ── Health check (unauthenticated ping) ──────────────────────────────────
     match /test/connection {
       allow read: if true;

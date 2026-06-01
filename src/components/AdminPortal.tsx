@@ -167,6 +167,13 @@ export function AdminPortal({ user }: { user: User }) {
   const [dictEditDomain, setDictEditDomain] = useState('');
   const [dictActionLoading, setDictActionLoading] = useState<string | null>(null);
   const [dictSeeding, setDictSeeding] = useState(false);
+  const [dictError, setDictError] = useState<string | null>(null);
+  const [addAdlam, setAddAdlam] = useState('');
+  const [addLatin, setAddLatin] = useState('');
+  const [addFr, setAddFr] = useState('');
+  const [addDomain, setAddDomain] = useState('general');
+  const [addSubmitting, setAddSubmitting] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
 
   /* ── PASTE STATE ── */
   const [pasteText, setPasteText] = useState('');
@@ -203,10 +210,16 @@ export function AdminPortal({ user }: { user: User }) {
 
   useEffect(() => {
     const q = query(collection(db, 'adlam_dict'), orderBy('latin', 'asc'));
-    const unsub = onSnapshot(q, snap => {
-      setDictTerms(snap.docs.map(d => ({ id: d.id, ...d.data() } as DictTerm)));
-      setDictLoading(false);
-    });
+    const unsub = onSnapshot(q,
+      snap => {
+        setDictTerms(snap.docs.map(d => ({ id: d.id, ...d.data() } as DictTerm)));
+        setDictLoading(false);
+      },
+      err => {
+        setDictError(err.message);
+        setDictLoading(false);
+      }
+    );
     return unsub;
   }, []);
 
@@ -342,6 +355,27 @@ export function AdminPortal({ user }: { user: User }) {
     a.download = `adlam_dict_verified_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  async function addTerm() {
+    if (!addAdlam.trim() || !addLatin.trim()) return;
+    setAddSubmitting(true);
+    await setDoc(doc(db, 'adlam_dict', addLatin.trim().toLowerCase()), {
+      adlam: addAdlam.trim(),
+      latin: addLatin.trim().toLowerCase(),
+      fr: addFr.trim(),
+      domain: addDomain,
+      status: 'draft',
+      verified_by: null,
+      verified_at: null,
+    }, { merge: false });
+    setAddAdlam('');
+    setAddLatin('');
+    setAddFr('');
+    setAddDomain('general');
+    setAddSubmitting(false);
+    setAddSuccess(true);
+    setTimeout(() => setAddSuccess(false), 2500);
   }
 
   /* ── PASTE SUBMIT ── */
@@ -755,6 +789,63 @@ export function AdminPortal({ user }: { user: User }) {
                 Export JSON ({dictTerms.filter(t => t.status === 'verified').length})
               </button>
             </div>
+          </div>
+
+          {/* error */}
+          {dictError && (
+            <div className="rounded-xl px-4 py-3 text-xs font-bold"
+              style={{ background: '#f8717120', border: '1px solid #f8717140', color: '#f87171' }}>
+              Firestore error: {dictError} — deploy firestore.rules then reload.
+            </div>
+          )}
+
+          {/* add term form */}
+          <div className="rounded-2xl border border-white/8 p-5 space-y-3" style={{ background: '#131313' }}>
+            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Add New Term</p>
+            <input
+              value={addAdlam}
+              onChange={e => setAddAdlam(e.target.value)}
+              dir="rtl"
+              placeholder="𞤢𞤣𞤤𞤢𞤥 — type ADLaM script here"
+              className="w-full rounded-xl px-4 py-3 text-white text-xl bg-black/40 outline-none"
+              style={{ fontFamily: '"Noto Sans Adlam", serif', border: '1px solid rgba(255,139,155,0.25)' }}
+            />
+            <div className="grid grid-cols-3 gap-3">
+              <input
+                value={addLatin}
+                onChange={e => setAddLatin(e.target.value)}
+                placeholder="English / latin"
+                className="rounded-xl px-4 py-2.5 text-white text-sm bg-black/40 outline-none"
+                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+              <input
+                value={addFr}
+                onChange={e => setAddFr(e.target.value)}
+                placeholder="Français"
+                className="rounded-xl px-4 py-2.5 text-white text-sm bg-black/40 outline-none"
+                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              />
+              <select
+                value={addDomain}
+                onChange={e => setAddDomain(e.target.value)}
+                className="rounded-xl px-4 py-2.5 text-white text-sm outline-none"
+                style={{ background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)' }}>
+                {['general','ui','ux','auth','data','infrastructure','design','layout','media','ecommerce','ai'].map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={addTerm}
+              disabled={addSubmitting || !addAdlam.trim() || !addLatin.trim()}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-40"
+              style={{ background: addSuccess ? '#4ade8030' : 'var(--gradient-brand)', color: addSuccess ? '#4ade80' : '#000' }}>
+              {addSubmitting
+                ? <><RefreshCw className="w-4 h-4 animate-spin" /> Adding…</>
+                : addSuccess
+                  ? <><CheckCircle2 className="w-4 h-4" /> Added!</>
+                  : '+ Add to dictionary'}
+            </button>
           </div>
 
           {/* filter */}
