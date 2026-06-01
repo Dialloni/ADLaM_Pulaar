@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  collection, query, orderBy, onSnapshot, updateDoc, doc,
+  collection, query, orderBy, onSnapshot, updateDoc, doc, setDoc,
   db, serverTimestamp, addDoc, storage, ref, uploadBytesResumable, getDownloadURL,
   auth,
 } from '../firebase';
-import { CheckCircle2, XCircle, Download, RefreshCw, Upload, FileText, X } from 'lucide-react';
+import adlamDictData from '../../adlam_dict.json';
+import { CheckCircle2, XCircle, Download, RefreshCw, Upload, FileText, X, BookMarked } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { User } from '../firebase';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -13,7 +14,19 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
 type SubmissionStatus = 'pending' | 'verified' | 'rejected';
 type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
-type Tab = 'queue' | 'upload' | 'paste';
+type Tab = 'queue' | 'upload' | 'paste' | 'dictionary';
+type DictStatus = 'draft' | 'verified';
+
+interface DictTerm {
+  id: string;
+  adlam: string;
+  latin: string;
+  fr: string;
+  domain: string;
+  status: DictStatus;
+  verified_by?: string | null;
+  verified_at?: any;
+}
 
 interface Submission {
   id: string;
@@ -144,6 +157,17 @@ export function AdminPortal({ user }: { user: User }) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /* ── DICTIONARY STATE ── */
+  const [dictTerms, setDictTerms] = useState<DictTerm[]>([]);
+  const [dictLoading, setDictLoading] = useState(true);
+  const [dictFilter, setDictFilter] = useState<'all' | DictStatus>('all');
+  const [dictEditingId, setDictEditingId] = useState<string | null>(null);
+  const [dictEditAdlam, setDictEditAdlam] = useState('');
+  const [dictEditFr, setDictEditFr] = useState('');
+  const [dictEditDomain, setDictEditDomain] = useState('');
+  const [dictActionLoading, setDictActionLoading] = useState<string | null>(null);
+  const [dictSeeding, setDictSeeding] = useState(false);
+
   /* ── PASTE STATE ── */
   const [pasteText, setPasteText] = useState('');
   const [pasteDomain, setPasteDomain] = useState<SubmissionDomain>('casual');
@@ -173,6 +197,15 @@ export function AdminPortal({ user }: { user: User }) {
     const unsub = onSnapshot(q, snap => {
       setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission)));
       setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'adlam_dict'), orderBy('latin', 'asc'));
+    const unsub = onSnapshot(q, snap => {
+      setDictTerms(snap.docs.map(d => ({ id: d.id, ...d.data() } as DictTerm)));
+      setDictLoading(false);
     });
     return unsub;
   }, []);
@@ -239,6 +272,74 @@ export function AdminPortal({ user }: { user: User }) {
     const a = document.createElement('a');
     a.href = url;
     a.download = `adlam_corpus_${new Date().toISOString().slice(0, 10)}.jsonl`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── DICTIONARY ACTIONS ── */
+  async function seedDictFromJson() {
+    setDictSeeding(true);
+    const terms = (adlamDictData as any).terms as Array<{ adlam: string; latin: string; fr: string; domain: string }>;
+    for (const term of terms) {
+      await setDoc(doc(db, 'adlam_dict', term.latin), {
+        adlam: term.adlam,
+        latin: term.latin,
+        fr: term.fr,
+        domain: term.domain,
+        status: 'draft',
+        verified_by: null,
+        verified_at: null,
+      }, { merge: true });
+    }
+    setDictSeeding(false);
+  }
+
+  async function verifyTerm(id: string) {
+    setDictActionLoading(id);
+    await updateDoc(doc(db, 'adlam_dict', id), {
+      status: 'verified',
+      verified_by: user.uid,
+      verified_at: serverTimestamp(),
+    });
+    setDictActionLoading(null);
+  }
+
+  async function unverifyTerm(id: string) {
+    setDictActionLoading(id);
+    await updateDoc(doc(db, 'adlam_dict', id), {
+      status: 'draft',
+      verified_by: null,
+      verified_at: null,
+    });
+    setDictActionLoading(null);
+  }
+
+  async function saveEditDict(id: string) {
+    if (!dictEditAdlam.trim()) return;
+    setDictActionLoading(id);
+    await updateDoc(doc(db, 'adlam_dict', id), {
+      adlam: dictEditAdlam.trim(),
+      fr: dictEditFr.trim(),
+      domain: dictEditDomain,
+      status: 'draft',
+      verified_by: null,
+      verified_at: null,
+    });
+    setDictEditingId(null);
+    setDictActionLoading(null);
+  }
+
+  function exportDictJSON() {
+    const verified = dictTerms.filter(t => t.status === 'verified');
+    const data = {
+      _meta: { description: 'Verified ADLaM technical dictionary', updated: new Date().toISOString().slice(0, 10) },
+      terms: verified.map(({ adlam, latin, fr, domain }) => ({ adlam, latin, fr, domain, status: 'verified' })),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `adlam_dict_verified_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -413,6 +514,7 @@ export function AdminPortal({ user }: { user: User }) {
           { id: 'queue', label: 'Review Queue' },
           { id: 'upload', label: 'Upload PDFs' },
           { id: 'paste', label: 'Paste Text' },
+          { id: 'dictionary', label: 'Dictionary' },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
@@ -618,6 +720,169 @@ export function AdminPortal({ user }: { user: User }) {
           </button>
           {pasteWords > 0 && pasteWords < 3 && (
             <p className="text-xs text-zinc-600">Need at least 3 words</p>
+          )}
+        </div>
+      )}
+
+      {/* ── DICTIONARY TAB ── */}
+      {tab === 'dictionary' && (
+        <div className="space-y-4">
+          {/* header */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-bold" style={{ color: '#fd8b00' }}>
+                Draft: {dictTerms.filter(t => t.status === 'draft').length}
+              </span>
+              <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
+                Verified: {dictTerms.filter(t => t.status === 'verified').length}
+              </span>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              {dictTerms.length === 0 && (
+                <button onClick={seedDictFromJson} disabled={dictSeeding}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                  style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                  {dictSeeding
+                    ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Seeding…</>
+                    : <><BookMarked className="w-3.5 h-3.5" /> Seed from JSON</>}
+                </button>
+              )}
+              <button onClick={exportDictJSON}
+                disabled={dictTerms.filter(t => t.status === 'verified').length === 0}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Download className="w-4 h-4" />
+                Export JSON ({dictTerms.filter(t => t.status === 'verified').length})
+              </button>
+            </div>
+          </div>
+
+          {/* filter */}
+          <div className="flex items-center gap-1 p-1 rounded-xl w-fit"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            {(['all', 'draft', 'verified'] as const).map(f => (
+              <button key={f} onClick={() => setDictFilter(f)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+                style={{
+                  background: dictFilter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
+                  color: dictFilter === f ? '#fff' : '#71717a',
+                  border: 'none',
+                }}>
+                {f}
+              </button>
+            ))}
+          </div>
+
+          {/* list */}
+          {dictLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <RefreshCw className="w-6 h-6 text-zinc-600 animate-spin" />
+            </div>
+          ) : dictTerms.length === 0 ? (
+            <div className="text-center py-20 space-y-3">
+              <p className="text-zinc-600 text-sm">No terms yet.</p>
+              <button onClick={seedDictFromJson} disabled={dictSeeding}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40 mx-auto"
+                style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                {dictSeeding
+                  ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Seeding…</>
+                  : <><BookMarked className="w-3.5 h-3.5" /> Seed 50 terms from JSON</>}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {dictTerms
+                .filter(t => dictFilter === 'all' || t.status === dictFilter)
+                .map(t => (
+                  <div key={t.id} className="rounded-2xl border border-white/8 overflow-hidden"
+                    style={{ background: '#131313' }}>
+                    <div className="px-5 py-3 flex items-center gap-3 flex-wrap">
+                      {dictEditingId === t.id ? (
+                        <div className="flex-1 space-y-2">
+                          <input
+                            value={dictEditAdlam}
+                            onChange={e => setDictEditAdlam(e.target.value)}
+                            dir="rtl"
+                            placeholder="ADLaM script…"
+                            className="w-full rounded-lg px-3 py-2 text-white text-xl bg-black/40 outline-none"
+                            style={{ fontFamily: '"Noto Sans Adlam", serif', border: '1px solid rgba(255,139,155,0.3)' }}
+                          />
+                          <div className="flex gap-2">
+                            <input
+                              value={dictEditFr}
+                              onChange={e => setDictEditFr(e.target.value)}
+                              placeholder="French translation"
+                              className="flex-1 rounded-lg px-3 py-2 text-white text-sm bg-black/40 outline-none"
+                              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                            />
+                            <input
+                              value={dictEditDomain}
+                              onChange={e => setDictEditDomain(e.target.value)}
+                              placeholder="domain"
+                              className="w-28 rounded-lg px-3 py-2 text-white text-sm bg-black/40 outline-none"
+                              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => saveEditDict(t.id)} disabled={dictActionLoading === t.id}
+                              className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                              style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                              Save
+                            </button>
+                            <button onClick={() => setDictEditingId(null)}
+                              className="text-xs text-zinc-600 hover:text-white transition-colors px-2">
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xl min-w-0" dir="rtl"
+                            style={{ fontFamily: '"Noto Sans Adlam", serif', color: '#fff' }}>
+                            {t.adlam}
+                          </span>
+                          <span className="text-sm text-zinc-500">·</span>
+                          <span className="text-sm font-bold text-zinc-300">{t.latin}</span>
+                          <span className="text-xs text-zinc-600">→</span>
+                          <span className="text-sm text-zinc-400">{t.fr}</span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full ml-1"
+                            style={{ background: 'rgba(255,255,255,0.06)', color: '#71717a' }}>
+                            {t.domain}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: t.status === 'verified' ? '#4ade8020' : '#fd8b0020',
+                              color: t.status === 'verified' ? '#4ade80' : '#fd8b00',
+                            }}>
+                            {t.status}
+                          </span>
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            <button
+                              onClick={() => { setDictEditingId(t.id); setDictEditAdlam(t.adlam); setDictEditFr(t.fr); setDictEditDomain(t.domain); }}
+                              className="px-2.5 py-1.5 rounded-lg text-xs transition-all hover:opacity-80"
+                              style={{ background: 'rgba(255,255,255,0.06)', color: '#71717a' }}>
+                              ✏️ Edit
+                            </button>
+                            {t.status === 'draft' ? (
+                              <button onClick={() => verifyTerm(t.id)} disabled={dictActionLoading === t.id}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                                style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Verify
+                              </button>
+                            ) : (
+                              <button onClick={() => unverifyTerm(t.id)} disabled={dictActionLoading === t.id}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                                style={{ background: '#f8717120', color: '#f87171', border: '1px solid #f8717140' }}>
+                                <XCircle className="w-3.5 h-3.5" /> Unverify
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
           )}
         </div>
       )}
