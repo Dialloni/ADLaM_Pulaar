@@ -201,10 +201,13 @@ export function AdminPortal({ user }: { user: User }) {
 
   useEffect(() => {
     const q = query(collection(db, 'corpus_submissions'), orderBy('submitted_at', 'desc'));
-    const unsub = onSnapshot(q, snap => {
-      setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission)));
-      setLoading(false);
-    });
+    const unsub = onSnapshot(q,
+      snap => {
+        setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission)));
+        setLoading(false);
+      },
+      _err => { setLoading(false); }
+    );
     return unsub;
   }, []);
 
