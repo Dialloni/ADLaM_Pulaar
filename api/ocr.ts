@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { verifyIdToken } from '../lib/firebaseAdmin';
+import { verifyIdToken } from '../lib/firebaseAdmin.js';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 const MODEL = 'gemini-2.0-flash';
