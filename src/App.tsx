@@ -375,7 +375,7 @@ function StatusDot({ status }: { status: 'ok' | 'degraded' | 'down' | 'checking'
    ROOT APP
 ════════════════════════════════════════════════════ */
 export default function App() {
-  const { user, loading, error: authContextError, signIn, signInWithEmail, signUpWithEmail, logout } = useAuth();
+  const { user, isAdmin, loading, error: authContextError, signIn, signInWithEmail, signUpWithEmail, logout } = useAuth();
 
   /* auth */
   const [email, setEmail]     = useState('');
@@ -1233,7 +1233,7 @@ export default function App() {
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
               { icon: BookOpen,       label: t.documentationLabel,   pg: 'docs'      as NavPage },
               { icon: Activity,       label: t.systemStatusLabel,    pg: 'status'    as NavPage },
-              ...(user?.email === 'gandoadlam25@gmail.com' ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
+              ...(isAdmin ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
             ]).map(({ icon: Icon, label, pg }) => {
               const active = page === pg && !currentProject;
               return (
@@ -2092,7 +2092,7 @@ export default function App() {
               )}
             </div>
 
-          ) : page === 'admin' && user?.email === 'gandoadlam25@gmail.com' ? (
+          ) : page === 'admin' && isAdmin ? (
             /* ══ ADMIN PORTAL ══ */
             <AdminPortal user={user} />
 
