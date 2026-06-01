@@ -117,7 +117,7 @@ async function ocrPdfWithGemini(fileUrl: string, pages: number): Promise<{ text:
     }
     if (!res.ok) {
       const body = await res.json().catch(() => ({})) as { error?: string };
-      throw new Error(body.error ?? `OCR failed: ${res.statusText}`);
+      throw new Error(body.error || `OCR failed (${res.status} ${res.statusText})`);
     }
     const { text } = await res.json() as { text: string };
     return { text, pages };
