@@ -30,6 +30,12 @@ async function generateOcr(base64: string, mimeType: string): Promise<string> {
             { text: OCR_PROMPT },
           ],
         }],
+        config: {
+          // Disable 2.5-flash "thinking" — OCR is mechanical, thinking only
+          // adds latency and risks Vercel 60s gateway timeout (504).
+          thinkingConfig: { thinkingBudget: 0 },
+          temperature: 0,
+        },
       });
       // @google/genai: text is a getter on the response, NOT response.candidates
       return result.text?.trim() ?? '';
