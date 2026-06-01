@@ -7,11 +7,14 @@
     { "source": "/api/edit", "destination": "/api/edit" },
     { "source": "/api/transcribe", "destination": "/api/transcribe" },
     { "source": "/api/status", "destination": "/api/status" },
+    { "source": "/api/ocr", "destination": "/api/ocr" },
+    { "source": "/api/decode", "destination": "/api/decode" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/*.ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "memory": 1024
     }
   }
 }
