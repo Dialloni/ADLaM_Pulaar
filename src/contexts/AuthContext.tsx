@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User, db, doc, setDoc, serverTimestamp, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '../firebase';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User, db, doc, setDoc, getDoc, serverTimestamp, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '../firebase';
+
+const BOOTSTRAP_ADMIN = 'gandoadlam25@gmail.com';
 
 interface AuthContextType {
   user: User | null;
+  isAdmin: boolean;
   loading: boolean;
   error: string | null;
   signIn: () => Promise<void>;
@@ -15,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +27,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       if (currentUser) {
         try {
-          // Sync user profile to Firestore
           const userRef = doc(db, 'users', currentUser.uid);
           await setDoc(userRef, {
             uid: currentUser.uid,
@@ -37,9 +40,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error syncing user profile:', err);
           setError(`Profile Sync Error: ${err.message}`);
         }
+
+        // Check admin status: Firestore admins collection OR bootstrap email
+        const email = currentUser.email?.toLowerCase() ?? '';
+        let admin = email === BOOTSTRAP_ADMIN.toLowerCase();
+        if (!admin) {
+          try {
+            const adminDoc = await getDoc(doc(db, 'admins', email));
+            admin = adminDoc.exists();
+          } catch { /* no access = not admin */ }
+        }
+        setIsAdmin(admin);
         setUser(currentUser);
       } else {
         setUser(null);
+        setIsAdmin(false);
       }
       setLoading(false);
     });
@@ -84,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, signIn, signInWithEmail, signUpWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, error, signIn, signInWithEmail, signUpWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );
