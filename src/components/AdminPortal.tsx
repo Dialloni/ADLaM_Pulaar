@@ -994,36 +994,41 @@ export function AdminPortal({ user }: { user: User }) {
       {tab === 'queue' && (
         <>
           {/* filters */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1 p-1 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              {(['all', 'pending', 'verified', 'rejected'] as const).map(s => (
-                <button key={s} onClick={() => setStatusFilter(s)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
-                  style={{
-                    background: statusFilter === s ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: statusFilter === s ? '#fff' : '#71717a',
-                    border: 'none',
-                  }}>
-                  {s}
-                </button>
-              ))}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 p-1 rounded-xl"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {(['all', 'pending', 'verified', 'rejected'] as const).map(s => (
+                  <button key={s} onClick={() => setStatusFilter(s)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+                    style={{
+                      background: statusFilter === s ? 'rgba(255,255,255,0.1)' : 'transparent',
+                      color: statusFilter === s ? '#fff' : '#71717a',
+                      border: 'none',
+                    }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <span className="text-zinc-600 text-xs ml-auto">{filtered.length} results</span>
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              {sources.map(s => (
-                <button key={s} onClick={() => setSourceFilter(s)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
-                  style={{
-                    background: sourceFilter === s ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: sourceFilter === s ? '#fff' : '#71717a',
-                    border: 'none',
-                  }}>
-                  {s}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1.5">
+              {sources.map(s => {
+                const label = s === 'all' ? 'ALL' : s.replace('telegram:', '').slice(0, 18);
+                return (
+                  <button key={s} onClick={() => setSourceFilter(s)}
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
+                    style={{
+                      background: sourceFilter === s ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+                      color: sourceFilter === s ? '#fff' : '#71717a',
+                      border: `1px solid ${sourceFilter === s ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+                    }}
+                    title={s}>
+                    {label}
+                  </button>
+                );
+              })}
             </div>
-            <span className="text-zinc-600 text-xs ml-auto">{filtered.length} results</span>
           </div>
 
           {/* list */}
