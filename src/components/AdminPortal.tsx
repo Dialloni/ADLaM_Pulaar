@@ -99,19 +99,27 @@ async function extractPdfText(file: File): Promise<{ text: string; pages: number
   return { text: parts.join('\n'), pages: pdf.numPages };
 }
 
-async function ocrPdfWithGemini(fileUrl: string, pages: number): Promise<{ text: string; pages: number }> {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) throw new Error('Not authenticated');
+// Render one PDF page to a JPEG base64 string (browser canvas).
+async function renderPageToJpeg(page: any, scale = 2): Promise<string> {
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext('2d')!;
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  // JPEG q0.9 keeps payload small (well under Vercel 4.5MB inbound limit)
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  return dataUrl.split(',')[1];
+}
 
-  let lastErr = 'OCR failed';
+async function ocrOneImage(base64: string, token: string): Promise<string> {
   for (let attempt = 0; attempt <= 3; attempt++) {
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ fileUrl, mimeType: 'application/pdf' }),
+      body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg' }),
     });
     if (res.status === 429) {
-      lastErr = 'Rate limited — waiting…';
       await new Promise(r => setTimeout(r, 4000 * (attempt + 1)));
       continue;
     }
@@ -120,9 +128,34 @@ async function ocrPdfWithGemini(fileUrl: string, pages: number): Promise<{ text:
       throw new Error(body.error || `OCR failed (${res.status} ${res.statusText})`);
     }
     const { text } = await res.json() as { text: string };
-    return { text, pages };
+    return text;
   }
-  throw new Error(lastErr);
+  throw new Error('OCR rate limited — try again later.');
+}
+
+// Render PDF pages client-side → OCR each page image individually.
+// Per-page image OCR is fast (seconds) and stays under Vercel's 60s limit,
+// unlike sending a whole PDF to Gemini.
+async function ocrPdfWithGemini(
+  file: File,
+  onProgress?: (msg: string) => void,
+): Promise<{ text: string; pages: number }> {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error('Not authenticated');
+
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+  const pages = pdf.numPages;
+
+  const texts: string[] = [];
+  for (let i = 1; i <= pages; i++) {
+    onProgress?.(`Gemini OCR page ${i}/${pages}…`);
+    const page = await pdf.getPage(i);
+    const base64 = await renderPageToJpeg(page, 2);
+    const text = await ocrOneImage(base64, token);
+    if (text) texts.push(text);
+  }
+  return { text: texts.join('\n\n'), pages };
 }
 
 export function AdminPortal({ user }: { user: User }) {
@@ -444,13 +477,12 @@ export function AdminPortal({ user }: { user: User }) {
         let usedOcr = false;
 
         if (ratio === 0 || word_count < 10) {
-          // fallback: render pages → Gemini vision OCR
-          setResults(prev => prev.map(r =>
-            r.fileName === file.name
-              ? { ...r, status: 'ready', error: 'Running Gemini OCR…' }
-              : r
+          // fallback: render pages client-side → Gemini vision OCR per page
+          const setMsg = (msg: string) => setResults(prev => prev.map(r =>
+            r.fileName === file.name ? { ...r, status: 'ready', error: msg } : r
           ));
-          extracted = await ocrPdfWithGemini(file_url, extracted.pages);
+          setMsg('Running Gemini OCR…');
+          extracted = await ocrPdfWithGemini(file, setMsg);
           ratio = adlamRatio(extracted.text);
           word_count = extracted.text.trim().split(/\s+/).filter(Boolean).length;
           usedOcr = true;
