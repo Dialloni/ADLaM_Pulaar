@@ -15,10 +15,6 @@ Output the extracted text exactly as it appears, preserving:
 If the document contains a mix of scripts, include all of it.
 Output ONLY the extracted text, nothing else.`;
 
-export const config = {
-  api: { bodyParser: { sizeLimit: '25mb' } },
-};
-
 async function generateOcr(base64: string, mimeType: string): Promise<string> {
   for (let attempt = 0; attempt <= 3; attempt++) {
     try {
