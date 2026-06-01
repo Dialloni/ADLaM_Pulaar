@@ -67,6 +67,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     const is429 = /429|quota|rate|RESOURCE_EXHAUSTED|Too Many/i.test(msg);
-    res.status(is429 ? 429 : 500).json({ error: msg });
+    const isTooLarge = /too large|size|413|payload/i.test(msg);
+    const isTimeout = /timeout|deadline/i.test(msg);
+    let friendly = msg;
+    if (is429)     friendly = 'Gemini rate limit hit — wait 30 seconds and try again.';
+    if (isTooLarge) friendly = 'PDF too large for OCR — try splitting into smaller files (under 15MB).';
+    if (isTimeout)  friendly = 'OCR timed out — PDF may be too long. Try fewer pages at once.';
+    res.status(is429 ? 429 : 500).json({ error: friendly });
   }
 }
