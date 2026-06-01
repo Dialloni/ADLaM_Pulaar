@@ -99,28 +99,16 @@ async function extractPdfText(file: File): Promise<{ text: string; pages: number
   return { text: parts.join('\n'), pages: pdf.numPages };
 }
 
-async function ocrPdfWithGemini(file: File): Promise<{ text: string; pages: number }> {
+async function ocrPdfWithGemini(fileUrl: string, pages: number): Promise<{ text: string; pages: number }> {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('Not authenticated');
-
-  const arrayBuffer = await file.arrayBuffer();
-  const uint8 = new Uint8Array(arrayBuffer);
-
-  // Encode to base64 BEFORE pdfjs detaches the buffer
-  let binary = '';
-  for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
-  const pdfBase64 = btoa(binary);
-
-  // Pass a copy to pdfjs so it can detach freely
-  const pdf = await pdfjsLib.getDocument({ data: uint8.slice() }).promise;
-  const pages = pdf.numPages;
 
   let lastErr = 'OCR failed';
   for (let attempt = 0; attempt <= 3; attempt++) {
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ imageBase64: pdfBase64, mimeType: 'application/pdf' }),
+      body: JSON.stringify({ fileUrl, mimeType: 'application/pdf' }),
     });
     if (res.status === 429) {
       lastErr = 'Rate limited — waiting…';
@@ -462,7 +450,7 @@ export function AdminPortal({ user }: { user: User }) {
               ? { ...r, status: 'ready', error: 'Running Gemini OCR…' }
               : r
           ));
-          extracted = await ocrPdfWithGemini(file);
+          extracted = await ocrPdfWithGemini(file_url, extracted.pages);
           ratio = adlamRatio(extracted.text);
           word_count = extracted.text.trim().split(/\s+/).filter(Boolean).length;
           usedOcr = true;

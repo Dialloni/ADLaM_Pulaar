@@ -14,26 +14,69 @@ Output the extracted text exactly as it appears, preserving:
 If the document contains a mix of scripts, include all of it.
 Output ONLY the extracted text, nothing else.`;
 
-async function callWithRetry(imageBase64: string, mimeType: string, retries = 3): Promise<string> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
+export const config = {
+  api: { bodyParser: { sizeLimit: '50mb' } },
+};
+
+async function ocrViaFilesApi(fileUrl: string, mimeType: string): Promise<string> {
+  // Fetch PDF from Firebase Storage (no body size limit)
+  const fetchRes = await fetch(fileUrl);
+  if (!fetchRes.ok) throw new Error(`Failed to fetch file: ${fetchRes.statusText}`);
+  const buffer = await fetchRes.arrayBuffer();
+
+  // Upload to Gemini Files API
+  const blob = new Blob([buffer], { type: mimeType });
+  const uploaded = await ai.files.upload({
+    file: blob,
+    config: { displayName: 'adlam-corpus', mimeType },
+  });
+
+  // Wait for processing
+  let fileInfo = await ai.files.get({ name: uploaded.name! });
+  let waited = 0;
+  while (fileInfo.state === 'PROCESSING' && waited < 90000) {
+    await new Promise(r => setTimeout(r, 3000));
+    waited += 3000;
+    fileInfo = await ai.files.get({ name: fileInfo.name! });
+  }
+  if (fileInfo.state === 'FAILED') throw new Error('Gemini file processing failed');
+
+  // Generate
+  const result = await ai.models.generateContent({
+    model: 'gemini-2.0-flash',
+    contents: [{
+      role: 'user',
+      parts: [
+        { fileData: { mimeType: fileInfo.mimeType!, fileUri: fileInfo.uri! } },
+        { text: OCR_PROMPT },
+      ],
+    }],
+  });
+
+  // Cleanup (best-effort)
+  ai.files.delete({ name: fileInfo.name! }).catch(() => {});
+
+  return result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
+}
+
+async function ocrViaInline(imageBase64: string, mimeType: string): Promise<string> {
+  for (let attempt = 0; attempt <= 3; attempt++) {
     try {
       const result = await ai.models.generateContent({
         model: 'gemini-2.0-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { inlineData: { mimeType, data: imageBase64 } },
-              { text: OCR_PROMPT },
-            ],
-          },
-        ],
+        contents: [{
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType, data: imageBase64 } },
+            { text: OCR_PROMPT },
+          ],
+        }],
       });
       return result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? '';
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       const is429 = /429|quota|rate|RESOURCE_EXHAUSTED|Too Many/i.test(msg);
-      if (is429 && attempt < retries) {
+      if (is429 && attempt < 3) {
         await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
         continue;
       }
@@ -54,15 +97,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  const { imageBase64, mimeType = 'image/png' } = req.body as {
-    imageBase64: string;
+  const { fileUrl, imageBase64, mimeType = 'application/pdf' } = req.body as {
+    fileUrl?: string;
+    imageBase64?: string;
     mimeType?: string;
   };
 
-  if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
+  if (!fileUrl && !imageBase64) return res.status(400).json({ error: 'fileUrl or imageBase64 required' });
 
   try {
-    const text = await callWithRetry(imageBase64, mimeType);
+    const text = fileUrl
+      ? await ocrViaFilesApi(fileUrl, mimeType)
+      : await ocrViaInline(imageBase64!, mimeType);
     res.json({ text });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -70,9 +116,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isTooLarge = /too large|size|413|payload/i.test(msg);
     const isTimeout = /timeout|deadline/i.test(msg);
     let friendly = msg;
-    if (is429)     friendly = 'Gemini rate limit hit — wait 30 seconds and try again.';
-    if (isTooLarge) friendly = 'PDF too large for OCR — try splitting into smaller files (under 15MB).';
-    if (isTimeout)  friendly = 'OCR timed out — PDF may be too long. Try fewer pages at once.';
+    if (is429)      friendly = 'Gemini rate limit hit — wait 30 seconds and try again.';
+    if (isTooLarge) friendly = 'PDF too large — try splitting into smaller files.';
+    if (isTimeout)  friendly = 'OCR timed out — PDF may be too long. Try fewer pages.';
     res.status(is429 ? 429 : 500).json({ error: friendly });
   }
 }
