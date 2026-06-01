@@ -814,14 +814,34 @@ export function AdminPortal({ user }: { user: User }) {
           {/* add term form */}
           <div className="rounded-2xl border border-white/8 p-5 space-y-3" style={{ background: '#131313' }}>
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Add New Term</p>
-            <input
-              value={addAdlam}
-              onChange={e => setAddAdlam(e.target.value)}
-              dir="rtl"
-              placeholder="𞤢𞤣𞤤𞤢𞤥 — type ADLaM script here"
-              className="w-full rounded-xl px-4 py-3 text-white text-xl bg-black/40 outline-none"
-              style={{ fontFamily: '"Noto Sans Adlam", serif', border: '1px solid rgba(255,139,155,0.25)' }}
-            />
+            <div className="space-y-1.5">
+              <input
+                value={addAdlam}
+                onChange={e => setAddAdlam(e.target.value)}
+                dir="rtl"
+                placeholder="𞤢𞤣𞤤𞤢𞤥 — type ADLaM script here"
+                className="w-full rounded-xl px-4 py-3 text-white text-xl bg-black/40 outline-none transition-all"
+                style={{
+                  fontFamily: '"Noto Sans Adlam", serif',
+                  border: addAdlam.trim() === ''
+                    ? '1px solid rgba(255,139,155,0.25)'
+                    : adlamRatio(addAdlam) >= 0.8
+                      ? '1px solid #4ade80'
+                      : '1px solid #f87171',
+                }}
+              />
+              {addAdlam.trim() !== '' && (
+                adlamRatio(addAdlam) >= 0.8 ? (
+                  <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: '#4ade80' }}>
+                    ✓ ADLaM script detected
+                  </p>
+                ) : (
+                  <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: '#f87171' }}>
+                    ✗ Type in ADLaM script — characters not recognized as ADLaM
+                  </p>
+                )
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-3">
               <input
                 value={addLatin}
@@ -849,7 +869,7 @@ export function AdminPortal({ user }: { user: User }) {
             </div>
             <button
               onClick={addTerm}
-              disabled={addSubmitting || !addAdlam.trim() || !addLatin.trim()}
+              disabled={addSubmitting || !addAdlam.trim() || !addLatin.trim() || adlamRatio(addAdlam) < 0.8}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-40"
               style={{ background: addSuccess ? '#4ade8030' : 'var(--gradient-brand)', color: addSuccess ? '#4ade80' : '#000' }}>
               {addSubmitting
