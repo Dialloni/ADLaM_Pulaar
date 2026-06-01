@@ -143,6 +143,7 @@ export function AdminPortal({ user }: { user: User }) {
   /* ── QUEUE STATE ── */
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [corpusError, setCorpusError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | SubmissionStatus>('pending');
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -206,7 +207,7 @@ export function AdminPortal({ user }: { user: User }) {
         setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission)));
         setLoading(false);
       },
-      _err => { setLoading(false); }
+      err => { setCorpusError(err.message); setLoading(false); }
     );
     return unsub;
   }, []);
@@ -529,6 +530,14 @@ export function AdminPortal({ user }: { user: User }) {
           Export JSONL ({stats.verified})
         </button>
       </div>
+
+      {/* corpus error */}
+      {corpusError && (
+        <div className="rounded-xl px-4 py-3 text-xs font-bold"
+          style={{ background: '#f8717120', border: '1px solid #f8717140', color: '#f87171' }}>
+          Firestore error: {corpusError}
+        </div>
+      )}
 
       {/* stats */}
       <div className="grid grid-cols-3 gap-4">
