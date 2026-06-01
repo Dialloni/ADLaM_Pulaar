@@ -1233,7 +1233,7 @@ export default function App() {
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
               { icon: BookOpen,       label: t.documentationLabel,   pg: 'docs'      as NavPage },
               { icon: Activity,       label: t.systemStatusLabel,    pg: 'status'    as NavPage },
-              ...(user?.email === 'abd9735@nyu.edu' ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
+              ...(user?.email === 'gandoadlam25@gmail.com' ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
             ]).map(({ icon: Icon, label, pg }) => {
               const active = page === pg && !currentProject;
               return (
@@ -2092,7 +2092,7 @@ export default function App() {
               )}
             </div>
 
-          ) : page === 'admin' && user?.email === 'abd9735@nyu.edu' ? (
+          ) : page === 'admin' && user?.email === 'gandoadlam25@gmail.com' ? (
             /* ══ ADMIN PORTAL ══ */
             <AdminPortal user={user} />
 
