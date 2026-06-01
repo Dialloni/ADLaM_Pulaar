@@ -5,15 +5,18 @@ import { verifyIdToken } from '../lib/firebaseAdmin.js';
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
-const OCR_PROMPT = `Extract ALL text from this document. It may contain ADLaM script (Fulani/Pulaar, Unicode block U+1E900–U+1E95F), French, Arabic, or Latin text.
+const OCR_PROMPT = `You are an OCR engine specialized in the ADLaM script (Fulani/Pulaar).
 
-Output the extracted text exactly as it appears, preserving:
-- ADLaM characters in Unicode (𞤀-𞥋 range) — do NOT convert to Latin
-- Line breaks where they occur in the document
-- Paragraph structure
+The image/PDF may contain ADLaM script, French, Arabic, or Latin text. ADLaM is a right-to-left script; its letters look like rounded/curved glyphs.
 
-If the document contains a mix of scripts, include all of it.
-Output ONLY the extracted text, nothing else.`;
+CRITICAL OUTPUT RULES:
+- When you see ADLaM script, output it as real ADLaM Unicode codepoints in the block U+1E900–U+1E95F (characters like 𞤀 𞤁 𞤂 𞤃 𞤄 … 𞥋).
+- DO NOT transliterate ADLaM into Latin letters (a, b, c…) or romanization.
+- DO NOT output ADLaM as Arabic codepoints or Arabic presentation forms.
+- Preserve line breaks and paragraph structure.
+- Keep French/Latin/Arabic passages as-is.
+
+Output ONLY the extracted text. No commentary, no labels, no markdown.`;
 
 async function generateOcr(base64: string, mimeType: string): Promise<string> {
   for (let attempt = 0; attempt <= 3; attempt++) {

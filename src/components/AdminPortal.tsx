@@ -464,8 +464,10 @@ export function AdminPortal({ user }: { user: User }) {
             : r
         ));
 
-        // 3. Write to Firestore if has ADLaM content
-        if (ratio > 0 && word_count > 10) {
+        // 3. Save any extracted text to the pending queue for review.
+        //    Don't discard low-ADLaM-ratio results — Gemini may transliterate
+        //    to Latin or emit pre-Unicode codepoints; admin inspects/edits/rejects.
+        if (word_count >= 3) {
           await addDoc(collection(db, 'corpus_submissions'), {
             source: 'pdf',
             raw_text: text,
@@ -476,16 +478,18 @@ export function AdminPortal({ user }: { user: User }) {
             submitted_at: serverTimestamp(),
             verified_by: null,
             verified_at: null,
-            source_meta: { file_name: file.name, pages, ocr: usedOcr },
+            source_meta: { file_name: file.name, pages, ocr: usedOcr, low_adlam: ratio < 0.1 },
             file_url,
           });
           setResults(prev => prev.map(r =>
-            r.fileName === file.name ? { ...r, status: 'done' } : r
+            r.fileName === file.name
+              ? { ...r, status: 'done', error: ratio < 0.1 ? 'Saved, but low ADLaM ratio — review in queue (may be Latin/pre-Unicode).' : undefined }
+              : r
           ));
         } else {
           setResults(prev => prev.map(r =>
             r.fileName === file.name
-              ? { ...r, status: 'error', error: 'No ADLaM text found even after Gemini OCR. Check if PDF contains ADLaM content.' }
+              ? { ...r, status: 'error', error: 'Gemini returned almost no text. PDF may be blank or unreadable.' }
               : r
           ));
         }
