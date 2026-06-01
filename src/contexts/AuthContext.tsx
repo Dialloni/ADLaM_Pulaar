@@ -48,11 +48,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check admin status: Firestore admins collection OR bootstrap email
         const email = currentUser.email?.toLowerCase() ?? '';
         let admin = email === BOOTSTRAP_ADMIN.toLowerCase();
+        console.log('[Auth] email:', currentUser.email, '| isAdmin:', admin, '| provider:', currentUser.providerData[0]?.providerId);
         if (!admin) {
           try {
             const adminDoc = await getDoc(doc(db, 'admins', email));
             admin = adminDoc.exists();
-          } catch { /* no access = not admin */ }
+            console.log('[Auth] Firestore admin check:', admin);
+          } catch (e) {
+            console.log('[Auth] Firestore admin check failed:', e);
+          }
         }
         setIsAdmin(admin);
         setUser(currentUser);
