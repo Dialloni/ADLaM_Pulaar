@@ -1,11 +1,18 @@
 import { useState, useRef } from 'react';
 import {
   collection, addDoc, db, serverTimestamp,
-  storage, ref, uploadBytesResumable, getDownloadURL,
+  storage, ref, uploadBytes, getDownloadURL,
 } from '../firebase';
 import type { User } from '../firebase';
 import { Camera, X, CheckCircle2, RefreshCw, ImagePlus } from 'lucide-react';
 import { cn } from '../lib/utils';
+
+const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
+  Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)),
+  ]);
 
 const P = '#ff8b9b';
 const MANROPE = 'Manrope, sans-serif';
@@ -99,16 +106,13 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
         file_name = `${Date.now()}_${safe}`;
         await user.getIdToken(true);
         const storageRef = ref(storage, `collector/${user.uid}/${file_name}`);
-        await new Promise<void>((resolve, reject) => {
-          const task = uploadBytesResumable(storageRef, imageFile, { contentType: imageFile.type });
-          task.on('state_changed',
-            snap => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-            reject, resolve);
-        });
-        file_url = await getDownloadURL(storageRef);
+        setProgress(50);
+        await withTimeout(uploadBytes(storageRef, imageFile, { contentType: imageFile.type }), 60_000, 'Upload');
+        file_url = await withTimeout(getDownloadURL(storageRef), 30_000, 'Get URL');
+        setProgress(100);
       }
 
-      await addDoc(collection(db, 'corpus_submissions'), {
+      await withTimeout(addDoc(collection(db, 'corpus_submissions'), {
         source: 'collector',
         raw_text: text.trim(),
         adlam_ratio: ratio,
@@ -120,7 +124,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
         verified_at: null,
         source_meta: { submitted_by: user.email, file_name, has_image: !!imageFile },
         file_url,
-      });
+      }), 30_000, 'Save');
 
       setText('');
       clearImage();
