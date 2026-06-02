@@ -3,16 +3,18 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getFirestore, doc, setDoc, getDoc, collection, query, where, onSnapshot, serverTimestamp, Timestamp, addDoc, updateDoc, orderBy, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 
+// Trim every value — pasted env vars (esp. on Vercel) can carry stray
+// whitespace/newlines that corrupt the bucket name or auth domain (#storage-404).
 const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY?.trim(),
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim(),
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim(),
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim(),
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim(),
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID?.trim(),
 };
 
-const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || '(default)';
+const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID?.trim() || '(default)';
 
 const app = initializeApp(firebaseConfig);
 const db  = getFirestore(app, firestoreDatabaseId);
