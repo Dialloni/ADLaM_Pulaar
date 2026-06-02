@@ -97,9 +97,10 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
       if (imageFile) {
         const safe = imageFile.name.replace(/[^\w.\-]/g, '_');
         file_name = `${Date.now()}_${safe}`;
+        await user.getIdToken(true);
         const storageRef = ref(storage, `collector/${user.uid}/${file_name}`);
         await new Promise<void>((resolve, reject) => {
-          const task = uploadBytesResumable(storageRef, imageFile);
+          const task = uploadBytesResumable(storageRef, imageFile, { contentType: imageFile.type });
           task.on('state_changed',
             snap => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
             reject, resolve);
