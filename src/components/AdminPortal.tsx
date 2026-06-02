@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  collection, query, orderBy, limit, onSnapshot, updateDoc, doc, setDoc,
+  collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, setDoc,
   db, serverTimestamp, addDoc, storage, ref, uploadBytesResumable, getDownloadURL,
   auth,
 } from '../firebase';
@@ -222,15 +222,26 @@ export function AdminPortal({ user }: { user: User }) {
   }
 
   useEffect(() => {
-    const q = query(collection(db, 'corpus_submissions'), orderBy('submitted_at', 'desc'), limit(100));
-    const unsub = onSnapshot(q,
-      snap => {
-        setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission)));
-        setLoading(false);
-      },
-      err => { setCorpusError(err.message); setLoading(false); }
-    );
-    return unsub;
+    // Two listeners merged client-side so ALL pending submissions are always
+    // visible (review queue), plus the 100 most-recent of any status for context.
+    // Neither query uses where+orderBy together, so no composite index is needed.
+    let pendingDocs: Submission[] = [];
+    let recentDocs: Submission[] = [];
+    const millis = (s: Submission) => (s.submitted_at as any)?.toMillis?.() ?? 0;
+    const recompute = () => {
+      const m = new Map<string, Submission>();
+      recentDocs.forEach(s => m.set(s.id, s));
+      pendingDocs.forEach(s => m.set(s.id, s));
+      setSubmissions([...m.values()].sort((a, b) => millis(b) - millis(a)));
+    };
+    const toSub = (d: any) => ({ id: d.id, ...d.data() } as Submission);
+    const onErr = (err: any) => { setCorpusError(err.message); setLoading(false); };
+
+    const qPending = query(collection(db, 'corpus_submissions'), where('status', '==', 'pending'));
+    const qRecent = query(collection(db, 'corpus_submissions'), orderBy('submitted_at', 'desc'), limit(100));
+    const unsubP = onSnapshot(qPending, snap => { pendingDocs = snap.docs.map(toSub); recompute(); setLoading(false); }, onErr);
+    const unsubR = onSnapshot(qRecent, snap => { recentDocs = snap.docs.map(toSub); recompute(); setLoading(false); }, onErr);
+    return () => { unsubP(); unsubR(); };
   }, []);
 
   useEffect(() => {
