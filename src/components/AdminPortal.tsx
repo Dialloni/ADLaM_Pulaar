@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  collection, query, orderBy, onSnapshot, updateDoc, doc, setDoc,
+  collection, query, orderBy, limit, onSnapshot, updateDoc, doc, setDoc,
   db, serverTimestamp, addDoc, storage, ref, uploadBytesResumable, getDownloadURL,
   auth,
 } from '../firebase';
@@ -222,7 +222,7 @@ export function AdminPortal({ user }: { user: User }) {
   }
 
   useEffect(() => {
-    const q = query(collection(db, 'corpus_submissions'), orderBy('submitted_at', 'desc'));
+    const q = query(collection(db, 'corpus_submissions'), orderBy('submitted_at', 'desc'), limit(100));
     const unsub = onSnapshot(q,
       snap => {
         setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission)));
