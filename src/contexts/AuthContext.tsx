@@ -25,7 +25,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Handle redirect result on page load (Safari uses redirect instead of popup)
-    getRedirectResult(auth).catch(() => {});
+    getRedirectResult(auth)
+      .then(res => { if (res) console.log('[Auth] redirect sign-in ok:', res.user.email); })
+      .catch(err => {
+        console.error('[Auth] redirect result error:', err.code, err.message);
+        setError(`Sign-in failed: ${err.code || err.message}`);
+      });
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setError(null);
