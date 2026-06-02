@@ -1113,6 +1113,16 @@ export function AdminPortal({ user }: { user: User }) {
                   </div>
 
                   <div className="px-5 py-4">
+                    {s.file_url && s.source_meta?.has_image && (
+                      <a href={s.file_url} target="_blank" rel="noopener noreferrer" className="block mb-3">
+                        <img
+                          src={s.file_url}
+                          alt="contributor submission"
+                          loading="lazy"
+                          className="max-h-72 rounded-xl border border-white/10 object-contain hover:opacity-90 transition-opacity"
+                        />
+                      </a>
+                    )}
                     {editingId === s.id ? (
                       <textarea
                         value={editText}
