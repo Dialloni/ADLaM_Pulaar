@@ -5,7 +5,7 @@ import {
   Search, Bell, LayoutDashboard, FolderKanban, Globe2, Settings,
   Users, BookOpen, Activity, Sparkles, LogOut, ChevronRight,
   RotateCcw, CheckCircle2, XCircle, AlertCircle, X, PanelLeft,
-  HelpCircle, Gift, Globe, Layers, Github, Figma,
+  HelpCircle, Gift, Globe, Layers, Github, Figma, Camera,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
@@ -21,6 +21,7 @@ import { Preview } from './components/Preview';
 import { CodeEditor } from './components/CodeEditor';
 import { LanguageSelector } from './components/LanguageSelector';
 import { AdminPortal } from './components/AdminPortal';
+import { GandoCollector } from './components/GandoCollector';
 import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode } from './translations';
 
@@ -35,7 +36,7 @@ const S = '#fd8b00';
 const T = '#bca2ff';
 const MANROPE = 'Manrope, sans-serif';
 
-type NavPage = 'dashboard' | 'projects' | 'assets' | 'templates' | 'docs' | 'status' | 'admin';
+type NavPage = 'dashboard' | 'projects' | 'assets' | 'templates' | 'docs' | 'status' | 'collector' | 'admin';
 
 const TEMPLATE_I18N: Record<string, { pageTitle: string; pageSubtitle: string; viewAll: string; preview: string; useTemplate: string; credit: string; templates: Record<string, { name: string; description: string; starterPrompt: string }> }> = {
   en: {
@@ -1233,6 +1234,7 @@ export default function App() {
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
               { icon: BookOpen,       label: t.documentationLabel,   pg: 'docs'      as NavPage },
               { icon: Activity,       label: t.systemStatusLabel,    pg: 'status'    as NavPage },
+              { icon: Camera,         label: selectedLang.code === 'fr' ? 'Collecteur' : 'Collector', pg: 'collector' as NavPage },
               ...(isAdmin ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
             ]).map(({ icon: Icon, label, pg }) => {
               const active = page === pg && !currentProject;
@@ -2091,6 +2093,10 @@ export default function App() {
                 </p>
               )}
             </div>
+
+          ) : page === 'collector' ? (
+            /* ══ GANDO COLLECTOR ══ */
+            <GandoCollector user={user} langCode={selectedLang.code} />
 
           ) : page === 'admin' && isAdmin ? (
             /* ══ ADMIN PORTAL ══ */
