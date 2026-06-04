@@ -2146,7 +2146,9 @@ export default function App() {
                   {(() => {
                     const raw = user.displayName?.trim().split(/\s+/)[0] || user.email?.split('@')[0] || 'Builder';
                     const firstName = raw.charAt(0).toUpperCase() + raw.slice(1);
-                    const greet = selectedLang.code === 'fr' ? 'Bonjour' : 'Welcome';
+                    const greet = selectedLang.code === 'fr' ? 'Bonjour'
+                      : selectedLang.code === 'ff-adlm' ? '𞤔𞤢𞥄𞤪𞤢𞥄𞤥𞤢'
+                      : 'Welcome';
                     return (
                       <h1 className={cn('text-center font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(30px, 5vw, 58px)', lineHeight: 1.05 }}>
@@ -2158,7 +2160,9 @@ export default function App() {
                     );
                   })()}
                   <p className={cn('text-center text-zinc-500 mb-8', isAdlam && 'font-adlam')} style={{ fontSize: 15 }}>
-                    {selectedLang.code === 'fr' ? 'Que construisons-nous aujourd’hui ?' : 'What will we build today?'}
+                    {selectedLang.code === 'fr' ? 'Que construisons-nous aujourd’hui ?'
+                      : selectedLang.code === 'ff-adlm' ? t.gandoViewSubtitle
+                      : 'What will we build today?'}
                   </p>
 
                   {/* import mode tabs */}
