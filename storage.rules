@@ -14,11 +14,17 @@ service firebase.storage {
 
     match /collector/{uid}/{fileName} {
       allow read: if request.auth != null
-        && request.auth.token.email == 'gandoadlam25@gmail.com';
+        && (request.auth.uid == uid
+         || request.auth.token.email == 'gandoadlam25@gmail.com');
+      // Images capped at 10MB; audio recordings (contributor + admin Pulaar) at 25MB.
       allow write: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.size < 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && (
+          (request.resource.contentType.matches('image/.*')
+            && request.resource.size < 10 * 1024 * 1024)
+          || (request.resource.contentType.matches('audio/.*')
+            && request.resource.size < 25 * 1024 * 1024)
+        );
     }
   }
 }
