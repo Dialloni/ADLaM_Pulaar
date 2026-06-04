@@ -6,6 +6,7 @@ import {
 import type { User } from '../firebase';
 import { Camera, X, CheckCircle2, RefreshCw, ImagePlus } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { AudioRecorder } from './AudioRecorder';
 
 const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
   Promise.race([
@@ -25,30 +26,40 @@ type Domain = typeof DOMAINS[number];
 
 const I18N: Partial<Record<LangCode, {
   title: string; subtitle: string; photoLabel: string; photoHint: string;
-  textLabel: string; textPlaceholder: string; domainLabel: string;
-  submit: string; submitting: string; success: string; needText: string;
+  audioLabel: string; audioHint: string;
+  enLabel: string; frLabel: string; latinLabel: string; adlamLabel: string;
+  fieldsHint: string; domainLabel: string;
+  submit: string; submitting: string; success: string; needAnything: string;
   adlamOk: string; adlamBad: string; remove: string;
 }>> = {
-  // NOTE: ADLaM (ff-adlm) UI strings intentionally fall back to English for
-  // now — to be replaced with verified ADLaM script by a native speaker.
+  // NOTE: ADLaM (ff-adlm) UI strings fall back to English for now — to be
+  // replaced with verified ADLaM script by a native speaker.
   en: {
     title: 'GANDO Collector',
-    subtitle: 'Contribute ADLaM text & photos to grow the corpus',
+    subtitle: 'Contribute a word — in any language you know. An instructor fills the ADLaM.',
     photoLabel: 'Photo (optional)', photoHint: 'JPG / PNG · max 10MB',
-    textLabel: 'ADLaM text', textPlaceholder: 'Type or transcribe ADLaM text here…',
+    audioLabel: 'Audio (optional) · record in Pulaar if you can', audioHint: 'mic',
+    enLabel: 'English', frLabel: 'French', latinLabel: 'Pulaar (Latin letters)',
+    adlamLabel: 'ADLaM script',
+    fieldsHint: 'Fill whatever you know — at least one field or an audio recording.',
     domainLabel: 'Category', submit: 'Submit contribution', submitting: 'Submitting…',
-    success: 'Thank you! Sent for review.', needText: 'Enter at least a few words of ADLaM',
-    adlamOk: '✓ ADLaM script detected', adlamBad: '✗ Type in ADLaM script',
+    success: 'Thank you! Sent for review.',
+    needAnything: 'Enter at least one word, or record audio',
+    adlamOk: '✓ ADLaM script detected', adlamBad: '✗ Not ADLaM script (saved anyway)',
     remove: 'Remove',
   },
   fr: {
     title: 'Collecteur GANDO',
-    subtitle: 'Contribuez du texte et des photos ADLaM pour enrichir le corpus',
+    subtitle: 'Contribuez un mot — dans la langue que vous connaissez. Un instructeur ajoute l’ADLaM.',
     photoLabel: 'Photo (optionnel)', photoHint: 'JPG / PNG · max 10 Mo',
-    textLabel: 'Texte ADLaM', textPlaceholder: 'Tapez ou transcrivez du texte ADLaM ici…',
+    audioLabel: 'Audio (optionnel) · enregistrez en pulaar si possible', audioHint: 'micro',
+    enLabel: 'Anglais', frLabel: 'Français', latinLabel: 'Pulaar (lettres latines)',
+    adlamLabel: 'Écriture ADLaM',
+    fieldsHint: 'Remplissez ce que vous savez — au moins un champ ou un enregistrement audio.',
     domainLabel: 'Catégorie', submit: 'Envoyer la contribution', submitting: 'Envoi…',
-    success: 'Merci ! Envoyé pour révision.', needText: 'Entrez au moins quelques mots en ADLaM',
-    adlamOk: '✓ Écriture ADLaM détectée', adlamBad: '✗ Écrivez en ADLaM',
+    success: 'Merci ! Envoyé pour révision.',
+    needAnything: 'Entrez au moins un mot, ou enregistrez un audio',
+    adlamOk: '✓ Écriture ADLaM détectée', adlamBad: '✗ Pas en ADLaM (enregistré quand même)',
     remove: 'Retirer',
   },
 };
@@ -60,23 +71,34 @@ function adlamRatio(text: string): number {
   return adlam.length / letters.length;
 }
 
+function audioExt(mime: string): string {
+  if (mime.includes('mp4')) return 'mp4';
+  if (mime.includes('ogg')) return 'ogg';
+  return 'webm';
+}
+
 export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode?: LangCode }) {
-  const t = I18N[langCode] ?? I18N.en;
+  const t = I18N[langCode] ?? I18N.en!;
   const isAdlam = langCode === 'ff-adlm';
 
-  const [text, setText] = useState('');
+  const [adlam, setAdlam] = useState('');
+  const [en, setEn] = useState('');
+  const [fr, setFr] = useState('');
+  const [latin, setLatin] = useState('');
   const [domain, setDomain] = useState<Domain>('casual');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const ratio = adlamRatio(text);
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
-  const canSubmit = words >= 1 && ratio >= 0.5 && !submitting;
+  const ratio = adlamRatio(adlam);
+  const hasText = [adlam, en, fr, latin].some(v => v.trim() !== '');
+  const hasAudio = !!audioBlob;
+  const canSubmit = (hasText || hasAudio) && !submitting;
 
   function pickImage(file: File | undefined) {
     if (!file) return;
@@ -101,33 +123,69 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
       let file_url: string | null = null;
       let file_name: string | null = null;
 
+      // ── Image upload (unchanged — one-shot uploadBytes + timeouts) ──
       if (imageFile) {
         const safe = imageFile.name.replace(/[^\w.\-]/g, '_');
         file_name = `${Date.now()}_${safe}`;
         await user.getIdToken(true);
         const storageRef = ref(storage, `collector/${user.uid}/${file_name}`);
-        setProgress(50);
+        setProgress(40);
         await withTimeout(uploadBytes(storageRef, imageFile, { contentType: imageFile.type }), 60_000, 'Upload');
         file_url = await withTimeout(getDownloadURL(storageRef), 30_000, 'Get URL');
-        setProgress(100);
+        setProgress(60);
       }
+
+      // ── Audio upload (sibling of image, separate path/field) ──
+      let audio_url: string | null = null;
+      let audio_name: string | null = null;
+      if (audioBlob) {
+        const ext = audioExt(audioBlob.type);
+        audio_name = `audio_${Date.now()}.${ext}`;
+        await user.getIdToken(true);
+        const audioRef = ref(storage, `collector/${user.uid}/${audio_name}`);
+        setProgress(80);
+        await withTimeout(uploadBytes(audioRef, audioBlob, { contentType: audioBlob.type || 'audio/webm' }), 60_000, 'Audio upload');
+        audio_url = await withTimeout(getDownloadURL(audioRef), 30_000, 'Get audio URL');
+        setProgress(95);
+      }
+
+      const adlam_text = adlam.trim();
+      const wordSource = adlam_text || latin.trim() || en.trim() || fr.trim();
+      const word_count = wordSource.split(/\s+/).filter(Boolean).length;
 
       await withTimeout(addDoc(collection(db, 'corpus_submissions'), {
         source: 'collector',
-        raw_text: text.trim(),
+        // Keep raw_text populated (= ADLaM, or best available) so the existing
+        // admin queue still renders something for every doc.
+        raw_text: adlam_text || wordSource,
+        adlam_text,
+        gloss_en: en.trim(),
+        gloss_fr: fr.trim(),
+        pulaar_latin: latin.trim(),
         adlam_ratio: ratio,
-        word_count: words,
-        status: 'pending',
+        word_count,
+        // No ADLaM yet → route to instructors to complete it.
+        status: adlam_text ? 'pending' : 'needs_adlam',
         domain,
         submitted_at: serverTimestamp(),
         verified_by: null,
         verified_at: null,
-        source_meta: { submitted_by: user.email, file_name, has_image: !!imageFile },
+        source_meta: {
+          submitted_by: user.email,
+          file_name,
+          has_image: !!imageFile,
+          has_audio: !!audioBlob,
+        },
         file_url,
+        audio_url,
+        audio_name,
+        pulaar_audio_url: null,
       }), 30_000, 'Save');
 
-      setText('');
+      setProgress(100);
+      setAdlam(''); setEn(''); setFr(''); setLatin('');
       clearImage();
+      setAudioBlob(null);
       setProgress(0);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3500);
@@ -137,6 +195,9 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
       setSubmitting(false);
     }
   }
+
+  const labelCls = cn('text-xs font-bold text-zinc-500 uppercase tracking-widest', isAdlam && 'font-adlam');
+  const inputCls = 'w-full rounded-xl px-4 py-3 text-white bg-black/40 outline-none transition-all placeholder-zinc-600';
 
   return (
     <div className="flex-1 overflow-y-auto p-8" style={{ fontFamily: MANROPE }}>
@@ -152,9 +213,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
 
         {/* photo */}
         <div className="rounded-2xl border border-white/8 p-5 space-y-3" style={{ background: '#131313' }}>
-          <p className={cn('text-xs font-bold text-zinc-500 uppercase tracking-widest', isAdlam && 'font-adlam')}>
-            {t.photoLabel}
-          </p>
+          <p className={labelCls}>{t.photoLabel}</p>
           {imagePreview ? (
             <div className="relative inline-block">
               <img src={imagePreview} alt="preview" className="max-h-64 rounded-xl border border-white/10" />
@@ -180,37 +239,62 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
           )}
         </div>
 
-        {/* ADLaM text */}
-        <div className="rounded-2xl border border-white/8 overflow-hidden" style={{ background: '#131313' }}>
-          <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-            <span className={cn('text-xs font-bold text-zinc-500 uppercase tracking-widest', isAdlam && 'font-adlam')}>
-              {t.textLabel}
-            </span>
-            {text.trim() !== '' && (
-              <span className="text-xs font-bold" style={{ color: ratio >= 0.5 ? '#4ade80' : '#f87171' }}>
-                {ratio >= 0.5 ? t.adlamOk : t.adlamBad}
-              </span>
-            )}
+        {/* audio */}
+        <AudioRecorder
+          value={audioBlob}
+          onChange={setAudioBlob}
+          label={t.audioLabel}
+          hint={t.audioHint}
+          accent={P}
+          disabled={submitting}
+        />
+
+        {/* word fields — fill any */}
+        <div className="rounded-2xl border border-white/8 p-5 space-y-4" style={{ background: '#131313' }}>
+          <p className={cn('text-xs text-zinc-600', isAdlam && 'font-adlam')}>{t.fieldsHint}</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <p className={labelCls}>{t.enLabel}</p>
+              <input value={en} onChange={e => setEn(e.target.value)}
+                placeholder="e.g. blackboard"
+                className={inputCls} style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+            </div>
+            <div className="space-y-1.5">
+              <p className={labelCls}>{t.frLabel}</p>
+              <input value={fr} onChange={e => setFr(e.target.value)}
+                placeholder="ex. tableau"
+                className={inputCls} style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+            </div>
           </div>
-          <textarea
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder={t.textPlaceholder}
-            dir="rtl"
-            className="w-full bg-transparent outline-none resize-none text-white placeholder-zinc-600 px-5 py-4"
-            style={{
-              minHeight: 180, fontSize: 18, lineHeight: 1.8,
-              fontFamily: ADLAM_FONT,
-              borderTop: '1px solid rgba(255,255,255,0.06)',
-            }}
-          />
+
+          <div className="space-y-1.5">
+            <p className={labelCls}>{t.latinLabel}</p>
+            <input value={latin} onChange={e => setLatin(e.target.value)}
+              placeholder="Pulaar in Latin letters…"
+              className={inputCls} style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <p className={labelCls}>{t.adlamLabel}</p>
+              {adlam.trim() !== '' && (
+                <span className="text-xs font-bold" style={{ color: ratio >= 0.5 ? '#4ade80' : '#f87171' }}>
+                  {ratio >= 0.5 ? t.adlamOk : t.adlamBad}
+                </span>
+              )}
+            </div>
+            <input value={adlam} onChange={e => setAdlam(e.target.value)}
+              dir="rtl"
+              placeholder="𞤢𞤣𞤤𞤢𞤥…"
+              className={inputCls}
+              style={{ border: '1px solid rgba(255,139,155,0.25)', fontFamily: ADLAM_FONT, fontSize: 18, lineHeight: 1.8 }} />
+          </div>
         </div>
 
         {/* domain */}
         <div className="rounded-2xl border border-white/8 p-5 space-y-2" style={{ background: '#131313' }}>
-          <p className={cn('text-xs font-bold text-zinc-500 uppercase tracking-widest', isAdlam && 'font-adlam')}>
-            {t.domainLabel}
-          </p>
+          <p className={labelCls}>{t.domainLabel}</p>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
               <button key={d} onClick={() => setDomain(d)}
@@ -248,9 +332,9 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
             <><Camera className="w-4 h-4" /> {t.submit}</>
           )}
         </button>
-        {text.trim() !== '' && !canSubmit && !submitting && (
-          <p className={cn('text-xs text-zinc-600 text-center', isAdlam && 'font-adlam')}>{t.needText}</p>
-        )}
+        {!canSubmit && !submitting && (hasText || hasAudio ? null : (
+          <p className={cn('text-xs text-zinc-600 text-center', isAdlam && 'font-adlam')}>{t.needAnything}</p>
+        ))}
       </div>
     </div>
   );
