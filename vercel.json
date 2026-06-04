@@ -3,6 +3,8 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
+    { "source": "/__/auth/:path*", "destination": "https://ai-studio-applet-webapp-28b0a.firebaseapp.com/__/auth/:path*" },
+    { "source": "/__/firebase/:path*", "destination": "https://ai-studio-applet-webapp-28b0a.firebaseapp.com/__/firebase/:path*" },
     { "source": "/api/generate", "destination": "/api/generate" },
     { "source": "/api/edit", "destination": "/api/edit" },
     { "source": "/api/transcribe", "destination": "/api/transcribe" },

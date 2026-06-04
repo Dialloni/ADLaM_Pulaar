@@ -5,9 +5,22 @@ import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, del
 
 // Trim every value — pasted env vars (esp. on Vercel) can carry stray
 // whitespace/newlines that corrupt the bucket name or auth domain (#storage-404).
+
+// Safari/iOS block third-party cookies, so signInWithRedirect fails when the
+// authDomain (*.firebaseapp.com) is a different site than the app. On the
+// production host we use the app's own domain as authDomain — vercel.json
+// proxies /__/auth/* to the Firebase handler, making auth first-party so the
+// redirect session persists on Safari/iOS. Localhost keeps the Firebase
+// authDomain (popup works there, no proxy available).
+const PROD_AUTH_HOST = 'gando-ai.vercel.app';
+const browserHost = typeof window !== 'undefined' ? window.location.hostname : '';
+const resolvedAuthDomain = browserHost === PROD_AUTH_HOST
+  ? PROD_AUTH_HOST
+  : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim();
+
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY?.trim(),
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim(),
+  authDomain:        resolvedAuthDomain,
   projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim(),
   storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim(),
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim(),
