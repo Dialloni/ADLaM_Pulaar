@@ -686,29 +686,30 @@ export default function App() {
       </div>
 
       {/* ── NAVBAR ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 h-16 border-b border-white/5"
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-10 h-16 border-b border-white/5"
         style={{ background: 'rgba(14,14,14,0.88)', backdropFilter: 'blur(20px)' }}>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 md:gap-2.5 min-w-0 flex-shrink-0">
           <GandoLogo size={22} />
           <span style={{ fontFamily: MANROPE, fontSize: 18, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginLeft: 2 }}>BETA</span>
+          <span className="hidden sm:inline" style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginLeft: 2 }}>BETA</span>
         </div>
         <div className="hidden md:flex items-center gap-7">
           {['Community', 'Pricing', 'Status'].map(lbl => (
             <button key={lbl} className="text-sm font-medium text-zinc-500 hover:text-white transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>{lbl}</button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
           <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
           <button onClick={() => { setAuthMode('login'); setAuthError(null); setAuthModalOpen(true); }}
-            className="hidden md:block text-sm font-bold text-zinc-400 hover:text-white transition-colors px-4 py-2 rounded-xl hover:bg-white/5"
+            className="text-sm font-bold text-zinc-400 hover:text-white transition-colors px-2.5 md:px-4 py-2 rounded-xl hover:bg-white/5"
             style={{ fontFamily: MANROPE }}>
             Sign in
           </button>
           <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl font-black text-black text-sm transition-all hover:scale-[1.03] active:scale-95"
+            className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl font-black text-black text-sm transition-all hover:scale-[1.03] active:scale-95"
             style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, whiteSpace: 'nowrap' }}>
-            Get started →
+            <span className="hidden sm:inline">Get started →</span>
+            <span className="sm:hidden">Start →</span>
           </button>
         </div>
       </nav>
@@ -967,12 +968,12 @@ export default function App() {
       </AnimatePresence>
 
       {/* ════════ HEADER ════════ */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-8 flex-shrink-0"
+      <header className="fixed top-0 left-0 right-0 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-8 flex-shrink-0"
         style={{ background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--line-1)' }}>
         {/* brand + nav */}
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-3 md:gap-8 min-w-0 flex-shrink-0">
           <GandoLogo size={28} />
-          <span className={cn('text-2xl font-black tracking-tight cursor-pointer select-none', isAdlam && 'font-adlam')}
+          <span className={cn('text-lg md:text-2xl font-black tracking-tight cursor-pointer select-none', isAdlam && 'font-adlam')}
             style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
             onClick={() => { setCurrentProject(null); setPage('dashboard'); }}>
             {t.appName.toUpperCase()}
@@ -981,9 +982,15 @@ export default function App() {
 
 
         {/* search + icons + profile */}
-        <div className="flex items-center gap-4">
-          {/* ── header search ── */}
-          <div ref={searchRef} className="relative">
+        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+          {/* mobile: search icon → jumps to Projects page (full search lives there) */}
+          <button onClick={() => { setCurrentProject(null); setPage('projects'); }}
+            className="sm:hidden p-2 rounded-xl text-zinc-400 hover:text-white transition-colors"
+            aria-label="Search projects">
+            <Search className="w-5 h-5" />
+          </button>
+          {/* ── header search (desktop) ── */}
+          <div ref={searchRef} className="relative hidden sm:block">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full transition-all"
               style={{ background: searchOpen ? '#1a1a1a' : '#131313', border: searchOpen ? '1px solid rgba(255,139,155,0.3)' : '1px solid transparent' }}>
               <Search className="w-4 h-4 flex-shrink-0" style={{ color: searchOpen ? P : '#71717a' }} />
@@ -1150,7 +1157,7 @@ export default function App() {
       </header>
 
       {/* ════════ BODY ════════ */}
-      <div className="flex flex-1 overflow-hidden pt-20">
+      <div className="flex flex-1 overflow-hidden pt-16 md:pt-20">
 
 
         {/* ════ SIDEBAR ════ */}
