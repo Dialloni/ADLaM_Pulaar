@@ -181,7 +181,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
 
     /* dashboard */
     gandoViewTitle: "𞤘𞤢𞤲𞤣𞤮 𞤖𞤢𞤤𞤭𞤲𞤣𞤫",
-    gandoViewSubtitle: "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆𞥆𞤫 𞤫 𞤯𞤫𞤲𞤯𞤢𞤤 𞤥𞤢𞥄𞤯𞤢 𞤥𞤢𞤥",
+    gandoViewSubtitle: "𞤃𞤢𞤸𞤵 𞤢𞤨𞤧𞤶𞤭 𞤫 𞤯𞤫𞤲𞤺𞤢𞤤𞤥𞤢𞥄",
     projectsLabel: "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭",
     appsBuiltLabel: "𞤀𞤨𞥆𞤧 𞤃𞤢𞤸𞤢𞥄𞤯𞤭",
     generateLabel: "𞤃𞤢𞤸𞤵",
