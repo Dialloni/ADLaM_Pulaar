@@ -592,16 +592,16 @@ export function AdminPortal({ user }: { user: User }) {
   const sources = ['all', ...Array.from(new Set(submissions.map(s => s.source)))];
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 space-y-6" style={{ fontFamily: MANROPE }}>
+    <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-8 space-y-6" style={{ fontFamily: MANROPE }}>
 
       {/* header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tighter">Corpus Admin</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">Corpus Admin</h1>
           <p className="text-zinc-500 text-sm mt-1">Review and verify ADLaM text submissions</p>
         </div>
         <button onClick={exportJSONL}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 flex-shrink-0"
           style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
           <Download className="w-4 h-4" />
           Export JSONL ({stats.verified})
@@ -632,7 +632,7 @@ export function AdminPortal({ user }: { user: User }) {
       </div>
 
       {/* tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl w-fit"
+      <div className="flex items-center gap-1 p-1 rounded-xl w-full sm:w-fit overflow-x-auto"
         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
         {([
           { id: 'queue', label: 'Review Queue' },
@@ -641,7 +641,7 @@ export function AdminPortal({ user }: { user: User }) {
           { id: 'dictionary', label: 'Dictionary' },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className="px-4 py-2 rounded-lg text-sm font-bold transition-all"
+            className="px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex-shrink-0"
             style={{
               background: tab === t.id ? 'rgba(255,255,255,0.1)' : 'transparent',
               color: tab === t.id ? '#fff' : '#71717a',
@@ -1141,7 +1141,7 @@ export function AdminPortal({ user }: { user: User }) {
               {filtered.map(s => (
                 <div key={s.id} className="rounded-2xl border border-white/8 overflow-hidden"
                   style={{ background: '#131313' }}>
-                  <div className="flex items-center gap-3 px-5 py-3 border-b border-white/6">
+                  <div className="flex items-center gap-2 flex-wrap px-4 md:px-5 py-3 border-b border-white/6">
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                       style={{ background: `${SOURCE_COLORS[s.source] ?? '#71717a'}20`, color: SOURCE_COLORS[s.source] ?? '#71717a' }}>
                       {s.source}
