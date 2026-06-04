@@ -1,18 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, setDoc,
-  db, serverTimestamp, addDoc, storage, ref, uploadBytesResumable, getDownloadURL,
+  db, serverTimestamp, addDoc, storage, ref, uploadBytes, uploadBytesResumable, getDownloadURL,
   auth,
 } from '../firebase';
 import adlamDictData from '../../adlam_dict.json';
 import { CheckCircle2, XCircle, Download, RefreshCw, Upload, FileText, X, BookMarked } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { User } from '../firebase';
+import { AudioRecorder } from './AudioRecorder';
 import * as pdfjsLib from 'pdfjs-dist';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
 
-type SubmissionStatus = 'pending' | 'verified' | 'rejected';
+type SubmissionStatus = 'pending' | 'verified' | 'rejected' | 'needs_adlam';
 type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
 type Tab = 'queue' | 'upload' | 'paste' | 'dictionary';
 type DictStatus = 'draft' | 'verified';
@@ -32,6 +33,10 @@ interface Submission {
   id: string;
   source: string;
   raw_text: string;
+  adlam_text?: string;
+  gloss_en?: string;
+  gloss_fr?: string;
+  pulaar_latin?: string;
   adlam_ratio: number;
   word_count: number;
   status: SubmissionStatus;
@@ -40,6 +45,8 @@ interface Submission {
   verified_by: string | null;
   source_meta: Record<string, any>;
   file_url: string | null;
+  audio_url?: string | null;
+  pulaar_audio_url?: string | null;
 }
 
 interface PdfResult {
@@ -172,6 +179,7 @@ export function AdminPortal({ user }: { user: User }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>('');
+  const [editAudio, setEditAudio] = useState<Blob | null>(null);
 
   /* ── UPLOAD STATE ── */
   const [results, setResults] = useState<PdfResult[]>([]);
@@ -226,22 +234,29 @@ export function AdminPortal({ user }: { user: User }) {
     // visible (review queue), plus the 100 most-recent of any status for context.
     // Neither query uses where+orderBy together, so no composite index is needed.
     let pendingDocs: Submission[] = [];
+    let needsAdlamDocs: Submission[] = [];
     let recentDocs: Submission[] = [];
     const millis = (s: Submission) => (s.submitted_at as any)?.toMillis?.() ?? 0;
     const recompute = () => {
       const m = new Map<string, Submission>();
       recentDocs.forEach(s => m.set(s.id, s));
+      needsAdlamDocs.forEach(s => m.set(s.id, s));
       pendingDocs.forEach(s => m.set(s.id, s));
       setSubmissions([...m.values()].sort((a, b) => millis(b) - millis(a)));
     };
     const toSub = (d: any) => ({ id: d.id, ...d.data() } as Submission);
     const onErr = (err: any) => { setCorpusError(err.message); setLoading(false); };
 
+    // Three single-field listeners merged client-side — none uses where+orderBy
+    // together, so no composite index is needed. needs_adlam = contributor gave
+    // a gloss/audio but no ADLaM yet; instructors complete those.
     const qPending = query(collection(db, 'corpus_submissions'), where('status', '==', 'pending'));
+    const qNeeds = query(collection(db, 'corpus_submissions'), where('status', '==', 'needs_adlam'));
     const qRecent = query(collection(db, 'corpus_submissions'), orderBy('submitted_at', 'desc'), limit(100));
     const unsubP = onSnapshot(qPending, snap => { pendingDocs = snap.docs.map(toSub); recompute(); setLoading(false); }, onErr);
+    const unsubN = onSnapshot(qNeeds, snap => { needsAdlamDocs = snap.docs.map(toSub); recompute(); setLoading(false); }, onErr);
     const unsubR = onSnapshot(qRecent, snap => { recentDocs = snap.docs.map(toSub); recompute(); setLoading(false); }, onErr);
-    return () => { unsubP(); unsubR(); };
+    return () => { unsubP(); unsubN(); unsubR(); };
   }, []);
 
   useEffect(() => {
@@ -266,6 +281,7 @@ export function AdminPortal({ user }: { user: User }) {
   });
 
   const stats = {
+    needs_adlam: submissions.filter(s => s.status === 'needs_adlam').length,
     pending:  submissions.filter(s => s.status === 'pending').length,
     verified: submissions.filter(s => s.status === 'verified').length,
     rejected: submissions.filter(s => s.status === 'rejected').length,
@@ -284,17 +300,43 @@ export function AdminPortal({ user }: { user: User }) {
     setActionLoading(null);
   }
 
-  async function saveEdit(id: string) {
-    if (!editText.trim()) return;
+  async function saveEdit(id: string, prevStatus: SubmissionStatus) {
+    const adlam = editText.trim();
+    // Need either an ADLaM transcription or a recorded Pulaar pronunciation.
+    if (!adlam && !editAudio) return;
     setActionLoading(id);
-    await updateDoc(doc(db, 'corpus_submissions', id), {
-      raw_text: editText.trim(),
-      edited_by: user.uid,
-      edited_at: serverTimestamp(),
-    });
-    setEditingId(null);
-    setEditText('');
-    setActionLoading(null);
+    try {
+      let pulaar_audio_url: string | null = null;
+      if (editAudio) {
+        const ext = editAudio.type.includes('mp4') ? 'mp4' : editAudio.type.includes('ogg') ? 'ogg' : 'webm';
+        const name = `pulaar_${id}_${Date.now()}.${ext}`;
+        const audioRef = ref(storage, `collector/${user.uid}/${name}`);
+        await uploadBytes(audioRef, editAudio, { contentType: editAudio.type || 'audio/webm' });
+        pulaar_audio_url = await getDownloadURL(audioRef);
+      }
+
+      const patch: Record<string, any> = {
+        edited_by: user.uid,
+        edited_at: serverTimestamp(),
+      };
+      if (adlam) {
+        patch.adlam_text = adlam;
+        patch.raw_text = adlam;          // keep legacy field in sync
+        patch.adlam_ratio = adlamRatio(adlam);
+        // Completing a needs_adlam entry moves it into the normal review queue.
+        if (prevStatus === 'needs_adlam') patch.status = 'pending';
+      }
+      if (pulaar_audio_url) patch.pulaar_audio_url = pulaar_audio_url;
+
+      await updateDoc(doc(db, 'corpus_submissions', id), patch);
+    } catch (err) {
+      setCorpusError(String(err instanceof Error ? err.message : err));
+    } finally {
+      setEditingId(null);
+      setEditText('');
+      setEditAudio(null);
+      setActionLoading(null);
+    }
   }
 
   async function reject(id: string) {
@@ -575,8 +617,9 @@ export function AdminPortal({ user }: { user: User }) {
       )}
 
       {/* stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {([
+          { label: 'Needs ADLaM', value: stats.needs_adlam, color: '#bca2ff' },
           { label: 'Pending',  value: stats.pending,  color: '#fd8b00' },
           { label: 'Verified', value: stats.verified, color: '#4ade80' },
           { label: 'Rejected', value: stats.rejected, color: '#f87171' },
@@ -1053,7 +1096,7 @@ export function AdminPortal({ user }: { user: User }) {
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1 p-1 rounded-xl"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                {(['all', 'pending', 'verified', 'rejected'] as const).map(s => (
+                {(['all', 'needs_adlam', 'pending', 'verified', 'rejected'] as const).map(s => (
                   <button key={s} onClick={() => setStatusFilter(s)}
                     className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
                     style={{
@@ -1116,16 +1159,16 @@ export function AdminPortal({ user }: { user: User }) {
                     )}
                     <span className={cn('text-xs font-bold ml-auto px-2 py-0.5 rounded-full')}
                       style={{
-                        background: s.status === 'verified' ? '#4ade8020' : s.status === 'rejected' ? '#f8717120' : '#fd8b0020',
-                        color: s.status === 'verified' ? '#4ade80' : s.status === 'rejected' ? '#f87171' : '#fd8b00',
+                        background: s.status === 'verified' ? '#4ade8020' : s.status === 'rejected' ? '#f8717120' : s.status === 'needs_adlam' ? '#bca2ff20' : '#fd8b0020',
+                        color: s.status === 'verified' ? '#4ade80' : s.status === 'rejected' ? '#f87171' : s.status === 'needs_adlam' ? '#bca2ff' : '#fd8b00',
                       }}>
-                      {s.status}
+                      {s.status === 'needs_adlam' ? 'needs ADLaM' : s.status}
                     </span>
                   </div>
 
-                  <div className="px-5 py-4">
+                  <div className="px-5 py-4 space-y-3">
                     {s.file_url && s.source_meta?.has_image && (
-                      <a href={s.file_url} target="_blank" rel="noopener noreferrer" className="block mb-3">
+                      <a href={s.file_url} target="_blank" rel="noopener noreferrer" className="block">
                         <img
                           src={s.file_url}
                           alt="contributor submission"
@@ -1134,39 +1177,94 @@ export function AdminPortal({ user }: { user: User }) {
                         />
                       </a>
                     )}
+
+                    {/* contributor glosses — what they knew the word as */}
+                    {(s.gloss_en || s.gloss_fr || s.pulaar_latin) && (
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {s.gloss_en && (
+                          <span className="px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', color: '#a1a1aa' }}>
+                            🇬🇧 {s.gloss_en}
+                          </span>
+                        )}
+                        {s.gloss_fr && (
+                          <span className="px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', color: '#a1a1aa' }}>
+                            🇫🇷 {s.gloss_fr}
+                          </span>
+                        )}
+                        {s.pulaar_latin && (
+                          <span className="px-2.5 py-1 rounded-lg font-bold" style={{ background: '#4ade8015', color: '#4ade80' }}>
+                            Pulaar (Latin): {s.pulaar_latin}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* audio: contributor + verified Pulaar */}
+                    {s.audio_url && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">Contributor audio</p>
+                        <audio src={s.audio_url} controls className="w-full" />
+                      </div>
+                    )}
+                    {s.pulaar_audio_url && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#4ade80' }}>✓ Verified Pulaar audio</p>
+                        <audio src={s.pulaar_audio_url} controls className="w-full" />
+                      </div>
+                    )}
+
                     {editingId === s.id ? (
-                      <textarea
-                        value={editText}
-                        onChange={e => setEditText(e.target.value)}
-                        rows={6}
-                        className="w-full rounded-xl px-3 py-2 text-sm text-zinc-200 leading-relaxed resize-y"
-                        dir="rtl"
-                        style={{
-                          fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif',
-                          fontSize: 15,
-                          background: 'rgba(0,0,0,0.4)',
-                          border: '1px solid rgba(255,139,155,0.3)',
-                          outline: 'none',
-                        }}
-                      />
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#bca2ff' }}>
+                            ADLaM equivalent
+                          </p>
+                          <textarea
+                            value={editText}
+                            onChange={e => setEditText(e.target.value)}
+                            rows={3}
+                            placeholder="𞤢𞤣𞤤𞤢𞤥… write the ADLaM here"
+                            className="w-full rounded-xl px-3 py-2 text-sm text-zinc-200 leading-relaxed resize-y"
+                            dir="rtl"
+                            style={{
+                              fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif',
+                              fontSize: 18,
+                              background: 'rgba(0,0,0,0.4)',
+                              border: '1px solid rgba(255,139,155,0.3)',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+                        {/* admin records the proper Pulaar pronunciation */}
+                        <AudioRecorder
+                          value={editAudio}
+                          onChange={setEditAudio}
+                          label="Record Pulaar pronunciation (optional)"
+                          accent="#4ade80"
+                          disabled={actionLoading === s.id}
+                        />
+                      </div>
                     ) : (
-                      <p className="text-sm text-zinc-300 leading-relaxed line-clamp-4" dir="rtl"
-                        style={{ fontSize: 15, fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif' }}>
-                        {s.raw_text}
-                      </p>
+                      s.raw_text && (
+                        <p className="text-sm text-zinc-300 leading-relaxed line-clamp-4" dir="rtl"
+                          style={{ fontSize: 15, fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif' }}>
+                          {s.raw_text}
+                        </p>
+                      )
                     )}
                   </div>
 
-                  {s.status === 'pending' && (
+                  {(s.status === 'pending' || s.status === 'needs_adlam') && (
                     <div className="px-5 pb-4 flex items-center gap-3 flex-wrap">
                       {editingId === s.id ? (
                         <>
-                          <button onClick={() => saveEdit(s.id)} disabled={actionLoading === s.id}
+                          <button onClick={() => saveEdit(s.id, s.status)} disabled={actionLoading === s.id}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                             style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                            Save Edit
+                            {actionLoading === s.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                            {s.status === 'needs_adlam' ? 'Save ADLaM → queue' : 'Save Edit'}
                           </button>
-                          <button onClick={() => { setEditingId(null); setEditText(''); }}
+                          <button onClick={() => { setEditingId(null); setEditText(''); setEditAudio(null); }}
                             className="text-xs text-zinc-600 hover:text-white transition-colors">
                             Cancel
                           </button>
@@ -1190,16 +1288,26 @@ export function AdminPortal({ user }: { user: User }) {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => setApprovingId(s.id)}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
-                            style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve
-                          </button>
-                          <button onClick={() => { setEditingId(s.id); setEditText(s.raw_text); }}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
-                            style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                            ✏️ Edit
-                          </button>
+                          {s.status === 'needs_adlam' ? (
+                            <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? ''); setEditAudio(null); }}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                              style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                              ✏️ Complete ADLaM
+                            </button>
+                          ) : (
+                            <>
+                              <button onClick={() => setApprovingId(s.id)}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                              </button>
+                              <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? s.raw_text); setEditAudio(null); }}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                                ✏️ Edit
+                              </button>
+                            </>
+                          )}
                           <button onClick={() => reject(s.id)} disabled={actionLoading === s.id}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                             style={{ background: '#f8717120', color: '#f87171', border: '1px solid #f8717140' }}>
