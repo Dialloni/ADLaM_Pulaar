@@ -399,6 +399,7 @@ export default function App() {
 
   /* nav / UI */
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [page, setPage] = useState<NavPage>('dashboard');
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATES_META[0] | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -971,7 +972,12 @@ export default function App() {
       <header className="fixed top-0 left-0 right-0 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-8 flex-shrink-0"
         style={{ background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--line-1)' }}>
         {/* brand + nav */}
-        <div className="flex items-center gap-3 md:gap-8 min-w-0 flex-shrink-0">
+        <div className="flex items-center gap-2 md:gap-8 min-w-0 flex-shrink-0">
+          <button onClick={() => setMobileNavOpen(o => !o)}
+            className="md:hidden p-2 -ml-1 rounded-lg text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Menu">
+            <PanelLeft className="w-5 h-5" />
+          </button>
           <GandoLogo size={28} />
           <span className={cn('text-lg md:text-2xl font-black tracking-tight cursor-pointer select-none', isAdlam && 'font-adlam')}
             style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
@@ -1160,9 +1166,20 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden pt-16 md:pt-20">
 
 
+        {/* mobile drawer backdrop */}
+        {mobileNavOpen && (
+          <div onClick={() => setMobileNavOpen(false)}
+            className="md:hidden fixed inset-0 z-[90]" style={{ background: 'rgba(0,0,0,0.6)' }} />
+        )}
+
         {/* ════ SIDEBAR ════ */}
-        <aside className="flex-shrink-0 flex flex-col border-r border-white/5"
-          style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, transition: 'width 200ms cubic-bezier(0.16,1,0.3,1)', overflowX: 'hidden', overflowY: 'auto' }}>
+        <aside className={cn(
+            'flex-shrink-0 flex flex-col border-r border-white/5',
+            'fixed md:static top-16 md:top-0 bottom-0 left-0 z-[100] md:z-auto',
+            'transition-transform duration-200 md:transition-none',
+            mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+          )}
+          style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
 
           {/* collapse toggle */}
           <div className="flex items-center px-3 pt-4 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-end' }}>
@@ -1246,7 +1263,7 @@ export default function App() {
             ]).map(({ icon: Icon, label, pg }) => {
               const active = page === pg && !currentProject;
               return (
-                <button key={pg} onClick={() => { setPage(pg); setCurrentProject(null); }}
+                <button key={pg} onClick={() => { setPage(pg); setCurrentProject(null); setMobileNavOpen(false); }}
                   className={cn('w-full flex items-center rounded-xl transition-all', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2', isAdlam && 'font-adlam')}
                   style={{ background: active ? 'rgba(255,255,255,0.07)' : 'transparent', color: active ? '#fff' : '#71717a', border: 'none', fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 600, fontSize: 13 }}>
                   <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? P : undefined }} />
@@ -1262,7 +1279,7 @@ export default function App() {
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 px-3 mb-1.5" style={{ fontFamily: MANROPE }}>Recents</p>
               <div className="space-y-0.5">
                 {projects.slice(0, 5).map(p => (
-                  <button key={p.id} onClick={() => openProject(p)}
+                  <button key={p.id} onClick={() => { openProject(p); setMobileNavOpen(false); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all hover:bg-white/5"
                     style={{ color: '#adaaaa' }}>
                     <Sparkles className="w-3 h-3 flex-shrink-0 opacity-60" style={{ color: P }} />
@@ -1288,7 +1305,7 @@ export default function App() {
         </aside>
 
         {/* ════ MAIN ════ */}
-        <main className="flex-1 overflow-hidden relative flex flex-col">
+        <main className="flex-1 min-w-0 overflow-hidden relative flex flex-col">
           {/* ambient glows */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden z-0">
             <div className="absolute w-96 h-96 rounded-full top-0 -left-20" style={{ background: P, filter: 'blur(80px)', opacity: 0.08 }} />
