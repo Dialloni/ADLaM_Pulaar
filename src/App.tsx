@@ -2142,13 +2142,23 @@ export default function App() {
                   <p className={cn('text-center text-[11px] font-black uppercase tracking-widest mb-4', isAdlam && 'font-adlam')}
                     style={{ color: P, fontFamily: isAdlam ? undefined : MANROPE }}>GANDO AI</p>
 
-                  {/* headline */}
-                  <h1 className={cn('text-center font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
-                    style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(30px, 5vw, 58px)', lineHeight: 1.05 }}>
-                    {t.gandoViewTitle}
-                  </h1>
+                  {/* personalized greeting */}
+                  {(() => {
+                    const raw = user.displayName?.trim().split(/\s+/)[0] || user.email?.split('@')[0] || 'Builder';
+                    const firstName = raw.charAt(0).toUpperCase() + raw.slice(1);
+                    const greet = selectedLang.code === 'fr' ? 'Bonjour' : 'Welcome';
+                    return (
+                      <h1 className={cn('text-center font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
+                        style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(30px, 5vw, 58px)', lineHeight: 1.05 }}>
+                        {greet},{' '}
+                        <span style={{ background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                          {firstName}
+                        </span>
+                      </h1>
+                    );
+                  })()}
                   <p className={cn('text-center text-zinc-500 mb-8', isAdlam && 'font-adlam')} style={{ fontSize: 15 }}>
-                    {t.gandoViewSubtitle}
+                    {selectedLang.code === 'fr' ? 'Que construisons-nous aujourd’hui ?' : 'What will we build today?'}
                   </p>
 
                   {/* import mode tabs */}
