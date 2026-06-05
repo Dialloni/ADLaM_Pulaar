@@ -414,6 +414,18 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [inputShake, setInputShake] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
+  const [generationSteps, setGenerationSteps] = useState<string[]>([]); // Claude-style build steps
+  const appendStep = (text: string) => setGenerationSteps((s) => (s.includes(text) ? s : [...s, text]));
+  const [streamingCode, setStreamingCode] = useState<string | null>(null);  // live text (code editor)
+  const [previewCode, setPreviewCode] = useState<string | null>(null);      // throttled (iframe preview)
+  const lastPreviewAt = useRef(0);
+  // Code editor updates on every chunk (smooth text); preview re-renders at most ~1.5s
+  // to avoid hammering the iframe. Double-buffering in <Preview> removes the flash.
+  const handleStreamCode = (c: string) => {
+    setStreamingCode(c);
+    const now = Date.now();
+    if (now - lastPreviewAt.current > 1500) { lastPreviewAt.current = now; setPreviewCode(c); }
+  };
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [selectedLang, setSelectedLang] = useState(LANGS[0]);
   const t = TRANSLATIONS[selectedLang.code] || TRANSLATIONS.en;
@@ -576,7 +588,7 @@ export default function App() {
   };
 
   const createNewProject = async (prompt: string) => {
-    const result = await generateProject(prompt, selectedLang.name, setGenerationStatus);
+    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode);
     const data = {
       userId: user!.uid, name: result.name, description: prompt,
       language: selectedLang.name, languageCode: selectedLang.code,
@@ -595,7 +607,7 @@ export default function App() {
     if (!currentProject) return;
     try {
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
-      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, setGenerationStatus);
+      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode);
       await updateDoc(doc(db, 'projects', currentProject.id), { code: result.code, updatedAt: serverTimestamp() });
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${currentProject.id}`); }
@@ -609,6 +621,10 @@ export default function App() {
     }
     if (!user) return;
     setIsGenerating(true);
+    setStreamingCode(null);
+    setPreviewCode(null);
+    setGenerationSteps([]);
+    lastPreviewAt.current = 0;
     const prompt = importMode === 'github'
       ? `Clone and recreate a web app inspired by this GitHub repository: ${input}`
       : importMode === 'figma'
@@ -622,7 +638,7 @@ export default function App() {
       const m = err.message || '';
       setGlobalError(/429|quota|rate|RESOURCE_EXHAUSTED/i.test(m)
         ? "You've reached the AI limit. Please wait a minute." : m || 'Unexpected error.');
-    } finally { setIsGenerating(false); }
+    } finally { setIsGenerating(false); setStreamingCode(null); setPreviewCode(null); setGenerationSteps([]); }
   };
 
   const handleRevert = async (snapshot: string) => {
@@ -1387,7 +1403,7 @@ export default function App() {
                 {/* chat panel — wider */}
                 <div className="w-[480px] flex-shrink-0 flex flex-col" style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
                   <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
-                    isGenerating={isGenerating} generationStatus={generationStatus}
+                    isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
                     selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
                     languages={LANGS} onLanguageSelect={setSelectedLang}
                     languageCode={selectedLang.code} t={t}
@@ -1397,8 +1413,8 @@ export default function App() {
                   <motion.div key="panel" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                     transition={{ type: 'spring', damping: 30, stiffness: 200 }} className="flex-1 overflow-hidden">
                     {activeTab === 'preview'
-                      ? <Preview code={currentProject.code} />
-                      : <CodeEditor code={currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} />}
+                      ? <Preview code={previewCode ?? currentProject.code} />
+                      : <CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} />}
                   </motion.div>
                 </AnimatePresence>
               </div>

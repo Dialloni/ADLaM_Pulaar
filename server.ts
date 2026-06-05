@@ -4,6 +4,7 @@ import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 import { verifyIdToken } from './lib/firebaseAdmin';
+import { runStream } from './lib/llm';
 
 dotenv.config();
 
@@ -192,46 +193,62 @@ async function startServer() {
     });
   });
 
+  // SSE streaming — mirrors api/generate.ts (Vercel). Local dev === production.
+  const sseHeaders = (res: Response) => {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+  };
+
   app.post('/api/generate', requireAuth, async (req: Request, res: Response) => {
-    const { prompt, preferredLanguage } = req.body ?? {};
+    const { prompt, preferredLanguage, provider } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
     }
+    sseHeaders(res);
+    const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
     try {
-      const hint = preferredLanguage
-        ? `Preferred output language (use unless the user's prompt is clearly in another language): ${preferredLanguage}\n\n`
-        : '';
-      const templateHint = buildTemplateHint(prompt);
-      const result = await callGemini(`${hint}${templateHint}User Prompt:\n${prompt}`);
-      res.json(result);
+      const result = await runStream(
+        { kind: 'generate', prompt, preferredLanguage, provider },
+        (chunk) => send({ type: 'code', chunk }),
+        (text) => send({ type: 'status', text })
+      );
+      send({ type: 'done', result });
+      res.end();
     } catch (err) {
       console.error('generate error:', err);
-      sendGeminiError(res, err);
+      const msg = err instanceof Error ? err.message : String(err);
+      const isRate = /429|quota|rate|RESOURCE_EXHAUSTED|overloaded/i.test(msg);
+      send({ type: 'error', error: isRate ? "You've reached the AI generation limit. Please wait a minute and try again." : msg });
+      res.end();
     }
   });
 
   app.post('/api/edit', requireAuth, async (req: Request, res: Response) => {
-    const { prompt, currentCode, history, preferredLanguage } = req.body ?? {};
+    const { prompt, currentCode, history, preferredLanguage, provider } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
     }
     if (!currentCode || typeof currentCode !== 'string') {
       return res.status(400).json({ error: 'currentCode is required' });
     }
+    sseHeaders(res);
+    const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
     try {
-      const trimmedHistory = Array.isArray(history) ? history.slice(-6) : [];
-      const historyText = trimmedHistory
-        .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
-        .join('\n');
-      const hint = preferredLanguage
-        ? `Preferred output language (unless the user's prompt is clearly in another language): ${preferredLanguage}\n\n`
-        : '';
-      const userContent = `${hint}Current Code:\n${currentCode}\n\nRecent Chat:\n${historyText}\n\nUser Request:\n${prompt}`;
-      const result = await callGemini(userContent);
-      res.json(result);
+      const result = await runStream(
+        { kind: 'edit', prompt, currentCode, history, preferredLanguage, provider },
+        (chunk) => send({ type: 'code', chunk }),
+        (text) => send({ type: 'status', text })
+      );
+      send({ type: 'done', result });
+      res.end();
     } catch (err) {
       console.error('edit error:', err);
-      sendGeminiError(res, err);
+      const msg = err instanceof Error ? err.message : String(err);
+      const isRate = /429|quota|rate|RESOURCE_EXHAUSTED|overloaded/i.test(msg);
+      send({ type: 'error', error: isRate ? "You've reached the AI generation limit. Please wait a minute and try again." : msg });
+      res.end();
     }
   });
 

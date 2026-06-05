@@ -39,3 +39,6 @@ firebase-service-account.json
 # Telegram scraper
 scraper/*.session
 scraper/output/
+
+# Eval harness generated outputs (can be large; contains generated apps)
+scripts/eval/results/
