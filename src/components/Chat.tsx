@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, Bot, ArrowRight, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link } from 'lucide-react';
+import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, Bot, ArrowRight, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,6 +15,7 @@ interface ChatProps {
   onSend: () => void;
   isGenerating: boolean;
   generationStatus: string;
+  generationSteps?: string[];
   selectedLanguage: string;
   currentLanguage?: { code: any; name: string };
   languages?: { code: any; name: string }[];
@@ -176,6 +177,7 @@ export const Chat: React.FC<ChatProps> = ({
   onSend,
   isGenerating,
   generationStatus,
+  generationSteps = [],
   selectedLanguage,
   currentLanguage,
   languages,
@@ -519,16 +521,37 @@ export const Chat: React.FC<ChatProps> = ({
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8b9b] to-[#fd8b00] flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: '#131313', border: '1px solid rgba(255,139,155,0.2)' }}>
-                      <div className="flex items-center gap-1.5">
-                        {[0, 1, 2].map(i => (
-                          <motion.div key={i}
-                            animate={{ opacity: [0.3, 1, 0.3] }}
-                            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-                            style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff8b9b' }}
-                          />
-                        ))}
-                      </div>
+                    <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: '#131313', border: '1px solid rgba(255,139,155,0.2)', maxWidth: '90%' }}>
+                      {generationSteps.length === 0 ? (
+                        <div className="flex items-center gap-1.5">
+                          {[0, 1, 2].map(i => (
+                            <motion.div key={i}
+                              animate={{ opacity: [0.3, 1, 0.3] }}
+                              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+                              style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff8b9b' }}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {generationSteps.map((step, i) => {
+                            const isLast = i === generationSteps.length - 1;
+                            const done = !isLast; // a new step arriving means previous ones finished
+                            return (
+                              <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
+                                className="flex items-center gap-2.5">
+                                <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  background: done ? 'rgba(40,200,64,0.15)' : 'rgba(255,139,155,0.12)' }}>
+                                  {done
+                                    ? <Check className="w-3 h-3" style={{ color: '#28c840' }} />
+                                    : <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#ff8b9b' }} />}
+                                </div>
+                                <span style={{ fontSize: 13, lineHeight: 1.4, color: done ? '#8a8a8a' : '#e4e4e4' }}>{step}</span>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 )}
