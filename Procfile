@@ -1,1 +1,1 @@
-web: python scraper/bot.py
+web: npm run start
