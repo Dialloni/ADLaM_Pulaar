@@ -162,11 +162,12 @@ async function startServer() {
 
   // First-party Firebase auth: proxy /__/auth/* and /__/firebase/* to the Firebase
   // handler so Google sign-in cookies are first-party on this domain (fixes the
-  // login bounce on Safari redirect + Chrome partitioned storage). Mounted BEFORE
-  // body parsing and the SPA fallback. cookieDomainRewrite:'' makes cookies host-only.
+  // login bounce on Safari redirect + Chrome partitioned storage). Mounted at ROOT
+  // with pathFilter (NOT app.use('/__', ...) — that strips the /__ prefix and
+  // forwards the wrong path). cookieDomainRewrite:'' makes cookies host-only.
   app.use(
-    '/__',
     createProxyMiddleware({
+      pathFilter: ['/__/auth/**', '/__/firebase/**'],
       target: FIREBASE_AUTH_PROXY_TARGET,
       changeOrigin: true,
       cookieDomainRewrite: '',
