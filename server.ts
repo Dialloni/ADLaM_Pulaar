@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer as createViteServer } from 'vite';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
@@ -7,6 +8,11 @@ import { verifyIdToken } from './lib/firebaseAdmin';
 import { runStream } from './lib/llm';
 
 dotenv.config();
+
+// Firebase first-party auth proxy target (same as the Vercel rewrite).
+const FIREBASE_AUTH_PROXY_TARGET =
+  process.env.FIREBASE_AUTH_PROXY_TARGET ||
+  'https://ai-studio-applet-webapp-28b0a.firebaseapp.com';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -153,6 +159,20 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+
+  // First-party Firebase auth: proxy /__/auth/* and /__/firebase/* to the Firebase
+  // handler so Google sign-in cookies are first-party on this domain (fixes the
+  // login bounce on Safari redirect + Chrome partitioned storage). Mounted BEFORE
+  // body parsing and the SPA fallback. cookieDomainRewrite:'' makes cookies host-only.
+  app.use(
+    '/__',
+    createProxyMiddleware({
+      target: FIREBASE_AUTH_PROXY_TARGET,
+      changeOrigin: true,
+      cookieDomainRewrite: '',
+      xfwd: true,
+    })
+  );
 
   app.use(express.json({ limit: '50mb' }));
 
