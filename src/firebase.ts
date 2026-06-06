@@ -12,12 +12,18 @@ import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, del
 // proxies /__/auth/* to the Firebase handler, making auth first-party so the
 // redirect session persists on Safari/iOS. Localhost keeps the Firebase
 // authDomain (popup works there, no proxy available).
-// Use the standard Firebase auth domain (*.firebaseapp.com). With signInWithPopup
-// + the app domain registered under Firebase Authorized Domains, Google's handler
-// posts the credential back to our origin — no first-party proxy needed. (The
-// custom-authDomain proxy approach broke the handshake: changeOrigin made the
-// handler post to the wrong origin → login bounced.)
-const resolvedAuthDomain = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim();
+// FIRST-PARTY AUTH. These hosts proxy /__/auth/* to the Firebase handler
+// (Vercel via vercel.json, Railway via the proxy in server.ts), so we use the
+// app's OWN domain as authDomain. The entire OAuth handshake then happens on
+// our origin — no third-party cookies/storage (which Chrome/Safari block and
+// which made the firebaseapp.com popup bounce). Requires, for each host:
+//   (1) the /__/auth proxy, (2) the host in Firebase Authorized Domains,
+//   (3) https://<host>/__/auth/handler in the Google OAuth client redirect URIs.
+const FIRST_PARTY_AUTH_HOSTS = ['gando-ai.vercel.app', 'gando-ai.up.railway.app'];
+const browserHost = typeof window !== 'undefined' ? window.location.hostname : '';
+const resolvedAuthDomain = FIRST_PARTY_AUTH_HOSTS.includes(browserHost)
+  ? browserHost
+  : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim();
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY?.trim(),
