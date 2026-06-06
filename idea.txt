@@ -1,0 +1,79 @@
+Here is the detailed, production-level system design architecture and project roadmap based on our conversation. You can copy and paste this directly into Claude or Gemini to give them the exact, un-sugarcoated technical blueprint of what you are building.
+
+---
+
+# Project Blueprint: High-Performance Natural Language AI Code Generator
+
+## 1. System Architecture Overview
+
+The system is designed as a distributed, decoupled microservices architecture engineered to translate natural language inputs (specifically low-resource languages/scripts) into executable code, provide a live-preview environment, and maintain context over complex project structures.
+
+```
+[ User UI ] <---> [ API Gateway / Load Balancer ] <---> [ Orchestration Backend (Go/Node/Python) ]
+                                                                |         |          |
+                                     +--------------------------+         |          +-------------------------+
+                                     |                                    v                                    |
+                        [ Vector DB: Retrieval ]              [ Foundational LLM API ]              [ Secure Sandbox Execution ]
+                      (Pinecone/Weaviate/Milvus)               (Gemini/Claude/OpenAI)                     (Docker / WASM)
+
+```
+
+---
+
+## 2. Core Architectural Pillars
+
+### A. The Core Machine Learning Strategy & Tokenization
+
+Because the target script (**Adlam**) is a low-resource linguistic system, relying purely on off-the-shelf, pre-trained LLMs will result in high tokenization fragmentation, high costs, and poor context retention.
+
+* **Custom Tokenizer Layer:** Before feeding raw text into an LLM API, a custom Byte-Pair Encoding (BPE) or WordPiece tokenizer trained specifically on the target script corpus must be evaluated to map script characters to efficient token IDs.
+* **Linguistic Context Layer:** The backend must handle morphological variations, dialect-specific grammar rules (such as the Guinea regional dialect of Pulaar), and orthographic nuances before sending payloads to downstream models.
+
+### B. Retrieval-Augmented Generation (RAG) & Vector Infrastructure
+
+To allow the model to understand local context, user codebases, and custom linguistic rules without constant, expensive fine-tuning:
+
+* **Vector Database:** Implement a highly scalable vector database (**Pinecone, Weaviate, or Milvus**).
+* **Data Pipeline:** Convert linguistic definitions, documentation, and code snippets into high-dimensional vector embeddings.
+* **Contextual Injection:** When a user inputs a prompt, the system queries the vector database for the most mathematically relevant code contexts or grammatical rules and injects them into the LLM system prompt dynamically.
+
+### C. Backend Orchestration & Microservices
+
+* **State & Session Management:** A high-throughput backend (built using Go, Node.js, or Python) to manage user sessions, coordinate streaming API calls, and interface with data persistence layers (e.g., Firebase, PostgreSQL).
+* **API Gateway:** Load balancers and API gateways to handle high-concurrency connections and manage rate-limiting for expensive downstream foundational model APIs.
+
+### D. Isolated Sandbox Execution Environment (The "Lovable" Architecture)
+
+To offer automated application creation, the system cannot safely execute code on the host machine.
+
+* **Strict Isolation:** Implementation of secure, ephemeral sandboxes utilizing **Docker containers** or **WebAssembly (WASM)** runtimes.
+* **Live Preview Pipeline:** The generated code is instantly compiled/interpreted inside this sandboxed container, totally isolated from sensitive host architecture and other users. The frontend then establishes a connection (via WebSockets or secure ports) to stream the UI/UX preview back to the user.
+
+---
+
+## 3. Current Bottleneck & Data Strategy
+
+The single largest technical risk to project execution is **data scarcity**. A corpus of $4,500$ words is an excellent foundational baseline but insufficient for deep linguistic alignment in machine learning.
+
+### Data Scale Targets:
+
+* **Phase 1 Target:** $\approx 50,000$ to $100,000$ cleaned, structured sentences (or equivalent functional tokens).
+* **Data Format:** Raw corpora must be compiled into structured **JSON/JSONL** formats mapping the script/language directly to syntax, semantics, or target code functions for optimal pipeline ingestion.
+* **Pipeline Automation:** Development of web-scrapers, text-cleaning scripts, OCR tools for printed books, and validation pipelines to automate deduplication and grammatical verification.
+
+---
+
+## 4. Priority Implementation Roadmap
+
+1. **Foundational API Integration:** Establish core pipelines streaming text/code generation using frontier model APIs (Gemini/Claude).
+2. **Vector Database Architecture:** Spin up a vector database instance and design the indexing schema for code context retrieval.
+3. **Backend Orchestration Core:** Build the middleware responsible for handling user prompts, calling the vector DB, assembling the prompt context, and querying the LLM.
+4. **Isolated Execution Environment:** Architect the Docker/WASM sandboxing pipeline to safely compile, run, and preview code outputs.
+5. **Frontend Interface:** Develop a responsive, streaming UI optimized for code editing, chatting, and viewing the live preview sandbox.
+6. **Linguistic Data Ingestion Pipeline:** Scale up data collection tools to clean, tokenize, and convert crawled script resources into usable JSONL training data.
+
+---
+
+**Prompt to give Claude/Gemini to start building:**
+
+> *"I am building a system based on the technical architecture above. It is a natural language code generation platform optimized for a low-resource script (Adlam). Given this system design, let's start with **Priority 1 and 2**. How should we structure the backend orchestration layer in code to seamlessly fetch context from a vector database before sending the final compiled payload to the foundational LLM API? Give me the explicit system code structure."*
