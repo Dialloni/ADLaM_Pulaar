@@ -1,6 +1,11 @@
+# Web app (Gando) — this is the repo's PRIMARY service.
+# The web Railway service reads this by default (no dashboard config needed).
+# The scraper service must point its "Railway Config File" to railway.scraper.toml.
 [build]
 builder = "nixpacks"
+buildCommand = "npm run build"
 
 [deploy]
-startCommand = "python scraper/bot.py"
-restartPolicyType = "always"
+startCommand = "npm run start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

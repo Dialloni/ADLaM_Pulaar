@@ -1,0 +1,9 @@
+# Telegram scraper bot. The SCRAPER Railway service must set its
+# "Railway Config File" path (Settings -> Config-as-code) to: railway.scraper.toml
+# Nixpacks detects Python via scraper/requirements.txt and runs the bot.
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "python scraper/bot.py"
+restartPolicyType = "always"
