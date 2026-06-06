@@ -24,6 +24,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Failsafe: never let the app hang on a loading spinner. If auth init stalls
+    // (e.g. a stale pending-redirect in IndexedDB from a previous authDomain),
+    // force render after 6s so the user at least gets the login screen.
+    const failsafe = setTimeout(() => setLoading(false), 6000);
+
     // Handle redirect result on page load (Safari uses redirect instead of popup)
     getRedirectResult(auth)
       .then(res => { if (res) console.log('[Auth] redirect sign-in ok:', res.user.email); })
@@ -33,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      clearTimeout(failsafe);
       setError(null);
       if (currentUser) {
         try {
@@ -72,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => { clearTimeout(failsafe); unsubscribe(); };
   }, []);
 
   const signIn = async () => {
