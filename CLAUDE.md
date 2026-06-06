@@ -1,76 +1,176 @@
-# Gando AI — Claude Context
+# Ruflo — Claude Code Configuration
 
-## Who I Am
-Abubakar Diallo — junior CS student at NYU (abd9735@nyu.edu). Building Gando AI solo.
-West African (Fulani/Pulaar background). Native understanding of ADLaM script context.
+## Rules
 
-## What Gando AI Is
-Bolt/Lovable/v0-style app builder where the entire UX is in African languages first.
-Users describe apps in Fulani ADLaM script → Gemini 2.5 Flash generates working HTML/CSS/JS → live preview.
-Live at: https://gando-ai.vercel.app
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless absolutely necessary — prefer editing existing files
+- NEVER create documentation files unless explicitly requested
+- NEVER save working files or tests to root — use `/src`, `/tests`, `/docs`, `/config`, `/scripts`
+- ALWAYS read a file before editing it
+- NEVER commit secrets, credentials, or .env files
+- NEVER add a `Co-Authored-By` trailer to user commits unless this project's `.claude/settings.json` has `attribution.commit` set (#2078). The Claude Code Bash tool may suggest one in its default commit-message template — ignore it. `Co-Authored-By` is semantic authorship attribution under git/GitHub convention; the tool is the facilitator, not a co-author.
+- Keep files under 500 lines
+- Validate input at system boundaries
 
-## Tech Stack
-- Frontend: React 19 + TypeScript + Vite 6 + Tailwind CSS v4
-- Backend: Express + tsx (Node.js)
-- AI: Google Gemini 2.5 Flash via @google/genai
-- Auth + DB: Firebase Auth + Firestore
-- Deploy: Vercel (frontend) + Firebase (auth/db)
-- Fonts: Manrope (display), Noto Sans Adlam (ADLaM script), JetBrains Mono (code)
+## Agent Comms (SendMessage-First Coordination)
 
-## Key Files
-- `src/App.tsx` — ALL pages rendered here (landing, dashboard, projects, templates, docs, status, assets/languages)
-- `src/translations.ts` — UI strings for EN / FR / ff-adlm (ADLaM), includes twPhrases[]
-- `src/index.css` — design tokens (CSS vars), Tailwind v4
-- `api/generate.ts` — POST /api/generate → Gemini app generation
-- `api/edit.ts` — POST /api/edit → iterative edits
-- `server.ts` — Express entry, mounts /api/*, serves Vite in dev
+Named agents coordinate via `SendMessage`, not polling or shared state.
 
-## Pages (NavPage type)
-`'dashboard' | 'projects' | 'assets' | 'templates' | 'docs' | 'status'`
-- `assets` = Languages page (ADLaM alphabet reference + language switcher)
-- `dashboard` = main builder (chat + preview + code editor)
+```
+Lead (you) ←→ architect ←→ developer ←→ tester ←→ reviewer
+              (named agents message each other directly)
+```
 
-## Design System ("Nexus Builder" aesthetic)
-- Primary: #ff8b9b (rose/flamingo)
-- Secondary: #fd8b00 (orange)
-- Tertiary: #bca2ff (lavender)
-- Background: #0e0e0e (obsidian)
-- All design tokens in `src/index.css` as CSS vars
-- Gradient text: `ds-gradient-text` class
-- ADLaM font class: `ds-adlam` or `font-adlam`
+### Spawning a Coordinated Team
 
-## ADLaM Unicode
-Block: U+1E900–U+1E95F
-28 core letters + 6 loan letters
-RTL script. Use `dir="rtl"` on ADLaM containers.
-Noto Sans Adlam font required.
+```javascript
+// ALL agents in ONE message, each knows WHO to message next
+Agent({ prompt: "Research the codebase. SendMessage findings to 'architect'.",
+  subagent_type: "researcher", name: "researcher", run_in_background: true })
+Agent({ prompt: "Wait for 'researcher'. Design solution. SendMessage to 'coder'.",
+  subagent_type: "system-architect", name: "architect", run_in_background: true })
+Agent({ prompt: "Wait for 'architect'. Implement it. SendMessage to 'tester'.",
+  subagent_type: "coder", name: "coder", run_in_background: true })
+Agent({ prompt: "Wait for 'coder'. Write tests. SendMessage results to 'reviewer'.",
+  subagent_type: "tester", name: "tester", run_in_background: true })
+Agent({ prompt: "Wait for 'tester'. Review code quality and security.",
+  subagent_type: "reviewer", name: "reviewer", run_in_background: true })
 
-## Languages Supported
-- ff-adlm (Fulani ADLaM) — full UI + generation
-- fr (Français) — full UI + generation
-- en (English) — full UI + generation
-- Swahili / Yoruba / Hausa / Wolof — generation only (no UI translation yet)
+// Kick off the pipeline
+SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
+```
 
-## Data / AI Research Direction
-Building ADLaM corpus for fine-tuning. Three data sources:
-1. Telethon Telegram scraper (ADLaM messages from Pulaar groups)
-2. PDF OCR on NYU Greene HPC (digitizing ADLaM books)
-3. GANDO Collector (in-app feature: users upload + label real-world photos in ADLaM)
+### Patterns
 
-Pipeline plan: collect → scrub (adlam_ratio ≥ 0.70) → admin verify → RAG (inject into Gemini) → eventually LoRA fine-tune on Llama 3.2 3B
+| Pattern | Flow | Use When |
+|---------|------|----------|
+| **Pipeline** | A → B → C → D | Sequential dependencies (feature dev) |
+| **Fan-out** | Lead → A, B, C → Lead | Independent parallel work (research) |
+| **Supervisor** | Lead ↔ workers | Ongoing coordination (complex refactor) |
 
-NYU Greene HPC access: /scratch/abd9735/ for large datasets. SLURM job arrays for parallelization.
+### Rules
 
-## What NOT to Do
-- Never commit .env (Firebase keys, Gemini key, service account private key)
-- Don't add unnecessary comments to code
-- Don't over-abstract — keep it simple, no premature patterns
-- Don't mock Firebase in tests — use real DB
+- ALWAYS name agents — `name: "role"` makes them addressable
+- ALWAYS include comms instructions in prompts — who to message, what to send
+- Spawn ALL agents in ONE message with `run_in_background: true`
+- After spawning: STOP, tell user what's running, wait for results
+- NEVER poll status — agents message back or complete automatically
 
-## Current Priorities (as of May 2026)
-1. GANDO Collector page (in-app labeled data collection)
-2. Technical ADLaM dictionary (JSON) → inject into Gemini system prompt
-3. 50-example eval set (hand-verified ADLaM → code benchmarks)
-4. Telethon scraper running on Greene
-5. Admin verification dashboard
-6. RAG pipeline (Pinecone or pgvector)
+## Swarm & Routing
+
+### Config
+- **Topology**: hierarchical-mesh (anti-drift)
+- **Max Agents**: 15
+- **Memory**: hybrid
+- **HNSW**: Enabled
+- **Neural**: Enabled
+
+```bash
+npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
+```
+
+### Agent Routing
+
+| Task | Agents | Topology |
+|------|--------|----------|
+| Bug Fix | researcher, coder, tester | hierarchical |
+| Feature | architect, coder, tester, reviewer | hierarchical |
+| Refactor | architect, coder, reviewer | hierarchical |
+| Performance | perf-engineer, coder | hierarchical |
+| Security | security-architect, auditor | hierarchical |
+
+### When to Swarm
+- **YES**: 3+ files, new features, cross-module refactoring, API changes, security, performance
+- **NO**: single file edits, 1-2 line fixes, docs updates, config changes, questions
+
+### 3-Tier Model Routing
+
+| Tier | Handler | Use Cases |
+|------|---------|-----------|
+| 1 | Agent Booster (WASM) | Simple transforms — skip LLM, use Edit directly |
+| 2 | Haiku | Simple tasks, low complexity |
+| 3 | Sonnet/Opus | Architecture, security, complex reasoning |
+
+## Memory & Learning
+
+### Before Any Task
+```bash
+npx @claude-flow/cli@latest memory search --query "[task keywords]" --namespace patterns
+npx @claude-flow/cli@latest hooks route --task "[task description]"
+```
+
+### After Success
+```bash
+npx @claude-flow/cli@latest memory store --namespace patterns --key "[name]" --value "[what worked]"
+npx @claude-flow/cli@latest hooks post-task --task-id "[id]" --success true --store-results true
+```
+
+### MCP Tools (use `ToolSearch("keyword")` to discover)
+
+| Category | Key Tools |
+|----------|-----------|
+| **Memory** | `memory_store`, `memory_search`, `memory_search_unified` |
+| **Bridge** | `memory_import_claude`, `memory_bridge_status` |
+| **Swarm** | `swarm_init`, `swarm_status`, `swarm_health` |
+| **Agents** | `agent_spawn`, `agent_list`, `agent_status` |
+| **Hooks** | `hooks_route`, `hooks_post-task`, `hooks_worker-dispatch` |
+| **Security** | `aidefence_scan`, `aidefence_is_safe`, `aidefence_has_pii` |
+| **Hive-Mind** | `hive-mind_init`, `hive-mind_consensus`, `hive-mind_spawn` |
+
+### Background Workers
+
+| Worker | When |
+|--------|------|
+| `audit` | After security changes |
+| `optimize` | After performance work |
+| `testgaps` | After adding features |
+| `map` | Every 5+ file changes |
+| `document` | After API changes |
+
+```bash
+npx @claude-flow/cli@latest hooks worker dispatch --trigger audit
+```
+
+## Agents
+
+**Core**: `coder`, `reviewer`, `tester`, `planner`, `researcher`
+**Architecture**: `system-architect`, `backend-dev`, `mobile-dev`
+**Security**: `security-architect`, `security-auditor`
+**Performance**: `performance-engineer`, `perf-analyzer`
+**Coordination**: `hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
+**GitHub**: `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`
+
+Any string works as a custom agent type.
+
+## Build & Test
+
+- ALWAYS run tests after code changes
+- ALWAYS verify build succeeds before committing
+
+```bash
+npm run build && npm test
+```
+
+## CLI Quick Reference
+
+```bash
+npx @claude-flow/cli@latest init --wizard           # Setup
+npx @claude-flow/cli@latest swarm init --v3-mode     # Start swarm
+npx @claude-flow/cli@latest memory search --query "" # Vector search
+npx @claude-flow/cli@latest hooks route --task ""    # Route to agent
+npx @claude-flow/cli@latest doctor --fix             # Diagnostics
+npx @claude-flow/cli@latest security scan            # Security scan
+npx @claude-flow/cli@latest performance benchmark    # Benchmarks
+```
+
+26 commands, 140+ subcommands. Use `--help` on any command for details.
+
+## Setup
+
+```bash
+claude mcp add claude-flow -- npx -y @claude-flow/cli@latest
+npx @claude-flow/cli@latest daemon start
+npx @claude-flow/cli@latest doctor --fix
+```
+
+**Agent tool** handles execution (agents, files, code, git). **MCP tools** handle coordination (swarm, memory, hooks). **CLI** is the same via Bash.
