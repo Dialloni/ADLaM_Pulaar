@@ -76,15 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async () => {
+    // Popup is the reliable path now that the app domain is an Authorized domain
+    // in Firebase: Google's handler posts the credential back to our (authorized)
+    // origin. Fall back to full-page redirect only if the popup is blocked.
     try {
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      if (isSafari) {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: any) {
+      const code = error?.code || '';
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
         await signInWithRedirect(auth, googleProvider);
-      } else {
-        await signInWithPopup(auth, googleProvider);
+        return;
       }
-    } catch (error) {
-      console.error('Sign in error:', error);
+      // popup-closed-by-user / cancelled-popup-request: user aborted — surface quietly.
+      console.error('Sign in error:', code || error);
       throw error;
     }
   };
