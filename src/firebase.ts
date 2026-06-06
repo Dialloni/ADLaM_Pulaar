@@ -12,10 +12,14 @@ import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, del
 // proxies /__/auth/* to the Firebase handler, making auth first-party so the
 // redirect session persists on Safari/iOS. Localhost keeps the Firebase
 // authDomain (popup works there, no proxy available).
-const PROD_AUTH_HOST = 'gando-ai.vercel.app';
+// Hosts that proxy /__/auth/* to the Firebase handler (first-party auth):
+// Vercel via vercel.json rewrites, Railway/Express via the proxy in server.ts.
+// On these, use the app's own domain as authDomain so the redirect/popup session
+// is first-party (works on Safari/iOS + Chrome's partitioned storage).
+const FIRST_PARTY_AUTH_HOSTS = ['gando-ai.vercel.app', 'gando-ai.up.railway.app'];
 const browserHost = typeof window !== 'undefined' ? window.location.hostname : '';
-const resolvedAuthDomain = browserHost === PROD_AUTH_HOST
-  ? PROD_AUTH_HOST
+const resolvedAuthDomain = FIRST_PARTY_AUTH_HOSTS.includes(browserHost)
+  ? browserHost
   : import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim();
 
 const firebaseConfig = {
