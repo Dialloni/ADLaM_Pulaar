@@ -42,3 +42,7 @@ scraper/output/
 
 # Eval harness generated outputs (can be large; contains generated apps)
 scripts/eval/results/
+
+# Lockfile is platform-specific (Mac) and breaks Linux CI native bindings
+# (@tailwindcss/oxide). Let npm install resolve per-platform on deploy.
+package-lock.json
