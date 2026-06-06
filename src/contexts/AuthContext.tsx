@@ -37,13 +37,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setError(`Sign-in failed: ${err.code || err.message}`);
       });
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       clearTimeout(failsafe);
       setError(null);
-      if (currentUser) {
+
+      if (!currentUser) {
+        setUser(null);
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      // Log the user in IMMEDIATELY. Do NOT await Firestore here — a hanging
+      // setDoc/getDoc used to block setUser entirely, so auth succeeded but the
+      // app never left the login screen ("bounce"). Auth state must not depend
+      // on Firestore reachability.
+      const email = currentUser.email?.toLowerCase() ?? '';
+      setIsAdmin(email === BOOTSTRAP_ADMIN.toLowerCase());
+      setUser(currentUser);
+      setLoading(false);
+
+      // Background, non-blocking: sync profile + refine admin status.
+      void (async () => {
         try {
-          const userRef = doc(db, 'users', currentUser.uid);
-          await setDoc(userRef, {
+          await setDoc(doc(db, 'users', currentUser.uid), {
             uid: currentUser.uid,
             email: currentUser.email,
             displayName: currentUser.displayName,
@@ -51,31 +68,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: 'user',
             updatedAt: serverTimestamp(),
           }, { merge: true });
-        } catch (err: any) {
-          console.error('Error syncing user profile:', err);
-          setError(`Profile Sync Error: ${err.message}`);
+        } catch (err) {
+          console.error('[Auth] profile sync failed (non-blocking):', err);
         }
-
-        // Check admin status: Firestore admins collection OR bootstrap email
-        const email = currentUser.email?.toLowerCase() ?? '';
-        let admin = email === BOOTSTRAP_ADMIN.toLowerCase();
-        console.log('[Auth] email:', currentUser.email, '| isAdmin:', admin, '| provider:', currentUser.providerData[0]?.providerId);
-        if (!admin) {
+        if (email && email !== BOOTSTRAP_ADMIN.toLowerCase()) {
           try {
             const adminDoc = await getDoc(doc(db, 'admins', email));
-            admin = adminDoc.exists();
-            console.log('[Auth] Firestore admin check:', admin);
+            if (adminDoc.exists()) setIsAdmin(true);
           } catch (e) {
-            console.log('[Auth] Firestore admin check failed:', e);
+            console.log('[Auth] admin check failed (non-blocking):', e);
           }
         }
-        setIsAdmin(admin);
-        setUser(currentUser);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
-      setLoading(false);
+      })();
     });
 
     return () => { clearTimeout(failsafe); unsubscribe(); };
