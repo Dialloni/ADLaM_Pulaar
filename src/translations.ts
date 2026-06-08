@@ -166,13 +166,13 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     /* nav */
     dashboardNav: "𞤚𞤢𞤩𞤤𞤮",
     projectsNav: "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭",
-    assetsNav: "𞤑𞤢𞥄𞤤𞤫𞥅𞤶𞤭",
+    assetsNav: "𞤖𞤢𞥄𞤤𞤢𞥄𞤶𞤭",
     searchPlaceholder: "𞤕𞤫𞥅𞤰𞤭 𞤘𞤢𞤲𞤣𞤮...",
 
     /* sidebar */
     myProjectsLabel: "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤢𞤥",
     templatesNav: "𞤃𞤮𞤣𞤫𞤤𞤭",
-    languageAssetsLabel: "𞤆𞤓𞤂𞤀𞥄𞤈 𞤑𞤢𞥄𞤤𞤫𞥅𞤶𞤭",
+    languageAssetsLabel: "𞤖𞤢𞥄𞤤𞤢𞥄𞤶𞤭",
     settingsNav: "𞤚𞤫𞤩𞥆𞤫",
     teamHubLabel: "𞤒𞤫𞤴𞥆𞤢𞤥",
     newProject: "𞤆𞤮𞤪𞤮𞤶𞤫 𞤳𞤫𞤧𞤮",
@@ -215,7 +215,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     searchProjectsPlaceholder: "𞤕𞤫𞥅𞤰𞤭 𞤆𞤮𞤪𞤮𞤶𞤫...",
     deleteProjectLabel: "𞤊𞤵𞤦𞤢 𞤆𞤮𞤪𞤮𞤶𞤫",
     openProjectLabel: "𞤊𞤭𞤤𞤵 𞤆𞤮𞤪𞤮𞤶𞤫",
-    shareLabel: "𞤐𞤫𞤤𞤣𞤵",
+    shareLabel: "𞤅𞤫𞤲𞤣𞤵𞤶𞤵",
     sharePendingLabel: "𞤖𞤢𞤦𞥆𞤢𞥄𞤣𞤫",
     shareLiveLabel: "𞤇 𞤘𞤢𞤤𞤫𞤪𞤭",
     shareConfirm: "𞤀𞤯𞤢 𞤴𞤭𞤯𞤭 𞤲𞤫𞤤𞤣𞤫 𞤆𞤮𞤪𞤮𞤶𞤫 𞤲𞤣𞤫 𞤫 𞤘𞤢𞤤𞤫𞤪𞤭 𞤪𞤫𞤲𞥆𞤣𞤮? 𞤀𞤣𞤥𞤭𞤲 𞤸𞤢 𞤸𞤮𞤤𞥆𞤭𞤲𞤢 𞤣𞤫.",
