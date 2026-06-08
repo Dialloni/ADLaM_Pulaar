@@ -6,6 +6,7 @@ import {
   Users, BookOpen, Activity, Sparkles, LogOut, ChevronRight,
   RotateCcw, CheckCircle2, XCircle, AlertCircle, X, PanelLeft,
   HelpCircle, Gift, Globe, Layers, Github, Figma, Camera,
+  Share2, Heart,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
@@ -436,6 +437,8 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [page, setPage] = useState<NavPage>('dashboard');
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATES_META[0] | null>(null);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [communityTemplates, setCommunityTemplates] = useState<Project[]>([]);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState('');
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -529,6 +532,15 @@ export default function App() {
       }
     }, err => setGlobalError(`Permission Error: ${err.message}`));
   }, [user, currentProject?.id]);
+
+  /* community templates listener (admin-approved, public) */
+  useEffect(() => {
+    if (!user) { setCommunityTemplates([]); return; }
+    const q = query(collection(db, 'projects'), where('featured', '==', true));
+    return onSnapshot(q,
+      snap => setCommunityTemplates(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project))),
+      () => {});
+  }, [user]);
 
   /* messages listener */
   useEffect(() => {
@@ -680,6 +692,31 @@ export default function App() {
   };
 
   const openProject = (p: Project) => { setCurrentProject(p); };
+
+  const shareProject = async (p: Project) => {
+    if (p.shareStatus === 'pending' || p.featured) return;
+    if (!confirm(t.shareConfirm)) return;
+    setSharingId(p.id);
+    try {
+      await updateDoc(doc(db, 'projects', p.id), { shareStatus: 'pending', sharedAt: serverTimestamp() });
+    } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${p.id}`); }
+    finally { setSharingId(null); }
+  };
+
+  const remixCommunity = async (tmpl: Project) => {
+    if (!user) return;
+    const data = {
+      userId: user.uid, name: `${tmpl.name} (remix)`, description: tmpl.description || '',
+      language: tmpl.language, languageCode: tmpl.languageCode,
+      code: tmpl.code, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+    };
+    try {
+      const refDoc = await addDoc(collection(db, 'projects'), data);
+      setCurrentProject({ id: refDoc.id, ...data } as unknown as Project);
+      setSelectedTemplate(null);
+      setPage('projects');
+    } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); }
+  };
 
   /* ── derived metrics ──────────────────────────── */
   const completionPct = Math.min(projects.length * 12, 96);
@@ -1390,6 +1427,21 @@ export default function App() {
                       <CodeIcon className="w-3.5 h-3.5" /> {t.code}
                     </button>
                   </div>
+                  {currentProject.featured ? (
+                    <span className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
+                      <Heart className="w-3.5 h-3.5" /> {t.shareLiveLabel}
+                    </span>
+                  ) : currentProject.shareStatus === 'pending' ? (
+                    <span className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#eab3081a', color: '#fbbf24' }}>
+                      {t.sharePendingLabel}
+                    </span>
+                  ) : (
+                    <button onClick={() => shareProject(currentProject)} disabled={sharingId === currentProject.id}
+                      className={cn('flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all', isAdlam && 'font-adlam')}
+                      style={{ color: T, borderColor: `${T}33`, background: `${T}0c` }}>
+                      <Share2 className="w-3.5 h-3.5" /> {sharingId === currentProject.id ? '…' : t.shareLabel}
+                    </button>
+                  )}
                   <button onClick={handleDownload}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 transition-all"
                     style={{ background: 'rgba(255,255,255,0.04)' }}>
@@ -1496,11 +1548,29 @@ export default function App() {
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${P}18`, color: P }}>
                             <Sparkles className="w-5 h-5" />
                           </div>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => deleteProject(p.id)}
-                              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-all">
-                              <Trash2 className="w-3 h-3" /> {t.deleteProjectLabel}
-                            </button>
+                          <div className="flex items-center gap-2">
+                            {p.featured ? (
+                              <span className={cn('flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
+                                <Heart className="w-2.5 h-2.5" /> {t.shareLiveLabel}
+                              </span>
+                            ) : p.shareStatus === 'pending' ? (
+                              <span className={cn('px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ background: '#eab3081a', color: '#fbbf24' }}>
+                                {t.sharePendingLabel}
+                              </span>
+                            ) : null}
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!p.featured && p.shareStatus !== 'pending' && (
+                                <button onClick={() => shareProject(p)} disabled={sharingId === p.id}
+                                  className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-all', isAdlam && 'font-adlam')}
+                                  style={{ color: T, borderColor: `${T}33` }}>
+                                  <Share2 className="w-3 h-3" /> {sharingId === p.id ? '…' : t.shareLabel}
+                                </button>
+                              )}
+                              <button onClick={() => deleteProject(p.id)}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-red-400 hover:bg-red-500/10 border border-red-500/20 transition-all">
+                                <Trash2 className="w-3 h-3" /> {t.deleteProjectLabel}
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <h3 className={cn('font-black text-white text-base mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
@@ -1686,6 +1756,44 @@ export default function App() {
                       );
                     })}
                   </div>
+
+                  {communityTemplates.length > 0 && (
+                    <div className="mb-8">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Heart className="w-4 h-4" style={{ color: P }} />
+                        <h2 className={cn('text-lg font-black text-white tracking-tight', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                          {t.communityTitle}
+                        </h2>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                        {communityTemplates.map(ct => (
+                          <motion.div key={ct.id}
+                            whileHover={{ y: -4 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            className="group relative rounded-2xl overflow-hidden border border-white/8 hover:border-white/20 transition-all"
+                            style={{ background: '#131313' }}>
+                            <div className="relative overflow-hidden" style={{ height: 180, background: '#0e0e0e' }}>
+                              <iframe srcDoc={ct.code} title={ct.name} className="border-none pointer-events-none"
+                                style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
+                            </div>
+                            <div className="p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ct.language}</span>
+                                <span style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>Community</span>
+                              </div>
+                              <h3 className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{ct.name}</h3>
+                              <p className="text-zinc-500 text-xs line-clamp-2 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>{ct.description}</p>
+                              <button onClick={() => remixCommunity(ct)}
+                                className={cn('w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black text-black transition-all hover:scale-[1.02]', isAdlam && 'font-adlam')}
+                                style={{ background: 'var(--gradient-brand)' }}>
+                                <Sparkles className="w-3 h-3" /> {t.remixLabel}
+                              </button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <p style={{ textAlign: 'center', fontSize: 10, color: '#767575', fontFamily: 'Inter, sans-serif', marginTop: 32 }}>{tl.credit}</p>
                 </div>

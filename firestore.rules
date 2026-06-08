@@ -2,6 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Admin = bootstrap email or a doc in /admins. Mirrors AuthContext.tsx.
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'gandoadlam25@gmail.com'
+        || exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
+      );
+    }
+
     // ── Users ────────────────────────────────────────────────────────────────
     // Users can only read/write their own profile document.
     match /users/{userId} {
@@ -9,10 +17,19 @@ service cloud.firestore {
     }
 
     // ── Projects ─────────────────────────────────────────────────────────────
-    // Users can only access projects they own.
+    // Owners access their own; anyone logged in can read FEATURED (community
+    // gallery); admins can read/update any (moderation).
     match /projects/{projectId} {
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == resource.data.userId;
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || resource.data.featured == true
+        || isAdmin()
+      );
+
+      allow update, delete: if request.auth != null && (
+        request.auth.uid == resource.data.userId
+        || isAdmin()
+      );
 
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId;

@@ -9,6 +9,9 @@ export interface Project {
   createdAt: any;
   updatedAt: any;
   status?: 'live' | 'building' | 'draft';
+  shareStatus?: 'pending' | 'approved' | 'rejected';
+  featured?: boolean;
+  sharedAt?: any;
 }
 
 export interface Message {

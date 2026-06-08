@@ -65,6 +65,12 @@ export interface UIStrings {
   searchProjectsPlaceholder: string;
   deleteProjectLabel: string;
   openProjectLabel: string;
+  shareLabel: string;
+  sharePendingLabel: string;
+  shareLiveLabel: string;
+  shareConfirm: string;
+  communityTitle: string;
+  remixLabel: string;
   confirmDelete: string;
   recentProjects: string;
 
@@ -209,6 +215,12 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     searchProjectsPlaceholder: "𞤕𞤫𞥅𞤰𞤭 𞤆𞤮𞤪𞤮𞤶𞤫...",
     deleteProjectLabel: "𞤊𞤵𞤦𞤢 𞤆𞤮𞤪𞤮𞤶𞤫",
     openProjectLabel: "𞤊𞤭𞤤𞤵 𞤆𞤮𞤪𞤮𞤶𞤫",
+    shareLabel: "𞤐𞤫𞤤𞤣𞤵",
+    sharePendingLabel: "𞤖𞤢𞤦𞥆𞤢𞥄𞤣𞤫",
+    shareLiveLabel: "𞤇 𞤘𞤢𞤤𞤫𞤪𞤭",
+    shareConfirm: "𞤀𞤯𞤢 𞤴𞤭𞤯𞤭 𞤲𞤫𞤤𞤣𞤫 𞤆𞤮𞤪𞤮𞤶𞤫 𞤲𞤣𞤫 𞤫 𞤘𞤢𞤤𞤫𞤪𞤭 𞤪𞤫𞤲𞥆𞤣𞤮? 𞤀𞤣𞤥𞤭𞤲 𞤸𞤢 𞤸𞤮𞤤𞥆𞤭𞤲𞤢 𞤣𞤫.",
+    communityTitle: "𞤋𞤱𞤣𞤫 𞤪𞤫𞤲𞥆𞤣𞤮",
+    remixLabel: "𞤏𞤢𞤴𞤤𞤵",
     confirmDelete: "𞤀𞤯𞤢 𞤤𞤢𞥄𞤩𞤭 𞤢 𞤲𞤮𞤼𞥆𞤭𞥅 𞤥𞤮𞤥𞤼𞤵𞤣𞤫 𞤯𞤵𞤥?",
     recentProjects: "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤩𞤫𞤲𞥆𞤵𞤯𞤭",
 
@@ -272,10 +284,10 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
 
     /* misc */
     settings: "𞤚𞤫𞤩𞥆𞤫",
-    logout: "𞤒𞤢𞤤𞤼𞤵𞤯𞤮",
-    share: "𞤖𞤮𞥅𞤪𞤫",
+    logout: "𞤒𞤢𞤤𞤼𞤵",
+    share: "𞤧𞤫𞤲𞤣𞤵𞤼𞤵",
     deploy: "𞤖𞤵𞥅𞤼𞤮𞤪",
-    language: "𞤆𞤓𞤂𞤀𞥄𞤈 (𞤀𞤁𞤂𞤀𞤃)",
+    language: "𞤖𞤢𞥄𞤤𞤢𞥄𞤶𞤭 (𞤀𞤁𞤂𞤀𞤃)",
     advanced: "𞤒𞤫𞥅𞤧𞤮",
     errorNetwork: "𞤑𞤮 𞤲𞤵𞤥𞤳𞤯𞤢𞤱𞤦𞤫𞤣𞤯𞤮. 𞤀𞤯𞤢 𞤦𞤫𞤙𞤶𞤭𞤩𞤧𞤴𞤧𞤭.",
     errorGeneration: "𞤊𞤭𞤣𞥆𞤭𞥅𞤲𞤣𞤫. 𞤀𞤯𞤢 𞤢𞤺𞤢𞤼𞤢𞥄𞤪𞤭𞤲𞤣𞤫.",
@@ -350,6 +362,12 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     searchProjectsPlaceholder: "Rechercher un projet…",
     deleteProjectLabel: "Supprimer",
     openProjectLabel: "Ouvrir",
+    shareLabel: "Partager",
+    sharePendingLabel: "En attente",
+    shareLiveLabel: "Dans la galerie",
+    shareConfirm: "Partager ce projet dans la galerie communautaire ? Un admin le vérifie avant publication, et d'autres utilisateurs peuvent le prévisualiser et le remixer.",
+    communityTitle: "De la communauté",
+    remixLabel: "Remixer",
     confirmDelete: "Êtes-vous sûr de vouloir supprimer ce projet ?",
     recentProjects: "Projets Récents",
 
@@ -487,6 +505,12 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     searchProjectsPlaceholder: "Search projects…",
     deleteProjectLabel: "Delete",
     openProjectLabel: "Open",
+    shareLabel: "Share",
+    sharePendingLabel: "Pending review",
+    shareLiveLabel: "In gallery",
+    shareConfirm: "Share this project to the community gallery? An admin reviews it before it goes public, and other users may preview and remix it.",
+    communityTitle: "From the community",
+    remixLabel: "Remix",
     confirmDelete: "Are you sure you want to delete this project?",
     recentProjects: "Recent Projects",
 
