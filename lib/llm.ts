@@ -243,3 +243,35 @@ async function runGemini(opts: RunStreamOpts, onCode: (chunk: string) => void): 
   if (m.code) onCode(m.code);
   return { code: m.code ?? '', name: m.name ?? '', language: m.language ?? '', explanation: m.explanation ?? '' };
 }
+
+// Lightweight non-streaming translation for UI text (e.g. community template
+// prompts). Claude primary, Gemini fallback. Output is the translation only.
+export async function translateText(text: string, targetLanguage: string): Promise<string> {
+  const sys = `You are a precise translator. Translate the user's text into ${targetLanguage}. `
+    + `Output ONLY the translation — no quotes, no notes, no preamble. Keep meaning and tone natural. `
+    + `If the target is Fulani/Pulaar, use ADLaM script.`;
+  if (anthropicKey()) {
+    try {
+      const client = new Anthropic({ apiKey: anthropicKey() });
+      const msg = await client.messages.create({
+        model: claudeModel(),
+        max_tokens: 2048,
+        system: sys,
+        messages: [{ role: 'user', content: text }],
+      });
+      const out = msg.content.map((b) => (b.type === 'text' ? b.text : '')).join('').trim();
+      if (out) return out;
+    } catch (err) {
+      if (!geminiKey()) throw err;
+    }
+  }
+  if (geminiKey()) {
+    const ai = new GoogleGenAI({ apiKey: geminiKey() });
+    const res = await ai.models.generateContent({
+      model: geminiModel(),
+      contents: `${sys}\n\nTEXT:\n${text}`,
+    });
+    return (res.text || '').trim();
+  }
+  throw new Error('No LLM provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY).');
+}

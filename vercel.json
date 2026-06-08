@@ -11,6 +11,7 @@
     { "source": "/api/status", "destination": "/api/status" },
     { "source": "/api/ocr", "destination": "/api/ocr" },
     { "source": "/api/decode", "destination": "/api/decode" },
+    { "source": "/api/translate", "destination": "/api/translate" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
