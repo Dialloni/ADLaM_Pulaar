@@ -439,6 +439,7 @@ export default function App() {
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATES_META[0] | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [communityTemplates, setCommunityTemplates] = useState<Project[]>([]);
+  const [selectedCommunity, setSelectedCommunity] = useState<Project | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState('');
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -714,8 +715,16 @@ export default function App() {
       const refDoc = await addDoc(collection(db, 'projects'), data);
       setCurrentProject({ id: refDoc.id, ...data } as unknown as Project);
       setSelectedTemplate(null);
+      setSelectedCommunity(null);
       setPage('projects');
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); }
+  };
+
+  const openFullPreview = (code: string) => {
+    const blob = new Blob([code], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   /* ── derived metrics ──────────────────────────── */
@@ -1601,6 +1610,63 @@ export default function App() {
             (() => {
               const tl = TEMPLATE_I18N[selectedLang.code] || TEMPLATE_I18N.en;
 
+              /* ── COMMUNITY SPLIT VIEW ── */
+              if (selectedCommunity) {
+                const cc = selectedCommunity;
+                return (
+                  <div className="flex-1 flex overflow-hidden" style={{ height: '100%' }}>
+                    {/* LEFT: live preview of the shared app */}
+                    <div className="flex-1 flex flex-col overflow-hidden border-r border-white/8">
+                      <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: '#0e0e0e' }}>
+                        <button onClick={() => setSelectedCommunity(null)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#adaaaa', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+                          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#fff'}
+                          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#adaaaa'}>
+                          <ChevronRight className="w-3 h-3 rotate-180" /> {t.templatesNav}
+                        </button>
+                        <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>/</span>
+                        <span style={{ fontSize: 12, color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{cc.name}</span>
+                      </div>
+                      <div className="flex-1 relative" style={{ background: '#0e0e0e' }}>
+                        <iframe srcDoc={cc.code} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-same-origin" />
+                      </div>
+                    </div>
+                    {/* RIGHT: info + actions */}
+                    <div className="overflow-y-auto" style={{ width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
+                      <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ cursor: 'pointer' }} onClick={() => setSelectedCommunity(null)}>{t.templatesNav}</span>
+                        <ChevronRight className="w-3 h-3" />
+                        <span style={{ color: '#adaaaa' }}>{cc.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cc.language}</span>
+                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
+                      </div>
+                      <h2 className={cn('font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
+                        style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 26, lineHeight: 1.15 }}>{cc.name}</h2>
+                      <p style={{ fontSize: 14, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, marginBottom: 24 }}>{cc.description}</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
+                        <button onClick={() => remixCommunity(cc)}
+                          className={cn(isAdlam && 'font-adlam')}
+                          style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'var(--gradient-brand)', border: 'none', color: '#0a0a0a', fontSize: 13, fontWeight: 900, fontFamily: isAdlam ? undefined : MANROPE, cursor: 'pointer', letterSpacing: '0.02em' }}>
+                          {tl.useTemplate}
+                        </button>
+                        <button onClick={() => openFullPreview(cc.code)}
+                          style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#e5e5e5', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                          Open full preview ↗
+                        </button>
+                      </div>
+                      {cc.description && (
+                        <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 24 }}>
+                          <p style={{ fontSize: 10, fontWeight: 700, color: '#767575', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Starter prompt</p>
+                          <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>{cc.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
               /* ── SPLIT VIEW ── */
               if (selectedTemplate) {
                 const tr = tl.templates[selectedTemplate.id] || TEMPLATE_I18N.en.templates[selectedTemplate.id];
@@ -1770,24 +1836,23 @@ export default function App() {
                           <motion.div key={ct.id}
                             whileHover={{ y: -4 }}
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                            className="group relative rounded-2xl overflow-hidden border border-white/8 hover:border-white/20 transition-all"
+                            onClick={() => setSelectedCommunity(ct)}
+                            className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
                             style={{ background: '#131313' }}>
                             <div className="relative overflow-hidden" style={{ height: 180, background: '#0e0e0e' }}>
                               <iframe srcDoc={ct.code} title={ct.name} className="border-none pointer-events-none"
                                 style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{tl.preview}</span>
+                              </div>
                             </div>
                             <div className="p-4">
                               <div className="flex items-center gap-2 mb-2">
                                 <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ct.language}</span>
-                                <span style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>Community</span>
+                                <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
                               </div>
                               <h3 className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{ct.name}</h3>
-                              <p className="text-zinc-500 text-xs line-clamp-2 mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>{ct.description}</p>
-                              <button onClick={() => remixCommunity(ct)}
-                                className={cn('w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black text-black transition-all hover:scale-[1.02]', isAdlam && 'font-adlam')}
-                                style={{ background: 'var(--gradient-brand)' }}>
-                                <Sparkles className="w-3 h-3" /> {t.remixLabel}
-                              </button>
+                              <p className="text-zinc-500 text-xs line-clamp-2" style={{ fontFamily: 'Inter, sans-serif' }}>{ct.description}</p>
                             </div>
                           </motion.div>
                         ))}
