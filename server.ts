@@ -5,7 +5,7 @@ import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 import { verifyIdToken } from './lib/firebaseAdmin';
-import { runStream } from './lib/llm';
+import { runStream, translateText } from './lib/llm';
 
 dotenv.config();
 
@@ -299,6 +299,20 @@ ${text}`,
     } catch (err) {
       console.error('decode error:', err);
       sendGeminiError(res, err);
+    }
+  });
+
+  app.post('/api/translate', requireAuth, async (req: Request, res: Response) => {
+    const { text, targetLanguage } = req.body ?? {};
+    if (!text || typeof text !== 'string' || !targetLanguage || typeof targetLanguage !== 'string') {
+      return res.status(400).json({ error: 'text and targetLanguage are required' });
+    }
+    try {
+      const translation = await translateText(text, targetLanguage);
+      res.json({ translation });
+    } catch (err) {
+      console.error('translate error:', err);
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
     }
   });
 

@@ -13,7 +13,7 @@ import { useAuth } from './contexts/AuthContext';
 import {
   collection, addDoc, updateDoc, doc, query, where, orderBy,
   onSnapshot, deleteDoc, db, serverTimestamp,
-  handleFirestoreError, OperationType,
+  handleFirestoreError, OperationType, auth,
 } from './firebase';
 import { Project, Message } from './types';
 import { generateProject, editProject } from './services/geminiService';
@@ -440,6 +440,8 @@ export default function App() {
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [communityTemplates, setCommunityTemplates] = useState<Project[]>([]);
   const [selectedCommunity, setSelectedCommunity] = useState<Project | null>(null);
+  const [promptTr, setPromptTr] = useState<{ text: string; loading: boolean }>({ text: '', loading: false });
+  const trCacheRef = useRef<Map<string, string>>(new Map());
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState('');
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -542,6 +544,34 @@ export default function App() {
       snap => setCommunityTemplates(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project))),
       () => {});
   }, [user]);
+
+  /* translate a community template's prompt into the selected language (lazy + cached) */
+  useEffect(() => {
+    const cc = selectedCommunity;
+    if (!cc || !cc.description || selectedLang.code === 'en') { setPromptTr({ text: '', loading: false }); return; }
+    const key = `${cc.id}:${selectedLang.code}`;
+    const cached = trCacheRef.current.get(key);
+    if (cached !== undefined) { setPromptTr({ text: cached, loading: false }); return; }
+    let cancelled = false;
+    setPromptTr({ text: '', loading: true });
+    (async () => {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ text: cc.description, targetLanguage: selectedLang.name }),
+        });
+        const data = await res.json();
+        const tr = res.ok ? (data.translation || '') : '';
+        trCacheRef.current.set(key, tr);
+        if (!cancelled) setPromptTr({ text: tr, loading: false });
+      } catch {
+        if (!cancelled) setPromptTr({ text: '', loading: false });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedCommunity?.id, selectedLang.code]);
 
   /* messages listener */
   useEffect(() => {
@@ -1657,10 +1687,24 @@ export default function App() {
                         </button>
                       </div>
                       {cc.description && (
-                        <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 24 }}>
-                          <p style={{ fontSize: 10, fontWeight: 700, color: '#767575', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Starter prompt</p>
-                          <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>{cc.description}</p>
-                        </div>
+                        <>
+                          {/* original prompt (the language it was built in) */}
+                          <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 12 }}>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: '#767575', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Original prompt</p>
+                            <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>{cc.description}</p>
+                          </div>
+                          {/* translation into the selected language */}
+                          {selectedLang.code !== 'en' && (
+                            <div style={{ padding: '14px 16px', borderRadius: 12, background: `${T}0c`, border: `1px solid ${T}33`, marginBottom: 24 }}>
+                              <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, fontWeight: 700, color: T, fontFamily: isAdlam ? undefined : 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>{selectedLang.name}</p>
+                              {promptTr.loading ? (
+                                <p style={{ fontSize: 12, color: '#767575', fontFamily: 'Inter, sans-serif', fontStyle: 'italic' }}>…</p>
+                              ) : (
+                                <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#d4d4d8', fontFamily: isAdlam ? undefined : 'Inter, sans-serif', lineHeight: 1.7 }}>{promptTr.text || cc.description}</p>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
