@@ -8,6 +8,7 @@ import adlamDictData from '../../adlam_dict.json';
 import { CheckCircle2, XCircle, Download, RefreshCw, Upload, FileText, X, BookMarked } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { User } from '../firebase';
+import type { Project } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -15,7 +16,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
 type SubmissionStatus = 'pending' | 'verified' | 'rejected' | 'needs_adlam';
 type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
-type Tab = 'queue' | 'upload' | 'paste' | 'dictionary';
+type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community';
 type DictStatus = 'draft' | 'verified';
 
 interface DictTerm {
@@ -214,6 +215,29 @@ export function AdminPortal({ user }: { user: User }) {
   const [pasteDecoding, setPasteDecoding] = useState(false);
   const pasteRatio = adlamRatio(pasteText);
   const pasteWords = pasteText.trim().split(/\s+/).filter(Boolean).length;
+
+  /* ── COMMUNITY STATE ── */
+  const [communityProjects, setCommunityProjects] = useState<Project[]>([]);
+  const [communityLoading, setCommunityLoading] = useState(true);
+  const [communityActionId, setCommunityActionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const q = query(collection(db, 'projects'), where('shareStatus', '==', 'pending'));
+    return onSnapshot(q,
+      snap => { setCommunityProjects(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project))); setCommunityLoading(false); },
+      () => setCommunityLoading(false));
+  }, []);
+
+  const approveShare = async (id: string) => {
+    setCommunityActionId(id);
+    try { await updateDoc(doc(db, 'projects', id), { featured: true, shareStatus: 'approved' }); }
+    finally { setCommunityActionId(null); }
+  };
+  const rejectShare = async (id: string) => {
+    setCommunityActionId(id);
+    try { await updateDoc(doc(db, 'projects', id), { featured: false, shareStatus: 'rejected' }); }
+    finally { setCommunityActionId(null); }
+  };
 
   function codeRangeLabel(text: string): string {
     const sample = [...text.replace(/\s/g, '')].slice(0, 5);
@@ -636,6 +660,7 @@ export function AdminPortal({ user }: { user: User }) {
         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
         {([
           { id: 'queue', label: 'Review Queue' },
+          { id: 'community', label: `Community${communityProjects.length ? ` (${communityProjects.length})` : ''}` },
           { id: 'upload', label: 'Upload PDFs' },
           { id: 'paste', label: 'Paste Text' },
           { id: 'dictionary', label: 'Dictionary' },
@@ -651,6 +676,46 @@ export function AdminPortal({ user }: { user: User }) {
           </button>
         ))}
       </div>
+
+      {/* ── COMMUNITY TAB ── */}
+      {tab === 'community' && (
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-500">Projects users shared to the gallery. Approve to publish as a community template; reject to hide.</p>
+          {communityLoading ? (
+            <div className="flex items-center gap-2 text-zinc-500 text-sm"><RefreshCw className="w-4 h-4 animate-spin" /> Loading…</div>
+          ) : communityProjects.length === 0 ? (
+            <div className="py-16 text-center text-zinc-600 text-sm">No projects awaiting review.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {communityProjects.map(cp => (
+                <div key={cp.id} className="rounded-2xl border border-white/8 overflow-hidden" style={{ background: '#131313' }}>
+                  <div className="relative overflow-hidden" style={{ height: 200, background: '#0e0e0e' }}>
+                    <iframe srcDoc={cp.code} title={cp.name} className="border-none pointer-events-none"
+                      style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-black text-white text-sm mb-1 truncate">{cp.name}</h3>
+                    <p className="text-zinc-500 text-xs line-clamp-2 mb-1">{cp.description}</p>
+                    <p className="text-[10px] text-zinc-600 mb-3">{cp.language} · owner {cp.userId.slice(0, 8)}…</p>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => approveShare(cp.id)} disabled={communityActionId === cp.id}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all"
+                        style={{ background: '#22c55e1a', color: '#4ade80', border: '1px solid #22c55e33' }}>
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                      </button>
+                      <button onClick={() => rejectShare(cp.id)} disabled={communityActionId === cp.id}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all"
+                        style={{ background: '#ef44441a', color: '#f87171', border: '1px solid #ef444433' }}>
+                        <XCircle className="w-3.5 h-3.5" /> Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── UPLOAD TAB ── */}
       {tab === 'upload' && (
