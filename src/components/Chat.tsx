@@ -170,7 +170,7 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
   );
 };
 
-export const Chat: React.FC<ChatProps> = ({
+const ChatImpl: React.FC<ChatProps> = ({
   messages,
   input,
   setInput,
@@ -658,3 +658,25 @@ export const Chat: React.FC<ChatProps> = ({
     </div>
   );
 };
+
+// Memoize on the *data* props only. Function props (onSend, setInput, …) get a
+// fresh identity on every App render — comparing them would defeat the memo and
+// force a full markdown re-parse of all messages whenever the parent re-renders
+// (e.g. toggling the chat panel), which caused the 5–15s open lag on mobile.
+function chatPropsEqual(a: ChatProps, b: ChatProps) {
+  return (
+    a.messages === b.messages &&
+    a.input === b.input &&
+    a.isGenerating === b.isGenerating &&
+    a.generationStatus === b.generationStatus &&
+    a.generationSteps === b.generationSteps &&
+    a.selectedLanguage === b.selectedLanguage &&
+    a.currentLanguage === b.currentLanguage &&
+    a.languageCode === b.languageCode &&
+    a.currentCode === b.currentCode &&
+    a.languages === b.languages &&
+    a.t === b.t
+  );
+}
+
+export const Chat = React.memo(ChatImpl, chatPropsEqual);
