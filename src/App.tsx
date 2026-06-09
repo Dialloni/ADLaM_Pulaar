@@ -438,6 +438,7 @@ export default function App() {
   const [page, setPage] = useState<NavPage>('dashboard');
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATES_META[0] | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [chatHidden, setChatHidden] = useState(false);
   const [communityTemplates, setCommunityTemplates] = useState<Project[]>([]);
   const [selectedCommunity, setSelectedCommunity] = useState<Project | null>(null);
   const [promptTr, setPromptTr] = useState<{ text: string; loading: boolean }>({ text: '', loading: false });
@@ -1452,6 +1453,12 @@ export default function App() {
                   <button onClick={() => setCurrentProject(null)} className="p-1.5 rounded-lg text-zinc-500 hover:text-white transition-colors" title={t.recentProjects}>
                     <RotateCcw className="w-4 h-4" />
                   </button>
+                  <button onClick={() => setChatHidden(h => !h)}
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: chatHidden ? P : '#71717a' }}
+                    title={chatHidden ? 'Show chat' : 'Hide chat'}>
+                    <PanelLeft className="w-4 h-4" />
+                  </button>
                   {isRenaming ? (
                     <input autoFocus value={newName} onChange={e => setNewName(e.target.value)}
                       onBlur={handleRename} onKeyDown={e => e.key === 'Enter' && handleRename()}
@@ -1507,15 +1514,20 @@ export default function App() {
 
               {/* chat + preview */}
               <div className="flex flex-1 pt-14 overflow-hidden">
-                {/* chat panel — wider */}
-                <div className="w-[480px] flex-shrink-0 flex flex-col" style={{ background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
-                  <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
-                    isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
-                    selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
-                    languages={LANGS} onLanguageSelect={setSelectedLang}
-                    languageCode={selectedLang.code} t={t}
-                    currentCode={currentProject?.code} onRevert={handleRevert} />
-                </div>
+                {/* chat panel — collapsible */}
+                <motion.div className="flex-shrink-0 flex flex-col"
+                  animate={{ width: chatHidden ? 0 : 480, opacity: chatHidden ? 0 : 1, marginRight: chatHidden ? 0 : 12 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 200 }}
+                  style={{ background: '#0d0d0d', border: chatHidden ? 'none' : '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+                  <div className="flex flex-col h-full" style={{ width: 480, minWidth: 480 }}>
+                    <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
+                      isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
+                      selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
+                      languages={LANGS} onLanguageSelect={setSelectedLang}
+                      languageCode={selectedLang.code} t={t}
+                      currentCode={currentProject?.code} onRevert={handleRevert} />
+                  </div>
+                </motion.div>
                 <AnimatePresence mode="wait">
                   <motion.div key="panel" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                     transition={{ type: 'spring', damping: 30, stiffness: 200 }} className="flex-1 overflow-hidden">
