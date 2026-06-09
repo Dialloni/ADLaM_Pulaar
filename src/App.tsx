@@ -548,7 +548,8 @@ export default function App() {
   /* translate a community template's prompt into the selected language (lazy + cached) */
   useEffect(() => {
     const cc = selectedCommunity;
-    if (!cc || !cc.description || selectedLang.code === 'en') { setPromptTr({ text: '', loading: false }); return; }
+    const clean = cleanPrompt(cc?.description || '');
+    if (!cc || !clean || selectedLang.code === 'en') { setPromptTr({ text: '', loading: false }); return; }
     const key = `${cc.id}:${selectedLang.code}`;
     const cached = trCacheRef.current.get(key);
     if (cached !== undefined) { setPromptTr({ text: cached, loading: false }); return; }
@@ -560,10 +561,10 @@ export default function App() {
         const res = await fetch('/api/translate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ text: cc.description, targetLanguage: selectedLang.name }),
+          body: JSON.stringify({ text: clean.slice(0, 2000), targetLanguage: selectedLang.name }),
         });
         const data = await res.json();
-        const tr = res.ok ? (data.translation || '') : '';
+        const tr = res.ok ? cleanPrompt(data.translation || '') : '';
         trCacheRef.current.set(key, tr);
         if (!cancelled) setPromptTr({ text: tr, loading: false });
       } catch {
@@ -755,6 +756,21 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
+  // Keep only the natural-language prompt — drop any code/HTML that leaked into the
+  // stored description (or a model translation). Cut at the first code fence/markup.
+  const cleanPrompt = (s: string): string => {
+    if (!s) return '';
+    let t = s;
+    let cut = -1;
+    for (const m of ['```', '<!DOCTYPE', '<!doctype', '<html', '<HTML', '<head', '<body', '<style']) {
+      const i = t.indexOf(m);
+      if (i !== -1 && (cut === -1 || i < cut)) cut = i;
+    }
+    if (cut !== -1) t = t.slice(0, cut);
+    t = t.replace(/<[^>]+>/g, ' ');
+    return t.replace(/\s+/g, ' ').trim();
   };
 
   /* ── derived metrics ──────────────────────────── */
@@ -1674,7 +1690,7 @@ export default function App() {
                       </div>
                       <h2 className={cn('font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 26, lineHeight: 1.15 }}>{cc.name}</h2>
-                      <p style={{ fontSize: 14, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, marginBottom: 24 }}>{cc.description}</p>
+                      <p style={{ fontSize: 14, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, marginBottom: 24, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description) || cc.name}</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
                         <button onClick={() => remixCommunity(cc)}
                           className={cn(isAdlam && 'font-adlam')}
@@ -1686,12 +1702,12 @@ export default function App() {
                           Open full preview ↗
                         </button>
                       </div>
-                      {cc.description && (
+                      {cleanPrompt(cc.description) && (
                         <>
                           {/* original prompt (the language it was built in) */}
                           <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 12 }}>
                             <p style={{ fontSize: 10, fontWeight: 700, color: '#767575', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Original prompt</p>
-                            <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>{cc.description}</p>
+                            <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description)}</p>
                           </div>
                           {/* translation into the selected language */}
                           {selectedLang.code !== 'en' && (
@@ -1700,7 +1716,7 @@ export default function App() {
                               {promptTr.loading ? (
                                 <p style={{ fontSize: 12, color: '#767575', fontFamily: 'Inter, sans-serif', fontStyle: 'italic' }}>…</p>
                               ) : (
-                                <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#d4d4d8', fontFamily: isAdlam ? undefined : 'Inter, sans-serif', lineHeight: 1.7 }}>{promptTr.text || cc.description}</p>
+                                <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#d4d4d8', fontFamily: isAdlam ? undefined : 'Inter, sans-serif', lineHeight: 1.7, overflowWrap: 'anywhere' }}>{promptTr.text || cleanPrompt(cc.description)}</p>
                               )}
                             </div>
                           )}
