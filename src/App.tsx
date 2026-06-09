@@ -1100,7 +1100,7 @@ export default function App() {
      MAIN APP
   ═════════════════════════════════════════════════ */
   return (
-    <div className={cn('h-screen w-screen flex flex-col overflow-hidden', isAdlam && 'font-adlam')} style={{ background: '#0e0e0e', color: '#fff' }}>
+    <div className={cn('w-screen flex flex-col overflow-hidden', isAdlam && 'font-adlam')} style={{ background: '#0e0e0e', color: '#fff', height: '100dvh' }}>
 
       {/* global error toast */}
       <AnimatePresence>

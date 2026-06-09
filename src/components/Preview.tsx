@@ -5,10 +5,93 @@ interface PreviewProps {
   code: string;
 }
 
+// Small reporter injected into the previewed HTML. It posts the document's
+// content height to the parent so we can size the iframe and let OUR page
+// scroll — iOS WebKit reliably scrolls our own elements, but is unreliable at
+// touch-scrolling content *inside* a sandboxed iframe. postMessage works
+// across the opaque sandbox origin, so no `allow-same-origin` is needed.
+const RESIZE_REPORTER = `
+<script>(function(){
+  var last=0,queued=false;
+  function measure(){return Math.max(document.body?document.body.scrollHeight:0,document.documentElement?document.documentElement.scrollHeight:0);}
+  function send(){queued=false;try{var h=measure();if(Math.abs(h-last)>4){last=h;parent.postMessage({__gandoHeight:h},'*');}}catch(e){}}
+  function schedule(){if(queued)return;queued=true;requestAnimationFrame(send);}
+  window.addEventListener('load',schedule);window.addEventListener('resize',schedule);
+  if(window.ResizeObserver&&document.body){try{new ResizeObserver(schedule).observe(document.body);}catch(e){}}
+  setTimeout(schedule,200);setTimeout(schedule,700);setTimeout(schedule,1500);
+})();</scr`+`ipt>`;
+
+function injectReporter(html: string): string {
+  if (!html) return html;
+  if (html.includes('</body>')) return html.replace('</body>', RESIZE_REPORTER + '</body>');
+  return html + RESIZE_REPORTER;
+}
+
+function useIsMobile() {
+  const [m, setM] = useState(
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onChange = () => setM(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return m;
+}
+
+// ── MOBILE: single iframe sized to its content; our wrapper does the scrolling. ──
+const MobilePreview: React.FC<PreviewProps> = ({ code }) => {
+  const [height, setHeight] = useState(2000);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const srcDoc = injectReporter(code);
+
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const h = e.data && (e.data as { __gandoHeight?: number }).__gandoHeight;
+      if (typeof h === 'number' && h > 0) {
+        const next = Math.max(h, 400);
+        // ignore sub-pixel/tiny jitter to avoid re-render thrash (freeze on animated apps)
+        setHeight(prev => (Math.abs(prev - next) > 8 ? next : prev));
+      }
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
+  return (
+    <div className="w-full h-full flex flex-col bg-white">
+      <div style={{ height: 38, background: '#131313', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', paddingLeft: 12, paddingRight: 12, gap: 8, flexShrink: 0 }}>
+        <div className="flex gap-1.5">
+          <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ff5f57' }} />
+          <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#febc2e' }} />
+          <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#28c840' }} />
+        </div>
+        <div style={{ flex: 1, height: 24, borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', paddingLeft: 8, gap: 5, overflow: 'hidden' }}>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#28c840', flexShrink: 0 }} />
+          <span style={{ fontSize: 10, color: '#767575', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>gando-preview.app</span>
+        </div>
+        <RotateCcw className="w-4 h-4 cursor-pointer" style={{ color: '#71717a' }} onClick={() => setRefreshKey(k => k + 1)} />
+      </div>
+      {/* This div is the scroller — our own element, which iOS scrolls reliably. */}
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: '#fff', position: 'relative' }}>
+        <iframe
+          key={refreshKey}
+          srcDoc={srcDoc}
+          title="Gando AI Preview"
+          style={{ width: '100%', height, border: 'none', display: 'block' }}
+          sandbox="allow-scripts allow-forms allow-modals allow-popups"
+        />
+      </div>
+    </div>
+  );
+};
+
 // Double-buffered iframe: when `code` changes (e.g. streaming updates), the new HTML is
 // loaded into the hidden buffer; we only swap it to visible once it has fully rendered.
 // This eliminates the white "blink" you get from mutating a single iframe's srcDoc.
 export const Preview: React.FC<PreviewProps> = ({ code }) => {
+  const isMobile = useIsMobile();
   const [refreshKey, setRefreshKey] = useState(0);
   const [top, setTop] = useState<'a' | 'b'>('a');
   const [codeA, setCodeA] = useState(code);
@@ -46,6 +129,8 @@ export const Preview: React.FC<PreviewProps> = ({ code }) => {
     transition: 'opacity 150ms ease',
     pointerEvents: top === which ? 'auto' : 'none',
   });
+
+  if (isMobile) return <MobilePreview code={code} />;
 
   return (
     <div className="w-full h-full flex flex-col bg-[#0e0e0e] p-4 md:p-6 lg:p-8">
