@@ -396,9 +396,26 @@ function StatusDot({ status }: { status: 'ok' | 'degraded' | 'down' | 'checking'
 }
 
 /* ════════════════════════════════════════════════════
+   useIsMobile — true when viewport ≤ 767px (phones)
+════════════════════════════════════════════════════ */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return isMobile;
+}
+
+/* ════════════════════════════════════════════════════
    ROOT APP
 ════════════════════════════════════════════════════ */
 export default function App() {
+  const isMobile = useIsMobile();
   const { user, isAdmin, loading, error: authContextError, signIn, signInWithEmail, signUpWithEmail, logout } = useAuth();
 
   /* auth */
@@ -438,7 +455,7 @@ export default function App() {
   const [page, setPage] = useState<NavPage>('dashboard');
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATES_META[0] | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
-  const [chatHidden, setChatHidden] = useState(false);
+  const [chatHidden, setChatHidden] = useState(typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   const [communityTemplates, setCommunityTemplates] = useState<Project[]>([]);
   const [selectedCommunity, setSelectedCommunity] = useState<Project | null>(null);
   const [promptTr, setPromptTr] = useState<{ text: string; loading: boolean }>({ text: '', loading: false });
@@ -1447,9 +1464,9 @@ export default function App() {
           {currentProject ? (
             <div className="flex flex-1 overflow-hidden relative z-10">
               {/* workspace top bar */}
-              <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-6 border-b border-white/5 z-20"
+              <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-3 md:px-6 border-b border-white/5 z-20 gap-2"
                 style={{ background: 'rgba(14,14,14,0.85)', backdropFilter: 'blur(12px)' }}>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink">
                   <button onClick={() => setCurrentProject(null)} className="p-1.5 rounded-lg text-zinc-500 hover:text-white transition-colors" title={t.recentProjects}>
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -1465,77 +1482,113 @@ export default function App() {
                       className="gando-input bg-transparent border-b text-white text-sm font-bold outline-none w-48 px-1"
                       style={{ borderColor: `${P}60` }} />
                   ) : (
-                    <span className={cn('text-sm font-black text-white cursor-pointer hover:text-[#ff8b9b] transition-colors', isAdlam && 'font-adlam')}
+                    <span className={cn('text-sm font-black text-white cursor-pointer hover:text-[#ff8b9b] transition-colors truncate max-w-[120px] md:max-w-none', isAdlam && 'font-adlam')}
                       style={{ fontFamily: isAdlam ? undefined : MANROPE }}
                       onClick={() => { setIsRenaming(true); setNewName(currentProject.name); }}>
                       {currentProject.name}
                     </span>
                   )}
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest"
+                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest flex-shrink-0"
                     style={{ background: `${P}15`, color: P, border: `1px solid ${P}25` }}>
                     {currentProject.language}
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
                   <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <button onClick={() => setActiveTab('preview')}
-                      className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                      className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
                       style={activeTab === 'preview' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: '#adaaaa' }}>
-                      <Eye className="w-3.5 h-3.5" /> {t.preview}
+                      <Eye className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.preview}</span>
                     </button>
                     <button onClick={() => setActiveTab('code')}
-                      className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                      className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
                       style={activeTab === 'code' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: '#adaaaa' }}>
-                      <CodeIcon className="w-3.5 h-3.5" /> {t.code}
+                      <CodeIcon className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.code}</span>
                     </button>
                   </div>
                   {currentProject.featured ? (
                     <span className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
-                      <Heart className="w-3.5 h-3.5" /> {t.shareLiveLabel}
+                      <Heart className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.shareLiveLabel}</span>
                     </span>
                   ) : currentProject.shareStatus === 'pending' ? (
-                    <span className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#eab3081a', color: '#fbbf24' }}>
+                    <span className={cn('hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#eab3081a', color: '#fbbf24' }}>
                       {t.sharePendingLabel}
                     </span>
                   ) : (
                     <button onClick={() => shareProject(currentProject)} disabled={sharingId === currentProject.id}
-                      className={cn('flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all', isAdlam && 'font-adlam')}
+                      className={cn('flex items-center gap-2 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold border transition-all', isAdlam && 'font-adlam')}
                       style={{ color: T, borderColor: `${T}33`, background: `${T}0c` }}>
-                      <Share2 className="w-3.5 h-3.5" /> {sharingId === currentProject.id ? '…' : t.shareLabel}
+                      <Share2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{sharingId === currentProject.id ? '…' : t.shareLabel}</span>
                     </button>
                   )}
                   <button onClick={handleDownload}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 transition-all"
+                    className="flex items-center gap-2 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 transition-all"
                     style={{ background: 'rgba(255,255,255,0.04)' }}>
-                    <Download className="w-3.5 h-3.5" /> {t.download}
+                    <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.download}</span>
                   </button>
                 </div>
               </div>
 
               {/* chat + preview */}
-              <div className="flex flex-1 pt-14 overflow-hidden">
-                {/* chat panel — collapsible */}
-                <motion.div className="flex-shrink-0 flex flex-col"
-                  animate={{ width: chatHidden ? 0 : 480, opacity: chatHidden ? 0 : 1, marginRight: chatHidden ? 0 : 12 }}
-                  transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-                  style={{ background: '#0d0d0d', border: chatHidden ? 'none' : '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
-                  <div className="flex flex-col h-full" style={{ width: 480, minWidth: 480 }}>
-                    <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
-                      isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
-                      selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
-                      languages={LANGS} onLanguageSelect={setSelectedLang}
-                      languageCode={selectedLang.code} t={t}
-                      currentCode={currentProject?.code} onRevert={handleRevert} />
-                  </div>
-                </motion.div>
-                <AnimatePresence mode="wait">
-                  <motion.div key="panel" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-                    transition={{ type: 'spring', damping: 30, stiffness: 200 }} className="flex-1 overflow-hidden">
-                    {activeTab === 'preview'
-                      ? <Preview code={previewCode ?? currentProject.code} />
-                      : <CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} />}
-                  </motion.div>
-                </AnimatePresence>
+              <div className="flex flex-1 pt-14 overflow-hidden relative">
+                {isMobile ? (
+                  <>
+                    {/* MOBILE: preview fills screen; chat is a bottom sheet toggled by chatHidden */}
+                    <div className="flex-1 overflow-hidden w-full">
+                      {activeTab === 'preview'
+                        ? <Preview code={previewCode ?? currentProject.code} />
+                        : <CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} />}
+                    </div>
+                    {/* dim backdrop when chat open */}
+                    {!chatHidden && (
+                      <div onClick={() => setChatHidden(true)}
+                        className="fixed inset-0 z-[140]" style={{ background: 'rgba(0,0,0,0.5)' }} />
+                    )}
+                    <motion.div
+                      className="fixed left-0 right-0 bottom-0 z-[150] flex flex-col"
+                      initial={false}
+                      animate={{ y: chatHidden ? '100%' : '0%' }}
+                      transition={{ type: 'spring', damping: 32, stiffness: 240 }}
+                      style={{ height: '78vh', background: '#0d0d0d', borderTop: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: 'hidden' }}>
+                      <div className="flex items-center justify-center py-2 flex-shrink-0" onClick={() => setChatHidden(true)}>
+                        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+                      </div>
+                      <div className="flex flex-col flex-1 min-h-0">
+                        <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
+                          isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
+                          selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
+                          languages={LANGS} onLanguageSelect={setSelectedLang}
+                          languageCode={selectedLang.code} t={t}
+                          currentCode={currentProject?.code} onRevert={handleRevert} />
+                      </div>
+                    </motion.div>
+                  </>
+                ) : (
+                  <>
+                    {/* DESKTOP: chat panel — collapsible side-by-side */}
+                    <motion.div className="flex-shrink-0 flex flex-col"
+                      animate={{ width: chatHidden ? 0 : 480, opacity: chatHidden ? 0 : 1, marginRight: chatHidden ? 0 : 12 }}
+                      transition={{ type: 'spring', damping: 30, stiffness: 200 }}
+                      style={{ background: '#0d0d0d', border: chatHidden ? 'none' : '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+                      <div className="flex flex-col h-full" style={{ width: 480, minWidth: 480 }}>
+                        <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
+                          isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
+                          selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
+                          languages={LANGS} onLanguageSelect={setSelectedLang}
+                          languageCode={selectedLang.code} t={t}
+                          currentCode={currentProject?.code} onRevert={handleRevert} />
+                      </div>
+                    </motion.div>
+                    <AnimatePresence mode="wait">
+                      <motion.div key="panel" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
+                        transition={{ type: 'spring', damping: 30, stiffness: 200 }} className="flex-1 overflow-hidden">
+                        {activeTab === 'preview'
+                          ? <Preview code={previewCode ?? currentProject.code} />
+                          : <CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} />}
+                      </motion.div>
+                    </AnimatePresence>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1672,9 +1725,10 @@ export default function App() {
               if (selectedCommunity) {
                 const cc = selectedCommunity;
                 return (
-                  <div className="flex-1 flex overflow-hidden" style={{ height: '100%' }}>
-                    {/* LEFT: live preview of the shared app */}
-                    <div className="flex-1 flex flex-col overflow-hidden border-r border-white/8">
+                  <div className={cn('flex-1 flex overflow-hidden', isMobile ? 'flex-col overflow-y-auto' : '')} style={{ height: '100%' }}>
+                    {/* LEFT (mobile: TOP): live preview of the shared app */}
+                    <div className={cn('flex flex-col overflow-hidden border-white/8', isMobile ? 'border-b' : 'flex-1 border-r')}
+                      style={isMobile ? { height: '68vh', flexShrink: 0 } : undefined}>
                       <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: '#0e0e0e' }}>
                         <button onClick={() => setSelectedCommunity(null)}
                           style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#adaaaa', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
@@ -1689,8 +1743,8 @@ export default function App() {
                         <iframe srcDoc={cc.code} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-same-origin" />
                       </div>
                     </div>
-                    {/* RIGHT: info + actions */}
-                    <div className="overflow-y-auto" style={{ width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
+                    {/* RIGHT (mobile: BELOW): info + actions */}
+                    <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: '#0e0e0e', padding: 20 } : { width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
                       <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedCommunity(null)}>{t.templatesNav}</span>
                         <ChevronRight className="w-3 h-3" />
@@ -1743,9 +1797,10 @@ export default function App() {
               if (selectedTemplate) {
                 const tr = tl.templates[selectedTemplate.id] || TEMPLATE_I18N.en.templates[selectedTemplate.id];
                 return (
-                  <div className="flex-1 flex overflow-hidden" style={{ height: '100%' }}>
-                    {/* LEFT: iframe preview */}
-                    <div className="flex-1 flex flex-col overflow-hidden border-r border-white/8">
+                  <div className={cn('flex-1 flex overflow-hidden', isMobile ? 'flex-col overflow-y-auto' : '')} style={{ height: '100%' }}>
+                    {/* LEFT (mobile: TOP): iframe preview */}
+                    <div className={cn('flex flex-col overflow-hidden border-white/8', isMobile ? 'border-b' : 'flex-1 border-r')}
+                      style={isMobile ? { height: '68vh', flexShrink: 0 } : undefined}>
                       {/* top bar */}
                       <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: '#0e0e0e' }}>
                         <button
@@ -1794,8 +1849,8 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* RIGHT: info panel */}
-                    <div className="overflow-y-auto" style={{ width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
+                    {/* RIGHT (mobile: BELOW): info panel */}
+                    <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: '#0e0e0e', padding: 20 } : { width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
                       {/* breadcrumb */}
                       <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedTemplate(null)}>{t.templatesNav}</span>
