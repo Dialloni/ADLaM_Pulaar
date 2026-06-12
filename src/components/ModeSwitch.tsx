@@ -36,9 +36,9 @@ export const ModeSwitch: React.FC<{
         onClick={() => setOpen(o => !o)}
         title="Choose Build or Chat"
         style={{
-          height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+          height: 32, borderRadius: 8, background: 'var(--btn-bg)', border: '1px solid var(--border)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px',
-          color: '#cfcfcf', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600,
+          color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600,
         }}
       >
         <active.Icon className="w-3.5 h-3.5" style={{ color: '#ff8b9b' }} />
@@ -47,19 +47,19 @@ export const ModeSwitch: React.FC<{
       </button>
 
       {open && (
-        <div style={{ position: 'absolute', [dropUp ? 'bottom' : 'top']: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 200, zIndex: 50 } as React.CSSProperties}>
+        <div style={{ position: 'absolute', [dropUp ? 'bottom' : 'top']: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 200, zIndex: 50 } as React.CSSProperties}>
           {OPTIONS.map(o => (
             <div
               key={o.id}
               onClick={() => { onChange?.(o.id); setOpen(false); }}
-              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
               onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
             >
               <o.Icon className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{o.label}</div>
-                <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{o.sub}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{o.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{o.sub}</div>
               </div>
               {mode === o.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
             </div>
