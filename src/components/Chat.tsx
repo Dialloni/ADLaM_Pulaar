@@ -7,11 +7,13 @@ import { cn } from '../lib/utils';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { ModeSwitch } from './ModeSwitch';
 
+type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
+
 interface ChatProps {
   messages: Message[];
   input: string;
   setInput: (val: string) => void;
-  onSend: () => void;
+  onSend: (extraContext?: string) => void;
   isGenerating: boolean;
   generationStatus: string;
   generationSteps?: string[];
@@ -206,6 +208,48 @@ const ChatImpl: React.FC<ChatProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [modelOpen, setModelOpen] = useState(false);
   const modelRef = useRef<HTMLDivElement>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    Array.from(e.target.files ?? []).forEach(file => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        const reader = new FileReader();
+        reader.onload = () => setAttachments(prev => [...prev, { id, name: file.name, kind: 'image', content: reader.result as string, previewUrl: url }]);
+        reader.readAsDataURL(file);
+      } else {
+        file.text().then(text => setAttachments(prev => [...prev, { id, name: file.name, kind: 'text', content: text }]));
+      }
+    });
+    e.target.value = '';
+  };
+
+  const handleSendClick = async () => {
+    if (isGenerating || isSending) return;
+    if (attachments.length === 0) { onSend(); return; }
+    setIsSending(true);
+    try {
+      const parts: string[] = [];
+      for (const att of attachments) {
+        if (att.kind === 'image') {
+          try {
+            const base64 = att.content.split(',')[1] ?? att.content;
+            const mime = att.content.startsWith('data:') ? att.content.split(';')[0].slice(5) : 'image/png';
+            const res = await fetch('/api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: base64, mimeType: mime }) });
+            const ocr = res.ok ? (await res.json() as { text: string }).text : '';
+            parts.push(`[Image: ${att.name}]${ocr ? `\n${ocr}` : ''}`);
+          } catch { parts.push(`[Image: ${att.name}]`); }
+        } else {
+          parts.push(`[File: ${att.name}]\n${att.content.slice(0, 4000)}`);
+        }
+      }
+      setAttachments([]);
+      onSend(parts.join('\n\n') || undefined);
+    } finally { setIsSending(false); }
+  };
 
   // Voice input (shared hook — Gemini-powered for African-language support).
   const { isListening, isTranscribing, toggleListening } = useVoiceInput(input, setInput, selectedLanguage);
@@ -365,6 +409,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           </div>
                         )}
                       </div>
+                      <ModeSwitch mode={mode} onChange={onModeChange} dropUp />
                     </div>
                     <div className="absolute bottom-6 right-6 flex items-center gap-3">
                       <button
@@ -380,13 +425,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                       >
                         {isTranscribing ? <Loader2 className="w-5 h-5" /> : isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                       </button>
-                      <button 
-                        onClick={onSend}
-                        disabled={!input.trim() || isGenerating}
+                      <button
+                        onClick={() => void handleSendClick()}
+                        disabled={(!input.trim() && attachments.length === 0) || isGenerating || isSending}
                         className={cn(
                           "p-4 rounded-2xl transition-all shadow-2xl active:scale-95 group/btn relative overflow-hidden",
-                          input.trim() && !isGenerating 
-                            ? "bg-white text-black hover:bg-zinc-200" 
+                          (input.trim() || attachments.length > 0) && !isGenerating && !isSending
+                            ? "bg-white text-black hover:bg-zinc-200"
                             : "bg-white/5 text-zinc-600 cursor-not-allowed"
                         )}
                       >
@@ -396,33 +441,35 @@ const ChatImpl: React.FC<ChatProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl mx-auto">
-                  {SUGGESTIONS(t).map((s, i) => (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + i * 0.1 }}
-                      onClick={() => setInput(s.prompt)}
-                      className="premium-card p-6 flex flex-col items-start text-left gap-4 group hover:bg-white/[0.03] hover:-translate-y-1 overflow-hidden"
-                    >
-                      <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110 flex-shrink-0", s.bg, s.color)}>
-                        <s.icon className="w-6 h-6" />
-                      </div>
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <h3 className={cn(
-                          "text-sm font-bold text-white group-hover:text-[#ff8b9b] transition-colors break-words",
-                          languageCode === 'ff-adlm' && "font-adlam"
-                        )}>{s.label}</h3>
-                        <p className={cn(
-                          "text-xs text-zinc-500 line-clamp-2 leading-relaxed break-words",
-                          languageCode === 'ff-adlm' && "font-adlam"
-                        )}>{s.prompt}</p>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-zinc-700 group-hover:text-white transition-all group-hover:translate-x-1 ml-auto flex-shrink-0" />
-                    </motion.button>
-                  ))}
-                </div>
+                {!currentCode && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl mx-auto">
+                    {SUGGESTIONS(t).map((s, i) => (
+                      <motion.button
+                        key={i}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 + i * 0.1 }}
+                        onClick={() => setInput(s.prompt)}
+                        className="premium-card p-6 flex flex-col items-start text-left gap-4 group hover:bg-white/[0.03] hover:-translate-y-1 overflow-hidden"
+                      >
+                        <div className={cn("p-3 rounded-2xl transition-transform group-hover:scale-110 flex-shrink-0", s.bg, s.color)}>
+                          <s.icon className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <h3 className={cn(
+                            "text-sm font-bold text-white group-hover:text-[#ff8b9b] transition-colors break-words",
+                            languageCode === 'ff-adlm' && "font-adlam"
+                          )}>{s.label}</h3>
+                          <p className={cn(
+                            "text-xs text-zinc-500 line-clamp-2 leading-relaxed break-words",
+                            languageCode === 'ff-adlm' && "font-adlam"
+                          )}>{s.prompt}</p>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-zinc-700 group-hover:text-white transition-all group-hover:translate-x-1 ml-auto flex-shrink-0" />
+                      </motion.button>
+                    ))}
+                  </div>
+                )}
               </motion.div>
             ) : (
               <div className="space-y-8">
@@ -571,7 +618,7 @@ const ChatImpl: React.FC<ChatProps> = ({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  onSend();
+                  void handleSendClick();
                 }
               }}
               placeholder="Describe your app..."
@@ -594,6 +641,20 @@ const ChatImpl: React.FC<ChatProps> = ({
               }}
             />
 
+            {attachments.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {attachments.map(att => (
+                  <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '3px 8px', fontSize: 12, color: '#cfcfcf' }}>
+                    {att.kind === 'image' && att.previewUrl
+                      ? <img src={att.previewUrl} style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }} alt="" />
+                      : <Paperclip className="w-3 h-3" style={{ color: '#767575' }} />}
+                    <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
+                    <button onClick={() => setAttachments(prev => prev.filter(x => x.id !== att.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#767575', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Bottom row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               {/* Left cluster: Plus · Model picker · Build/Chat */}
@@ -611,13 +672,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                   {dropdownOpen && (
                     <div style={{ position: 'absolute', bottom: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                       {[
-                        { icon: Paperclip, label: 'Add files or photos' },
-                        { icon: Camera,    label: 'Take a screenshot' },
-                        { icon: Link,      label: 'Add from URL' },
-                      ].map(({ icon: Icon, label }) => (
+                        { icon: Paperclip, label: 'Add files or photos', action: () => { setDropdownOpen(false); fileInputRef.current?.click(); } },
+                        { icon: Camera,    label: 'Take a screenshot',   action: () => setDropdownOpen(false) },
+                        { icon: Link,      label: 'Add from URL',         action: () => setDropdownOpen(false) },
+                      ].map(({ icon: Icon, label, action }) => (
                         <div
                           key={label}
-                          onClick={() => setDropdownOpen(false)}
+                          onClick={action}
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
@@ -687,24 +748,25 @@ const ChatImpl: React.FC<ChatProps> = ({
                 <motion.button
                   whileHover={input.trim() && !isGenerating ? { scale: 1.05 } : {}}
                   whileTap={input.trim() && !isGenerating ? { scale: 0.95 } : {}}
-                  onClick={onSend}
-                  disabled={!input.trim() || isGenerating}
+                  onClick={() => void handleSendClick()}
+                  disabled={(!input.trim() && attachments.length === 0) || isGenerating || isSending}
                   style={{
                     width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                    background: input.trim() && !isGenerating ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
-                    color: input.trim() && !isGenerating ? '#0a0a0a' : '#52525b',
+                    background: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
+                    color: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? '#0a0a0a' : '#52525b',
                     border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                   title={isGenerating ? "Generating..." : input.trim() ? "Send message" : "Type a message first"}
                 >
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                  {isGenerating || isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
                 </motion.button>
               </div>
             </div>
           </div>
         </motion.div>
       )}
+      <input ref={fileInputRef} type="file" accept="image/*,.txt,.md,.csv" multiple style={{ display: 'none' }} onChange={handleFileChange} />
     </div>
   );
 };
