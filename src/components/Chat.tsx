@@ -304,7 +304,7 @@ const ChatImpl: React.FC<ChatProps> = ({
     <div className="flex-1 flex flex-col overflow-hidden bg-[#0e0e0e] relative">
       {/* Header bar */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 10 }}>
-        <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12, color: '#fff' }}>Chat with Gando</span>
+        <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>Chat with Gando</span>
       </div>
       {/* Background Glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -389,7 +389,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           <ChevronDown className="w-3 h-3 opacity-60" />
                         </button>
                         {modelOpen && (
-                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                             {MODELS.map(m => (
                               <div
                                 key={m.id}
@@ -510,14 +510,14 @@ const ChatImpl: React.FC<ChatProps> = ({
                               borderRadius: '14px 14px 4px 14px',
                               fontSize: 13,
                               lineHeight: 1.6,
-                              color: '#fff',
+                              color: 'var(--text-primary)',
                             } : {
-                              background: '#131313',
-                              border: '1px solid rgba(255,255,255,0.06)',
+                              background: 'var(--card-bg)',
+                              border: '1px solid var(--border-subtle)',
                               borderRadius: '14px 14px 14px 4px',
                               fontSize: 13,
                               lineHeight: 1.6,
-                              color: '#e5e5e5',
+                              color: 'var(--text-secondary)',
                             }}>
                             {m.role === 'assistant' ? (
                               <div className="prose prose-invert max-w-none">
@@ -561,7 +561,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8b9b] to-[#fd8b00] flex items-center justify-center flex-shrink-0 mt-0.5">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: '#131313', border: '1px solid rgba(255,139,155,0.2)', maxWidth: '90%' }}>
+                    <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: 'var(--card-bg)', border: '1px solid rgba(255,139,155,0.2)', maxWidth: '90%' }}>
                       {generationSteps.length === 0 ? (
                         <div className="flex items-center gap-1.5">
                           {[0, 1, 2].map(i => (
@@ -606,9 +606,9 @@ const ChatImpl: React.FC<ChatProps> = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,10,10,0.7)', flexShrink: 0 }}
+          style={{ padding: '12px 16px', borderTop: '1px solid var(--border-subtle)', background: 'var(--chat-bar-bg)', flexShrink: 0 }}
         >
-          <div style={{ position: 'relative', background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ position: 'relative', background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {/* Textarea */}
             <textarea
               ref={textareaRef}
@@ -631,7 +631,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                 border: 'none',
                 outline: 'none',
                 resize: 'none',
-                color: '#fff',
+                color: 'var(--text-primary)',
                 fontSize: 15,
                 lineHeight: 1.6,
                 fontFamily: 'var(--font-sans)',
@@ -670,7 +670,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   </button>
 
                   {dropdownOpen && (
-                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                       {[
                         { icon: Paperclip, label: 'Add files or photos', action: () => { setDropdownOpen(false); fileInputRef.current?.click(); } },
                         { icon: Camera,    label: 'Take a screenshot',   action: () => setDropdownOpen(false) },
@@ -704,7 +704,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   </button>
 
                   {modelOpen && (
-                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                       {MODELS.map(m => (
                         <div
                           key={m.id}

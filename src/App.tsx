@@ -7,7 +7,7 @@ import {
   RotateCcw, CheckCircle2, XCircle, AlertCircle, X, PanelLeft,
   HelpCircle, Gift, Globe, Layers, Github, Figma, Camera,
   Share2, Heart, ChevronDown, Check, Plus, Paperclip, Mic, MicOff,
-  MessageSquare, ArrowLeft, ArrowUp,
+  MessageSquare, ArrowLeft, ArrowUp, Sun, Moon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
@@ -24,6 +24,7 @@ import { CodeEditor } from './components/CodeEditor';
 import { LanguageSelector } from './components/LanguageSelector';
 import { useVoiceInput } from './lib/useVoiceInput';
 import { ModeSwitch } from './components/ModeSwitch';
+import { useTheme } from './lib/useTheme';
 import { AdminPortal } from './components/AdminPortal';
 import { GandoCollector } from './components/GandoCollector';
 import { cn } from './lib/utils';
@@ -419,6 +420,7 @@ function useIsMobile() {
 ════════════════════════════════════════════════════ */
 export default function App() {
   const isMobile = useIsMobile();
+  const { toggle: toggleTheme, resolved: resolvedTheme } = useTheme();
   const { user, isAdmin, loading, error: authContextError, signIn, signInWithEmail, signUpWithEmail, logout } = useAuth();
 
   /* auth */
@@ -916,7 +918,7 @@ export default function App() {
      LOADING
   ═════════════════════════════════════════════════ */
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0e0e0e' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--app-bg)' }}>
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
           <Loader2 className="w-10 h-10 animate-spin" style={{ color: P }} />
@@ -932,7 +934,7 @@ export default function App() {
   ═════════════════════════════════════════════════ */
   if (!user) return (
     <div className={cn('min-h-screen relative overflow-x-hidden', isAdlam && 'font-adlam')}
-      style={{ background: '#0e0e0e', color: '#fff' }}>
+      style={{ background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
 
       {/* ambient blobs + grid */}
       <div className="pointer-events-none fixed inset-0 z-0">
@@ -946,7 +948,7 @@ export default function App() {
 
       {/* ── NAVBAR ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-10 h-16 border-b border-white/5"
-        style={{ background: 'rgba(14,14,14,0.88)', backdropFilter: 'blur(20px)' }}>
+        style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(20px)' }}>
         <div className="flex items-center gap-2 md:gap-2.5 min-w-0 flex-shrink-0">
           <GandoLogo size={22} />
           <span style={{ fontFamily: MANROPE, fontSize: 18, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
@@ -958,6 +960,13 @@ export default function App() {
           ))}
         </div>
         <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+          <button onClick={toggleTheme} title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="p-2 rounded-xl transition-colors"
+            style={{ color: 'var(--text-muted)', background: 'transparent' }}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'}>
+            {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
           <button onClick={() => { setAuthMode('login'); setAuthError(null); setAuthModalOpen(true); }}
             className="text-sm font-bold text-zinc-400 hover:text-white transition-colors px-2.5 md:px-4 py-2 rounded-xl hover:bg-white/5"
@@ -979,7 +988,7 @@ export default function App() {
           <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase', marginBottom: 20 }}>
             {t.loginEyebrow}
           </p>
-          <h1 className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(40px,7vw,82px)', lineHeight: 1.0, letterSpacing: isAdlam ? 0 : '-0.03em', color: '#fff', marginBottom: 22 }}>
+          <h1 className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(40px,7vw,82px)', lineHeight: 1.0, letterSpacing: isAdlam ? 0 : '-0.03em', color: 'var(--text-primary)', marginBottom: 22 }}>
             {t.loginLine1}<br />
             {t.loginLine2}<br />
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
@@ -989,7 +998,7 @@ export default function App() {
           </p>
 
           {/* textarea card */}
-          <div style={{ borderRadius: 20, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 80px -12px rgba(0,0,0,0.7)', padding: '18px 18px 14px', textAlign: 'left' }}>
+          <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 80px -12px rgba(0,0,0,0.7)', padding: '18px 18px 14px', textAlign: 'left' }}>
             <textarea
               ref={landingTextareaRef}
               value={landingInput}
@@ -1003,7 +1012,7 @@ export default function App() {
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setAuthMode('google'); setAuthModalOpen(true); } }}
               placeholder={!landingInput ? (twText + (twCursor ? '|' : ' ')) : ''}
               className="gando-input"
-              style={{ width: '100%', minHeight: 100, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: '#fff', fontSize: 16, lineHeight: 1.6, fontFamily: 'var(--font-sans)', display: 'block', boxSizing: 'border-box', overflowY: 'hidden' }}
+              style={{ width: '100%', minHeight: 100, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: 'var(--text-primary)', fontSize: 16, lineHeight: 1.6, fontFamily: 'var(--font-sans)', display: 'block', boxSizing: 'border-box', overflowY: 'hidden' }}
             />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', gap: 8 }}>
               {/* Left cluster: Plus · Model · Mode */}
@@ -1026,7 +1035,7 @@ export default function App() {
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
                   {landingModelOpen && (
-                    <div style={{ position: 'absolute', top: 44, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                       {([
                         { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
                         { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
@@ -1083,7 +1092,7 @@ export default function App() {
           <section className="relative z-10 px-5 md:px-10 pb-24" style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 24, color: '#fff', margin: 0 }}>{tl.pageTitle}</h2>
+                <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 24, color: 'var(--text-primary)', margin: 0 }}>{tl.pageTitle}</h2>
                 <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#767575', marginTop: 4 }}>{tl.pageSubtitle}</p>
               </div>
               <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
@@ -1098,7 +1107,7 @@ export default function App() {
                   <motion.div key={tmpl.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                     onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
                     className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
-                    style={{ background: '#131313' }}>
+                    style={{ background: 'var(--card-bg)' }}>
                     <div className="relative overflow-hidden" style={{ height: 160, background: tmpl.color }}>
                       {tmpl.previewUrl ? (
                         <iframe src={tmpl.previewUrl} title={tr.name} className="border-none pointer-events-none"
@@ -1117,7 +1126,7 @@ export default function App() {
                         <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
                         <span style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
                       </div>
-                      <h3 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: '#fff', marginBottom: 4 }}>{tr.name}</h3>
+                      <h3 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>{tr.name}</h3>
                       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#71717a', lineHeight: 1.5 }}>{tr.description}</p>
                     </div>
                   </motion.div>
@@ -1190,7 +1199,7 @@ export default function App() {
                 <span style={{ fontFamily: MANROPE, fontSize: 17, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
               </div>
 
-              <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 26, color: '#fff', marginBottom: 6 }}>
+              <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 26, color: 'var(--text-primary)', marginBottom: 6 }}>
                 {authMode === 'login' ? 'Welcome back' : authMode === 'signup' ? 'Create account' : 'Get started free'}
               </h2>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#767575', marginBottom: 24 }}>
@@ -1250,7 +1259,7 @@ export default function App() {
      MAIN APP
   ═════════════════════════════════════════════════ */
   return (
-    <div className={cn('w-screen flex flex-col overflow-hidden', isAdlam && 'font-adlam')} style={{ background: '#0e0e0e', color: '#fff', height: '100dvh' }}>
+    <div className={cn('w-screen flex flex-col overflow-hidden', isAdlam && 'font-adlam')} style={{ background: 'var(--app-bg)', color: 'var(--text-primary)', height: '100dvh' }}>
 
       {/* global error toast */}
       <AnimatePresence>
@@ -1268,7 +1277,7 @@ export default function App() {
 
       {/* ════════ HEADER ════════ */}
       <header className="fixed top-0 left-0 right-0 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-8 flex-shrink-0"
-        style={{ background: 'rgba(14,14,14,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--line-1)' }}>
+        style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
         {/* brand + nav */}
         <div className="flex items-center gap-2 md:gap-8 min-w-0 flex-shrink-0">
           <button onClick={() => setMobileNavOpen(o => !o)}
@@ -1331,7 +1340,7 @@ export default function App() {
                   exit={{ opacity: 0, y: 6, scale: 0.97 }}
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 top-12 w-72 rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50"
-                  style={{ background: '#111' }}
+                  style={{ background: 'var(--card-bg)' }}
                 >
                   {(() => {
                     const q = headerSearch.toLowerCase().trim();
@@ -1384,6 +1393,13 @@ export default function App() {
               )}
             </AnimatePresence>
           </div>
+          <button onClick={toggleTheme} title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="p-2 rounded-xl transition-colors"
+            style={{ color: 'var(--text-muted)', background: 'transparent' }}
+            onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)'}
+            onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'}>
+            {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           {/* language selector — global, lives in the top bar */}
           <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
           <div ref={notifRef} className="relative">
@@ -1395,7 +1411,7 @@ export default function App() {
                 <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 top-12 w-72 rounded-2xl shadow-2xl border border-white/10 z-50 p-6 flex flex-col items-center gap-3"
-                  style={{ background: '#131313' }}>
+                  style={{ background: 'var(--card-bg)' }}>
                   <Bell className="w-8 h-8 text-zinc-600" />
                   <p className="text-sm font-bold text-zinc-500 text-center">No notifications yet</p>
                   <p className="text-xs text-zinc-600 text-center">Activity on your projects will show up here.</p>
@@ -1422,7 +1438,7 @@ export default function App() {
                 <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 top-14 w-64 rounded-2xl shadow-2xl border border-white/10 overflow-hidden z-50"
-                  style={{ background: '#131313' }}>
+                  style={{ background: 'var(--card-bg)' }}>
                   {/* user info */}
                   <div className="p-4 border-b border-white/5">
                     <div className="flex items-center gap-3">
@@ -1508,7 +1524,7 @@ export default function App() {
                 <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" style={{ transform: 'rotate(90deg)' }} />
               </div>
               {userMenuOpen && (
-                <div style={{ position: 'absolute', top: '100%', left: 12, right: 12, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 12, right: 12, background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                   <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
                   {([
                     { icon: Settings,   label: 'Settings'  },
@@ -1757,7 +1773,7 @@ export default function App() {
                   style={{ fontFamily: MANROPE }}>
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
-                <span style={{ fontFamily: MANROPE, fontWeight: 800, fontSize: 13, color: '#fff' }}>Chat with Gando</span>
+                <span style={{ fontFamily: MANROPE, fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>Chat with Gando</span>
               </div>
               <div className="flex flex-col flex-1 min-h-0">
                 <Chat messages={chatMessages} input={input} setInput={setInput} onSend={handleSend}
@@ -1780,7 +1796,7 @@ export default function App() {
                   </h1>
                   <p className={cn('text-zinc-500 mt-1', isAdlam && 'font-adlam')}>{t.projectsPageSubtitle}</p>
                 </div>
-                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-white/10" style={{ background: '#131313', minWidth: 260 }}>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-white/10" style={{ background: 'var(--card-bg)', minWidth: 260 }}>
                   <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
                   <input value={projectSearch} onChange={e => setProjectSearch(e.target.value)}
                     placeholder={t.searchProjectsPlaceholder}
@@ -1839,7 +1855,7 @@ export default function App() {
                   {filteredProjects.map(p => (
                     <motion.div key={p.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                       className="group relative rounded-2xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
-                      style={{ background: '#131313' }}>
+                      style={{ background: 'var(--card-bg)' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                       <div className="p-6">
                         <div className="flex justify-between items-start mb-4">
@@ -1907,7 +1923,7 @@ export default function App() {
                     {/* LEFT (mobile: TOP): live preview of the shared app */}
                     <div className={cn('flex flex-col overflow-hidden border-white/8', isMobile ? 'border-b' : 'flex-1 border-r')}
                       style={isMobile ? { height: '68vh', flexShrink: 0 } : undefined}>
-                      <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: '#0e0e0e' }}>
+                      <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--app-bg)' }}>
                         <button onClick={() => setSelectedCommunity(null)}
                           style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#adaaaa', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
                           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#fff'}
@@ -1915,14 +1931,14 @@ export default function App() {
                           <ChevronRight className="w-3 h-3 rotate-180" /> {t.templatesNav}
                         </button>
                         <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>/</span>
-                        <span style={{ fontSize: 12, color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{cc.name}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{cc.name}</span>
                       </div>
-                      <div className="flex-1 relative" style={{ background: '#0e0e0e' }}>
+                      <div className="flex-1 relative" style={{ background: 'var(--app-bg)' }}>
                         <iframe srcDoc={cc.code} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-same-origin" />
                       </div>
                     </div>
                     {/* RIGHT (mobile: BELOW): info + actions */}
-                    <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: '#0e0e0e', padding: 20 } : { width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
+                    <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: 'var(--app-bg)', padding: 20 } : { width: 340, flexShrink: 0, background: 'var(--app-bg)', padding: 28 }}>
                       <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedCommunity(null)}>{t.templatesNav}</span>
                         <ChevronRight className="w-3 h-3" />
@@ -1980,7 +1996,7 @@ export default function App() {
                     <div className={cn('flex flex-col overflow-hidden border-white/8', isMobile ? 'border-b' : 'flex-1 border-r')}
                       style={isMobile ? { height: '68vh', flexShrink: 0 } : undefined}>
                       {/* top bar */}
-                      <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: '#0e0e0e' }}>
+                      <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--app-bg)' }}>
                         <button
                           onClick={() => setSelectedTemplate(null)}
                           style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#adaaaa', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
@@ -1990,7 +2006,7 @@ export default function App() {
                           <ChevronRight className="w-3 h-3 rotate-180" /> {t.templatesNav}
                         </button>
                         <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>/</span>
-                        <span style={{ fontSize: 12, color: '#fff', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{tr.name}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{tr.name}</span>
                       </div>
                       {/* iframe */}
                       <div className="flex-1 relative" style={{ background: selectedTemplate.color }}>
@@ -2010,7 +2026,7 @@ export default function App() {
                         )}
                       </div>
                       {/* thumbnail strip */}
-                      <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, background: '#0e0e0e', flexShrink: 0 }}>
+                      <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 8, background: 'var(--app-bg)', flexShrink: 0 }}>
                         {TEMPLATES_META.filter(t => t.id !== selectedTemplate.id).slice(0, 4).map(t => {
                           const tt = tl.templates[t.id] || TEMPLATE_I18N.en.templates[t.id];
                           return (
@@ -2028,7 +2044,7 @@ export default function App() {
                     </div>
 
                     {/* RIGHT (mobile: BELOW): info panel */}
-                    <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: '#0e0e0e', padding: 20 } : { width: 340, flexShrink: 0, background: '#0e0e0e', padding: 28 }}>
+                    <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: 'var(--app-bg)', padding: 20 } : { width: 340, flexShrink: 0, background: 'var(--app-bg)', padding: 28 }}>
                       {/* breadcrumb */}
                       <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedTemplate(null)}>{t.templatesNav}</span>
@@ -2098,7 +2114,7 @@ export default function App() {
                           transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                           onClick={() => setSelectedTemplate(tmpl)}
                           className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
-                          style={{ background: '#131313' }}>
+                          style={{ background: 'var(--card-bg)' }}>
                           {/* preview thumbnail */}
                           <div className="relative overflow-hidden" style={{ height: 180, background: tmpl.color }}>
                             {tmpl.previewUrl ? (
@@ -2143,8 +2159,8 @@ export default function App() {
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             onClick={() => setSelectedCommunity(ct)}
                             className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
-                            style={{ background: '#131313' }}>
-                            <div className="relative overflow-hidden" style={{ height: 180, background: '#0e0e0e' }}>
+                            style={{ background: 'var(--card-bg)' }}>
+                            <div className="relative overflow-hidden" style={{ height: 180, background: 'var(--app-bg)' }}>
                               <iframe srcDoc={ct.code} title={ct.name} className="border-none pointer-events-none"
                                 style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
                               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -2259,7 +2275,7 @@ export default function App() {
                     { name: 'Igbo',     region: 'Nigeria',     flag: '🇳🇬' },
                   ].map(({ name, region, flag }) => (
                     <div key={name} className="rounded-xl p-4 text-center border border-white/5 opacity-50"
-                      style={{ background: '#131313' }}>
+                      style={{ background: 'var(--card-bg)' }}>
                       <p style={{ fontSize: 22, marginBottom: 6 }}>{flag}</p>
                       <p style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: '#e5e5e5', marginBottom: 2 }}>{name}</p>
                       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#52525b' }}>{region}</p>
@@ -2272,7 +2288,7 @@ export default function App() {
               {/* ── ADLAM SCRIPT REFERENCE ── */}
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4" style={{ fontFamily: MANROPE }}>ADLAM SCRIPT REFERENCE</p>
-                <div className="rounded-2xl border border-white/8 overflow-hidden relative" style={{ background: '#131313' }}>
+                <div className="rounded-2xl border border-white/8 overflow-hidden relative" style={{ background: 'var(--card-bg)' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="p-6 space-y-6">
 
@@ -2485,7 +2501,7 @@ export default function App() {
                   {/* CONTENT */}
                   <div className="flex-1 min-w-0 space-y-6">
                     {/* Section header */}
-                    <div className="flex items-center gap-4 p-5 rounded-2xl relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex items-center gap-4 p-5 rounded-2xl relative overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                       <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <BookOpen className="w-4 h-4" style={{ color: P }} />
@@ -2516,7 +2532,7 @@ export default function App() {
                     </div>
 
                     {/* ARTICLE CARD */}
-                    <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                       <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#767575', textTransform: 'uppercase', marginBottom: 10, fontFamily: MANROPE }}>ARTICLE · 3 MIN READ</p>
                       <h3 className={cn('font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 20, marginBottom: 12 }}>{t.docsSection2Title}</h3>
@@ -2546,7 +2562,7 @@ export default function App() {
                     </div>
 
                     {/* QUICK TIPS */}
-                    <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: '#131313', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                       <h2 className={cn('font-black text-white mb-5', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 16 }}>
                         💡 Quick Tips
@@ -2584,7 +2600,7 @@ export default function App() {
                 </div>
                 <button onClick={fetchStatus}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border border-white/10 hover:border-white/20 text-zinc-400 hover:text-white transition-all"
-                  style={{ background: '#131313' }}>
+                  style={{ background: 'var(--card-bg)' }}>
                   <RotateCcw className="w-4 h-4" /> Refresh
                 </button>
               </div>
@@ -2595,7 +2611,7 @@ export default function App() {
                 { label: t.statusAI,       status: sysStatus.ai,      detail: sysStatus.aiMs ? `${sysStatus.aiMs}ms latency` : '' },
                 { label: t.statusFirebase, status: sysStatus.db,      detail: user ? 'Authenticated' : 'Not connected' },
               ] as { label: string; status: 'ok'|'degraded'|'down'|'checking'; detail: string }[]).map(({ label, status, detail }) => (
-                <div key={label} className="flex items-center justify-between p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+                <div key={label} className="flex items-center justify-between p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: 'var(--card-bg)' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <div className="flex items-center gap-4">
                     <StatusDot status={status} />
@@ -2615,7 +2631,7 @@ export default function App() {
               ))}
 
               {/* model info */}
-              <div className="p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: '#131313' }}>
+              <div className="p-6 rounded-2xl border border-white/8 relative overflow-hidden" style={{ background: 'var(--card-bg)' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                 <h3 className={cn('font-black text-white mb-4', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.statusModel}</h3>
                 <div className="flex items-center justify-between">
@@ -2707,7 +2723,7 @@ export default function App() {
                   )}
 
                   {/* big textarea card */}
-                  <div style={{ borderRadius: 20, background: '#1a1a1a', border: `1px solid ${inputShake ? 'rgba(255,139,155,0.6)' : 'rgba(255,255,255,0.1)'}`, boxShadow: '0 24px 80px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)', padding: '18px 18px 14px', transition: 'border-color 0.2s' }}
+                  <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: `1px solid ${inputShake ? 'rgba(255,139,155,0.6)' : 'rgba(255,255,255,0.1)'}`, boxShadow: '0 24px 80px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)', padding: '18px 18px 14px', transition: 'border-color 0.2s' }}
                     className={inputShake ? 'animate-shake' : ''}>
                     <textarea
                       ref={heroTextareaRef}
@@ -2722,7 +2738,7 @@ export default function App() {
                         !input ? (twText + (twCursor ? '|' : ' ')) : t.inputPlaceholder
                       }
                       className={cn('gando-input', isAdlam && 'font-adlam')}
-                      style={{ width: '100%', minHeight: 110, maxHeight: 260, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: '#fff', fontSize: 16, lineHeight: 1.6, fontFamily: isAdlam ? undefined : 'var(--font-sans)', overflowY: 'hidden', display: 'block', boxSizing: 'border-box' }}
+                      style={{ width: '100%', minHeight: 110, maxHeight: 260, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: 'var(--text-primary)', fontSize: 16, lineHeight: 1.6, fontFamily: isAdlam ? undefined : 'var(--font-sans)', overflowY: 'hidden', display: 'block', boxSizing: 'border-box' }}
                     />
                     {dashAttachments.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
@@ -2751,7 +2767,7 @@ export default function App() {
                                 <Plus className="w-4 h-4" />
                               </button>
                               {dashPlusOpen && (
-                                <div style={{ position: 'absolute', top: 44, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                                <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                                   {([
                                     { icon: Paperclip, label: 'Add files or photos', action: () => { setDashPlusOpen(false); dashFileInputRef.current?.click(); } },
                                     { icon: Camera,    label: 'Take a screenshot',   action: () => setDashPlusOpen(false) },
@@ -2784,7 +2800,7 @@ export default function App() {
                                 <ChevronDown className="w-3 h-3 opacity-60" />
                               </button>
                               {dashModelOpen && (
-                                <div style={{ position: 'absolute', top: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                                <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                                   {([
                                     { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
                                     { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
@@ -2875,7 +2891,7 @@ export default function App() {
                       <motion.div key={p.id} whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         onClick={() => openProject(p)}
                         className="group cursor-pointer rounded-2xl overflow-hidden border border-white/8 hover:border-white/15 transition-all"
-                        style={{ background: '#131313' }}>
+                        style={{ background: 'var(--card-bg)' }}>
                         <div style={{ height: 2, background: 'var(--gradient-horizontal)' }} />
                         <div className="p-5">
                           <div className="flex items-start justify-between mb-3">
@@ -2909,7 +2925,7 @@ export default function App() {
                           <motion.div key={tmpl.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             onClick={() => { setPage('templates'); setSelectedTemplate(tmpl); }}
                             className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
-                            style={{ background: '#131313' }}>
+                            style={{ background: 'var(--card-bg)' }}>
                             <div style={{ height: 140, background: tmpl.color, position: 'relative', overflow: 'hidden' }}>
                               {tmpl.previewUrl ? (
                                 <iframe src={tmpl.previewUrl} title={tr.name} className="border-none pointer-events-none"

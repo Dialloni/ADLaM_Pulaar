@@ -153,6 +153,40 @@
   --dur-slower:     700ms;
 }
 
+/* ── THEME TOKENS ── dark (default) + light override ── */
+:root, [data-theme="dark"] {
+  --app-bg: #0e0e0e;
+  --card-bg: #1a1a1a;
+  --card-elevated: #1e1e1e;
+  --text-primary: #ffffff;
+  --text-secondary: #cfcfcf;
+  --text-muted: #767575;
+  --text-faint: #52525b;
+  --border: rgba(255,255,255,0.10);
+  --border-subtle: rgba(255,255,255,0.06);
+  --btn-bg: rgba(255,255,255,0.04);
+  --navbar-bg: rgba(14,14,14,0.88);
+  --chat-bar-bg: rgba(10,10,10,0.70);
+  --input-bg: rgba(255,255,255,0.04);
+  --hover-bg: rgba(255,255,255,0.05);
+}
+[data-theme="light"] {
+  --app-bg: #f7f7f8;
+  --card-bg: #ffffff;
+  --card-elevated: #f0f0f2;
+  --text-primary: #0a0a0a;
+  --text-secondary: #1a1a1a;
+  --text-muted: #52525b;
+  --text-faint: #a1a1aa;
+  --border: rgba(0,0,0,0.09);
+  --border-subtle: rgba(0,0,0,0.05);
+  --btn-bg: rgba(0,0,0,0.04);
+  --navbar-bg: rgba(247,247,248,0.88);
+  --chat-bar-bg: rgba(247,247,248,0.90);
+  --input-bg: rgba(0,0,0,0.04);
+  --hover-bg: rgba(0,0,0,0.04);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SEMANTIC TYPE ROLES
    Use these as classes or re-declarations (h1, p, etc).
