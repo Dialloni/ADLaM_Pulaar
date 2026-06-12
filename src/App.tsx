@@ -461,6 +461,26 @@ export default function App() {
   const dashModelRef = useRef<HTMLDivElement>(null);
   const [dashPlusOpen, setDashPlusOpen] = useState(false);
   const dashPlusRef = useRef<HTMLDivElement>(null);
+  type DashAttachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
+  const [dashAttachments, setDashAttachments] = useState<DashAttachment[]>([]);
+  const dashFileInputRef = useRef<HTMLInputElement>(null);
+  const handleDashFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    Array.from(e.target.files ?? []).forEach(file => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        const reader = new FileReader();
+        reader.onload = () => setDashAttachments(prev => [...prev, { id, name: file.name, kind: 'image', content: reader.result as string, previewUrl: url }]);
+        reader.readAsDataURL(file);
+      } else {
+        file.text().then(text => setDashAttachments(prev => [...prev, { id, name: file.name, kind: 'text', content: text }]));
+      }
+    });
+    e.target.value = '';
+  };
+  const buildDashContext = () => dashAttachments.map(a =>
+    a.kind === 'image' ? `[Image: ${a.name}]` : `[File: ${a.name}]\n${a.content.slice(0, 4000)}`
+  ).join('\n\n');
   const dashVoice = useVoiceInput(input, setInput, selectedLang.name);
   // Build vs Chat mode. Build = generate/edit an app. Chat = just talk to the AI.
   const [mode, setModeState] = useState<'build' | 'chat'>(
@@ -720,9 +740,10 @@ export default function App() {
   };
 
   // Chat mode — converse with the AI, no app generation. Ephemeral thread (chatMessages).
-  const runChat = async (prompt: string) => {
+  const runChat = async (typedPrompt: string, extraContext?: string) => {
     if (!currentProject) setChatActive(true); // dashboard chat opens the full-screen session
-    const userMsg: Message = { id: `u-${Date.now()}`, projectId: '', role: 'user', content: prompt, timestamp: Date.now() };
+    const fullPrompt = extraContext ? `${extraContext}\n\n${typedPrompt}` : typedPrompt;
+    const userMsg: Message = { id: `u-${Date.now()}`, projectId: '', role: 'user', content: typedPrompt, timestamp: Date.now() };
     const aiMsg: Message = { id: `a-${Date.now()}`, projectId: '', role: 'assistant', content: '', timestamp: Date.now() };
     const history = chatMessages;
     setChatMessages(prev => [...prev, userMsg, aiMsg]);
@@ -730,7 +751,7 @@ export default function App() {
     setIsGenerating(true);
     try {
       await chatStream(
-        prompt,
+        fullPrompt,
         history,
         currentProject?.code,
         selectedLang.name,
@@ -751,24 +772,25 @@ export default function App() {
     } finally { setIsGenerating(false); }
   };
 
-  const handleSend = async () => {
+  const handleSend = async (extraContext?: string) => {
     if (!input.trim()) {
       setInputShake(true);
       setTimeout(() => setInputShake(false), 500);
       return;
     }
     if (!user) return;
-    if (mode === 'chat') { await runChat(input.trim()); return; }
+    if (mode === 'chat') { await runChat(input.trim(), extraContext); return; }
     setIsGenerating(true);
     setStreamingCode(null);
     setPreviewCode(null);
     setGenerationSteps([]);
     lastPreviewAt.current = 0;
-    const prompt = importMode === 'github'
+    const basePrompt = importMode === 'github'
       ? `Clone and recreate a web app inspired by this GitHub repository: ${input}`
       : importMode === 'figma'
       ? `Build a pixel-perfect web UI matching this Figma design: ${input}`
       : input;
+    const prompt = extraContext ? `${extraContext}\n\n${basePrompt}` : basePrompt;
     setInput('');
     try {
       if (!currentProject) await createNewProject(prompt);
@@ -2641,7 +2663,7 @@ export default function App() {
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onInput={handleHeroInput}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const ctx = buildDashContext(); setDashAttachments([]); handleSend(ctx || undefined); } }}
                       placeholder={
                         mode === 'chat' ? 'Ask Gando anything…' :
                         importMode === 'github' ? 'Paste a GitHub repository URL to clone…' :
@@ -2651,6 +2673,19 @@ export default function App() {
                       className={cn('gando-input', isAdlam && 'font-adlam')}
                       style={{ width: '100%', minHeight: 110, maxHeight: 260, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: '#fff', fontSize: 16, lineHeight: 1.6, fontFamily: isAdlam ? undefined : 'var(--font-sans)', overflowY: 'hidden', display: 'block', boxSizing: 'border-box' }}
                     />
+                    {dashAttachments.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                        {dashAttachments.map(att => (
+                          <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '3px 8px', fontSize: 12, color: '#cfcfcf' }}>
+                            {att.kind === 'image' && att.previewUrl
+                              ? <img src={att.previewUrl} style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }} alt="" />
+                              : <Paperclip className="w-3 h-3" style={{ color: '#767575' }} />}
+                            <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
+                            <button onClick={() => setDashAttachments(prev => prev.filter(x => x.id !== att.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#767575', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', gap: 8 }}>
                       <div className="flex items-center gap-2 min-w-0">
                       {importMode === 'describe'
@@ -2667,13 +2702,13 @@ export default function App() {
                               {dashPlusOpen && (
                                 <div style={{ position: 'absolute', top: 44, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                                   {([
-                                    { icon: Paperclip, label: 'Add files or photos' },
-                                    { icon: Camera,    label: 'Take a screenshot' },
-                                    { icon: Globe,     label: 'Add from URL' },
-                                  ]).map(({ icon: Icon, label }) => (
+                                    { icon: Paperclip, label: 'Add files or photos', action: () => { setDashPlusOpen(false); dashFileInputRef.current?.click(); } },
+                                    { icon: Camera,    label: 'Take a screenshot',   action: () => setDashPlusOpen(false) },
+                                    { icon: Globe,     label: 'Add from URL',         action: () => setDashPlusOpen(false) },
+                                  ]).map(({ icon: Icon, label, action }) => (
                                     <div
                                       key={label}
-                                      onClick={() => setDashPlusOpen(false)}
+                                      onClick={action}
                                       onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
                                       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
@@ -2744,13 +2779,13 @@ export default function App() {
                             {dashVoice.isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : dashVoice.isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                           </button>
                         )}
-                        <button onClick={handleSend} disabled={isGenerating || !input.trim()}
+                        <button onClick={() => { const ctx = buildDashContext(); setDashAttachments([]); handleSend(ctx || undefined); }} disabled={isGenerating || (!input.trim() && dashAttachments.length === 0)}
                           title={mode === 'chat' ? 'Ask Gando' : 'Generate'}
                           style={{
                             width: 38, height: 38, borderRadius: 12, flexShrink: 0, border: 'none',
-                            background: (!input.trim() || isGenerating) ? 'rgba(255,255,255,0.06)' : 'var(--gradient-brand)',
-                            color: (!input.trim() || isGenerating) ? '#52525b' : '#0a0a0a',
-                            cursor: (!input.trim() || isGenerating) ? 'not-allowed' : 'pointer',
+                            background: ((!input.trim() && dashAttachments.length === 0) || isGenerating) ? 'rgba(255,255,255,0.06)' : 'var(--gradient-brand)',
+                            color: ((!input.trim() && dashAttachments.length === 0) || isGenerating) ? '#52525b' : '#0a0a0a',
+                            cursor: ((!input.trim() && dashAttachments.length === 0) || isGenerating) ? 'not-allowed' : 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: (!input.trim() || isGenerating) ? 'none' : 'var(--glow-primary-sm)',
                           }}>
@@ -2759,6 +2794,8 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+
+                  <input ref={dashFileInputRef} type="file" accept="image/*,.txt,.md,.csv" multiple style={{ display: 'none' }} onChange={handleDashFileChange} />
 
                   {/* suggestion chips — prompt mode only */}
                   {importMode === 'describe' && (
