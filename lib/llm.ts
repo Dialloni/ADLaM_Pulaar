@@ -244,6 +244,71 @@ async function runGemini(opts: RunStreamOpts, onCode: (chunk: string) => void): 
   return { code: m.code ?? '', name: m.name ?? '', language: m.language ?? '', explanation: m.explanation ?? '' };
 }
 
+// ── Chat mode ─────────────────────────────────────────────────────────────
+// Plain conversational answers (NO app generation, NO code protocol). Can see the
+// current project's code as context so the user can ask about what they built.
+const CHAT_SYSTEM = `You are Gando AI, a friendly, knowledgeable assistant for an African-language-first app builder.
+
+- Answer the user's question conversationally and helpfully. Do NOT build or output a full app unless explicitly asked; this is a chat, not a build request.
+- ALWAYS reply in the SAME language the user wrote in (especially African languages like Fulani/Pulaar in ADLaM script, Swahili, Yoruba, Wolof, Hausa, etc.).
+- If Fulani/Pulaar: write using ONLY characters from the ADLaM Unicode block (U+1E900–U+1E95F), plus spaces, digits and basic punctuation.
+- If "Current Code" is provided, you may reference and explain it. You can suggest changes in words; if the user wants you to actually apply them, tell them to switch to Build mode.
+- Keep answers focused. Use short markdown when helpful (lists, code snippets).`;
+
+export interface ChatOpts {
+  prompt: string;
+  history?: { role: string; content: string }[];
+  currentCode?: string;
+  preferredLanguage?: string;
+  provider?: 'claude' | 'gemini';
+}
+
+function buildChatContent(o: ChatOpts): string {
+  const hint = o.preferredLanguage ? `Preferred reply language: ${o.preferredLanguage}\n\n` : '';
+  const codeCtx = o.currentCode ? `Current Code (for reference only):\n${o.currentCode}\n\n` : '';
+  const historyText = (o.history ?? []).slice(-8).map((m) => `${m.role}: ${m.content}`).join('\n');
+  const hist = historyText ? `Recent conversation:\n${historyText}\n\n` : '';
+  return `${hint}${codeCtx}${hist}User: ${o.prompt}`;
+}
+
+/** Stream a chat answer token-by-token. Resolves with the full answer text. */
+export async function chatStream(opts: ChatOpts, onToken: (chunk: string) => void): Promise<string> {
+  const provider = opts.provider || 'claude';
+  if (provider === 'claude' && anthropicKey()) {
+    try {
+      const client = new Anthropic({ apiKey: anthropicKey() });
+      const stream = client.messages.stream({
+        model: claudeModel(),
+        max_tokens: 4096,
+        system: CHAT_SYSTEM,
+        messages: [{ role: 'user', content: buildChatContent(opts) }],
+      });
+      let full = '';
+      for await (const ev of stream) {
+        if (ev.type === 'content_block_delta' && ev.delta.type === 'text_delta') {
+          full += ev.delta.text;
+          onToken(ev.delta.text);
+        }
+      }
+      await stream.finalMessage();
+      return full;
+    } catch (err) {
+      if (!geminiKey()) throw err;
+    }
+  }
+  // Gemini fallback — non-streaming, emit the whole answer as one chunk.
+  if (!geminiKey()) throw new Error('No LLM provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY).');
+  const ai = new GoogleGenAI({ apiKey: geminiKey() });
+  const res = await ai.models.generateContent({
+    model: geminiModel(),
+    contents: buildChatContent(opts),
+    config: { systemInstruction: CHAT_SYSTEM, maxOutputTokens: 4096, temperature: 0.7 },
+  });
+  const out = (res.text || '').trim();
+  if (out) onToken(out);
+  return out;
+}
+
 // Lightweight non-streaming translation for UI text (e.g. community template
 // prompts). Gemini primary (fast/cheap for short text), Claude fallback.
 // Output is the translation only.

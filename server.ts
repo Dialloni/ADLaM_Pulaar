@@ -5,7 +5,7 @@ import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 import { verifyIdToken } from './lib/firebaseAdmin';
-import { runStream, translateText } from './lib/llm';
+import { runStream, translateText, chatStream } from './lib/llm';
 
 dotenv.config();
 
@@ -269,6 +269,29 @@ async function startServer() {
       const msg = err instanceof Error ? err.message : String(err);
       const isRate = /429|quota|rate|RESOURCE_EXHAUSTED|overloaded/i.test(msg);
       send({ type: 'error', error: isRate ? "You've reached the AI generation limit. Please wait a minute and try again." : msg });
+      res.end();
+    }
+  });
+
+  app.post('/api/chat', requireAuth, async (req: Request, res: Response) => {
+    const { prompt, history, currentCode, preferredLanguage, provider } = req.body ?? {};
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'prompt is required' });
+    }
+    sseHeaders(res);
+    const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
+    try {
+      const text = await chatStream(
+        { prompt, history, currentCode, preferredLanguage, provider },
+        (chunk) => send({ type: 'token', text: chunk })
+      );
+      send({ type: 'done', text });
+      res.end();
+    } catch (err) {
+      console.error('chat error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      const isRate = /429|quota|rate|RESOURCE_EXHAUSTED|overloaded/i.test(msg);
+      send({ type: 'error', error: isRate ? "You've reached the AI limit. Please wait a minute and try again." : msg });
       res.end();
     }
   });

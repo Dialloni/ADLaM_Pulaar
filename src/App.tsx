@@ -6,7 +6,8 @@ import {
   Users, BookOpen, Activity, Sparkles, LogOut, ChevronRight,
   RotateCcw, CheckCircle2, XCircle, AlertCircle, X, PanelLeft,
   HelpCircle, Gift, Globe, Layers, Github, Figma, Camera,
-  Share2, Heart,
+  Share2, Heart, ChevronDown, Check, Plus, Paperclip, Mic, MicOff,
+  MessageSquare, ArrowLeft, ArrowUp,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
@@ -16,11 +17,13 @@ import {
   handleFirestoreError, OperationType, auth,
 } from './firebase';
 import { Project, Message } from './types';
-import { generateProject, editProject } from './services/geminiService';
+import { generateProject, editProject, chatStream } from './services/geminiService';
 import { Chat } from './components/Chat';
 import { Preview } from './components/Preview';
 import { CodeEditor } from './components/CodeEditor';
 import { LanguageSelector } from './components/LanguageSelector';
+import { useVoiceInput } from './lib/useVoiceInput';
+import { ModeSwitch } from './components/ModeSwitch';
 import { AdminPortal } from './components/AdminPortal';
 import { GandoCollector } from './components/GandoCollector';
 import { cn } from './lib/utils';
@@ -446,6 +449,29 @@ export default function App() {
   };
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [selectedLang, setSelectedLang] = useState(LANGS[0]);
+  // AI model picker — Claude (eval winner) default; remembered per browser.
+  const [provider, setProviderState] = useState<'claude' | 'gemini'>(
+    () => (typeof window !== 'undefined' && (localStorage.getItem('gando_provider') as 'claude' | 'gemini')) || 'claude'
+  );
+  const setProvider = (p: 'claude' | 'gemini') => {
+    setProviderState(p);
+    try { localStorage.setItem('gando_provider', p); } catch { /* ignore */ }
+  };
+  const [dashModelOpen, setDashModelOpen] = useState(false);
+  const dashModelRef = useRef<HTMLDivElement>(null);
+  const [dashPlusOpen, setDashPlusOpen] = useState(false);
+  const dashPlusRef = useRef<HTMLDivElement>(null);
+  const dashVoice = useVoiceInput(input, setInput, selectedLang.name);
+  // Build vs Chat mode. Build = generate/edit an app. Chat = just talk to the AI.
+  const [mode, setModeState] = useState<'build' | 'chat'>(
+    () => (typeof window !== 'undefined' && (localStorage.getItem('gando_mode') as 'build' | 'chat')) || 'build'
+  );
+  const setMode = (m: 'build' | 'chat') => {
+    setModeState(m);
+    try { localStorage.setItem('gando_mode', m); } catch { /* ignore */ }
+  };
+  const [chatMessages, setChatMessages] = useState<Message[]>([]); // ephemeral chat-mode thread
+  const [chatActive, setChatActive] = useState(false);             // dashboard chat view open
   const t = TRANSLATIONS[selectedLang.code] || TRANSLATIONS.en;
   const isAdlam = selectedLang.code === 'ff-adlm';
 
@@ -620,6 +646,24 @@ export default function App() {
 
   useEffect(() => { if (page === 'status') fetchStatus(); }, [page]);
 
+  useEffect(() => {
+    if (!dashModelOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dashModelRef.current && !dashModelRef.current.contains(e.target as Node)) setDashModelOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dashModelOpen]);
+
+  useEffect(() => {
+    if (!dashPlusOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (dashPlusRef.current && !dashPlusRef.current.contains(e.target as Node)) setDashPlusOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dashPlusOpen]);
+
   /* typewriter */
   useEffect(() => {
     const active = user ? input : landingInput;
@@ -650,7 +694,7 @@ export default function App() {
   };
 
   const createNewProject = async (prompt: string) => {
-    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode);
+    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider);
     const data = {
       userId: user!.uid, name: result.name, description: prompt,
       language: selectedLang.name, languageCode: selectedLang.code,
@@ -669,10 +713,42 @@ export default function App() {
     if (!currentProject) return;
     try {
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
-      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode);
+      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider);
       await updateDoc(doc(db, 'projects', currentProject.id), { code: result.code, updatedAt: serverTimestamp() });
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${currentProject.id}`); }
+  };
+
+  // Chat mode — converse with the AI, no app generation. Ephemeral thread (chatMessages).
+  const runChat = async (prompt: string) => {
+    if (!currentProject) setChatActive(true); // dashboard chat opens the full-screen session
+    const userMsg: Message = { id: `u-${Date.now()}`, projectId: '', role: 'user', content: prompt, timestamp: Date.now() };
+    const aiMsg: Message = { id: `a-${Date.now()}`, projectId: '', role: 'assistant', content: '', timestamp: Date.now() };
+    const history = chatMessages;
+    setChatMessages(prev => [...prev, userMsg, aiMsg]);
+    setInput('');
+    setIsGenerating(true);
+    try {
+      await chatStream(
+        prompt,
+        history,
+        currentProject?.code,
+        selectedLang.name,
+        (full) => setChatMessages(prev => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { ...aiMsg, content: full };
+          return copy;
+        }),
+        provider
+      );
+    } catch (err: any) {
+      const m = err.message || 'Chat failed.';
+      setChatMessages(prev => {
+        const copy = [...prev];
+        copy[copy.length - 1] = { ...aiMsg, content: `⚠️ ${m}` };
+        return copy;
+      });
+    } finally { setIsGenerating(false); }
   };
 
   const handleSend = async () => {
@@ -682,6 +758,7 @@ export default function App() {
       return;
     }
     if (!user) return;
+    if (mode === 'chat') { await runChat(input.trim()); return; }
     setIsGenerating(true);
     setStreamingCode(null);
     setPreviewCode(null);
@@ -1234,6 +1311,8 @@ export default function App() {
               )}
             </AnimatePresence>
           </div>
+          {/* language selector — global, lives in the top bar */}
+          <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
           <div ref={notifRef} className="relative">
             <button onClick={() => setNotifOpen(o => !o)} className="p-2 rounded-xl text-zinc-400 hover:text-white transition-colors relative">
               <Bell className="w-5 h-5" />
@@ -1554,11 +1633,13 @@ export default function App() {
                         <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
                       </div>
                       <div className="flex flex-col flex-1 min-h-0">
-                        <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
-                          isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
+                        <Chat messages={mode === 'chat' ? chatMessages : messages} input={input} setInput={setInput} onSend={handleSend}
+                          isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={mode === 'chat' ? [] : generationSteps}
                           selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
                           languages={LANGS} onLanguageSelect={setSelectedLang}
                           languageCode={selectedLang.code} t={t}
+                          provider={provider} onProviderChange={setProvider}
+                          mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert} />
                       </div>
                     </motion.div>
@@ -1571,11 +1652,13 @@ export default function App() {
                       transition={{ type: 'spring', damping: 30, stiffness: 200 }}
                       style={{ background: '#0d0d0d', border: chatHidden ? 'none' : '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
                       <div className="flex flex-col h-full" style={{ width: 480, minWidth: 480 }}>
-                        <Chat messages={messages} input={input} setInput={setInput} onSend={handleSend}
-                          isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={generationSteps}
+                        <Chat messages={mode === 'chat' ? chatMessages : messages} input={input} setInput={setInput} onSend={handleSend}
+                          isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={mode === 'chat' ? [] : generationSteps}
                           selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
                           languages={LANGS} onLanguageSelect={setSelectedLang}
                           languageCode={selectedLang.code} t={t}
+                          provider={provider} onProviderChange={setProvider}
+                          mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert} />
                       </div>
                     </motion.div>
@@ -1589,6 +1672,28 @@ export default function App() {
                     </AnimatePresence>
                   </>
                 )}
+              </div>
+            </div>
+
+          ) : chatActive ? (
+            /* ══ CHAT SESSION (chat mode, no project) ══ */
+            <div className="flex flex-1 flex-col overflow-hidden relative z-10">
+              <div className="h-14 flex items-center gap-3 px-4 md:px-6 border-b border-white/5 flex-shrink-0">
+                <button onClick={() => { setChatActive(false); setChatMessages([]); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
+                  style={{ fontFamily: MANROPE }}>
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </button>
+                <span style={{ fontFamily: MANROPE, fontWeight: 800, fontSize: 13, color: '#fff' }}>Chat with Gando</span>
+              </div>
+              <div className="flex flex-col flex-1 min-h-0">
+                <Chat messages={chatMessages} input={input} setInput={setInput} onSend={handleSend}
+                  isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={[]}
+                  selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
+                  languages={LANGS} onLanguageSelect={setSelectedLang}
+                  languageCode={selectedLang.code} t={t}
+                  provider={provider} onProviderChange={setProvider}
+                  mode={mode} onModeChange={setMode} />
               </div>
             </div>
 
@@ -2506,25 +2611,27 @@ export default function App() {
                       : 'What will we build today?'}
                   </p>
 
-                  {/* import mode tabs */}
+                  {/* import mode tabs — build mode only */}
+                  {mode === 'build' && (
                   <div className="flex items-center gap-1 mb-3">
                     {([
-                      { mode: 'describe' as const, Icon: Sparkles, label: 'Prompt' },
-                      { mode: 'github'   as const, Icon: Github,   label: 'GitHub' },
-                      { mode: 'figma'    as const, Icon: Figma,    label: 'Figma'  },
-                    ]).map(({ mode, Icon, label }) => (
-                      <button key={mode} onClick={() => { setImportMode(mode); setInput(''); }}
+                      { im: 'describe' as const, Icon: Sparkles, label: 'Prompt' },
+                      { im: 'github'   as const, Icon: Github,   label: 'GitHub' },
+                      { im: 'figma'    as const, Icon: Figma,    label: 'Figma'  },
+                    ]).map(({ im, Icon, label }) => (
+                      <button key={im} onClick={() => { setImportMode(im); setInput(''); }}
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all"
                         style={{
                           fontFamily: MANROPE,
-                          color: importMode === mode ? '#fff' : '#71717a',
-                          background: importMode === mode ? 'rgba(255,255,255,0.08)' : 'transparent',
-                          border: importMode === mode ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                          color: importMode === im ? '#fff' : '#71717a',
+                          background: importMode === im ? 'rgba(255,255,255,0.08)' : 'transparent',
+                          border: importMode === im ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
                         }}>
                         <Icon className="w-3 h-3" />{label}
                       </button>
                     ))}
                   </div>
+                  )}
 
                   {/* big textarea card */}
                   <div style={{ borderRadius: 20, background: '#1a1a1a', border: `1px solid ${inputShake ? 'rgba(255,139,155,0.6)' : 'rgba(255,255,255,0.1)'}`, boxShadow: '0 24px 80px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)', padding: '18px 18px 14px', transition: 'border-color 0.2s' }}
@@ -2536,6 +2643,7 @@ export default function App() {
                       onInput={handleHeroInput}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                       placeholder={
+                        mode === 'chat' ? 'Ask Gando anything…' :
                         importMode === 'github' ? 'Paste a GitHub repository URL to clone…' :
                         importMode === 'figma'  ? 'Paste a Figma design link to build from…' :
                         !input ? (twText + (twCursor ? '|' : ' ')) : t.inputPlaceholder
@@ -2543,21 +2651,112 @@ export default function App() {
                       className={cn('gando-input', isAdlam && 'font-adlam')}
                       style={{ width: '100%', minHeight: 110, maxHeight: 260, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: '#fff', fontSize: 16, lineHeight: 1.6, fontFamily: isAdlam ? undefined : 'var(--font-sans)', overflowY: 'hidden', display: 'block', boxSizing: 'border-box' }}
                     />
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', gap: 8 }}>
+                      <div className="flex items-center gap-2 min-w-0">
                       {importMode === 'describe'
-                        ? <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
+                        ? <div className="flex items-center gap-2">
+                            {/* Plus — attach files/photos/PDF */}
+                            <div ref={dashPlusRef} style={{ position: 'relative' }}>
+                              <button
+                                onClick={() => setDashPlusOpen(o => !o)}
+                                title="Attach files, photos or a URL"
+                                style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa' }}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                              {dashPlusOpen && (
+                                <div style={{ position: 'absolute', top: 44, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                                  {([
+                                    { icon: Paperclip, label: 'Add files or photos' },
+                                    { icon: Camera,    label: 'Take a screenshot' },
+                                    { icon: Globe,     label: 'Add from URL' },
+                                  ]).map(({ icon: Icon, label }) => (
+                                    <div
+                                      key={label}
+                                      onClick={() => setDashPlusOpen(false)}
+                                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
+                                    >
+                                      <Icon className="w-4 h-4" style={{ color: '#767575', flexShrink: 0 }} />
+                                      {label}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {/* Model picker */}
+                            <div ref={dashModelRef} style={{ position: 'relative' }}>
+                              <button
+                                onClick={() => setDashModelOpen(o => !o)}
+                                title="Choose the AI model"
+                                className="flex items-center gap-1.5 py-2 px-3 rounded-xl transition-colors"
+                                style={{ fontSize: 12, fontWeight: 700, color: '#cfcfcf', fontFamily: 'Inter, sans-serif', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                              >
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                                {provider === 'claude' ? 'Claude' : 'Gemini'}
+                                <ChevronDown className="w-3 h-3 opacity-60" />
+                              </button>
+                              {dashModelOpen && (
+                                <div style={{ position: 'absolute', top: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                                  {([
+                                    { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
+                                    { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
+                                  ]).map(m => (
+                                    <div
+                                      key={m.id}
+                                      onClick={() => { setProvider(m.id); setDashModelOpen(false); }}
+                                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
+                                    >
+                                      <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                                      <div style={{ minWidth: 0, flex: 1 }}>
+                                        <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                                        <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                                      </div>
+                                      {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         : <span style={{ fontSize: 11, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>
                             {importMode === 'github' ? 'github.com/user/repo' : 'figma.com/design/…'}
                           </span>
                       }
-                      <button onClick={handleSend} disabled={isGenerating || !input.trim()}
-                        className={cn('flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 disabled:scale-100', isAdlam && 'font-adlam')}
-                        style={{ fontFamily: isAdlam ? undefined : MANROPE, background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontSize: 14, flexShrink: 0 }}
-                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
-                        {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : importMode === 'github' ? <Github className="w-4 h-4" /> : importMode === 'figma' ? <Figma className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                        {isGenerating ? (generationStatus || t.generating) : importMode === 'github' ? 'Clone' : importMode === 'figma' ? 'Build from Figma' : t.generateLabel}
-                      </button>
+                      <ModeSwitch mode={mode} onChange={setMode} />
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {importMode === 'describe' && (
+                          <button
+                            onClick={dashVoice.toggleListening}
+                            title={dashVoice.isListening ? 'Stop recording' : 'Speak your prompt'}
+                            className={dashVoice.isListening ? 'animate-pulse' : ''}
+                            style={{
+                              width: 38, height: 38, borderRadius: 12, flexShrink: 0,
+                              background: dashVoice.isListening ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.04)',
+                              border: `1px solid ${dashVoice.isListening ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                              color: dashVoice.isListening ? '#f87171' : dashVoice.isTranscribing ? '#ff8b9b' : '#adaaaa',
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                            {dashVoice.isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : dashVoice.isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                          </button>
+                        )}
+                        <button onClick={handleSend} disabled={isGenerating || !input.trim()}
+                          title={mode === 'chat' ? 'Ask Gando' : 'Generate'}
+                          style={{
+                            width: 38, height: 38, borderRadius: 12, flexShrink: 0, border: 'none',
+                            background: (!input.trim() || isGenerating) ? 'rgba(255,255,255,0.06)' : 'var(--gradient-brand)',
+                            color: (!input.trim() || isGenerating) ? '#52525b' : '#0a0a0a',
+                            cursor: (!input.trim() || isGenerating) ? 'not-allowed' : 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: (!input.trim() || isGenerating) ? 'none' : 'var(--glow-primary-sm)',
+                          }}>
+                          {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
