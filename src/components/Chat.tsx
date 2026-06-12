@@ -1,12 +1,11 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, Bot, ArrowRight, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check } from 'lucide-react';
+import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, Bot, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { LanguageSelector } from './LanguageSelector';
-import { TRANSLATIONS } from '../translations';
-import { transcribeAudio } from '../services/geminiService';
+import { useVoiceInput } from '../lib/useVoiceInput';
+import { ModeSwitch } from './ModeSwitch';
 
 interface ChatProps {
   messages: Message[];
@@ -22,9 +21,19 @@ interface ChatProps {
   onLanguageSelect?: (lang: { code: any; name: string }) => void;
   languageCode: string;
   t: any;
+  provider?: 'claude' | 'gemini';
+  onProviderChange?: (p: 'claude' | 'gemini') => void;
+  mode?: 'build' | 'chat';
+  onModeChange?: (m: 'build' | 'chat') => void;
   currentCode?: string;
   onRevert?: (snapshot: string) => void;
 }
+
+const MODELS: { id: 'claude' | 'gemini'; label: string; sub: string }[] = [
+  { id: 'claude', label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
+  { id: 'gemini', label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
+];
+
 
 const SUGGESTIONS = (t: any) => [
   { 
@@ -184,71 +193,22 @@ const ChatImpl: React.FC<ChatProps> = ({
   onLanguageSelect,
   languageCode,
   t,
+  provider = 'claude',
+  onProviderChange,
+  mode = 'build',
+  onModeChange,
   currentCode,
   onRevert,
 }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [modelOpen, setModelOpen] = useState(false);
+  const modelRef = useRef<HTMLDivElement>(null);
 
-  // Voice Input Logic (Gemini-powered for better African language support)
-  const toggleListening = async () => {
-    if (isListening) {
-      mediaRecorderRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        
-        // Convert blob to base64
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = async () => {
-          const base64Audio = (reader.result as string).split(',')[1];
-          setIsTranscribing(true);
-          try {
-            const transcript = await transcribeAudio(base64Audio, 'audio/webm', selectedLanguage);
-            if (transcript) {
-              setInput(input ? `${input} ${transcript}` : transcript);
-            }
-          } catch (error) {
-            console.error('Transcription failed:', error);
-          } finally {
-            setIsTranscribing(false);
-          }
-        };
-
-        // Stop all tracks to release the microphone
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsListening(true);
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      alert('Could not access microphone. Please check permissions.');
-    }
-  };
+  // Voice input (shared hook — Gemini-powered for African-language support).
+  const { isListening, isTranscribing, toggleListening } = useVoiceInput(input, setInput, selectedLanguage);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -264,6 +224,15 @@ const ChatImpl: React.FC<ChatProps> = ({
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [dropdownOpen]);
+
+  useEffect(() => {
+    if (!modelOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) setModelOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [modelOpen]);
 
   const handleInput = () => {
     const el = textareaRef.current;
@@ -363,15 +332,39 @@ const ChatImpl: React.FC<ChatProps> = ({
                       )}
                     />
                     <div className="absolute bottom-5 left-5 flex items-center gap-2">
-                      {currentLanguage && languages && onLanguageSelect && (
-                        <LanguageSelector
-                          currentLanguage={currentLanguage}
-                          languages={languages}
-                          onSelect={onLanguageSelect}
-                          dropUp
-                          buttonClassName="!py-1.5 !px-3 !rounded-lg !bg-white/[0.04] hover:!bg-white/10 !border-white/5 text-[11px]"
-                        />
-                      )}
+                      {/* Model picker */}
+                      <div ref={modelRef} style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => setModelOpen(o => !o)}
+                          title="Choose the AI model"
+                          className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/5 transition-colors"
+                          style={{ fontSize: 11, fontWeight: 600, color: '#cfcfcf', fontFamily: 'Inter, sans-serif' }}
+                        >
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                          {provider === 'claude' ? 'Claude' : 'Gemini'}
+                          <ChevronDown className="w-3 h-3 opacity-60" />
+                        </button>
+                        {modelOpen && (
+                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                            {MODELS.map(m => (
+                              <div
+                                key={m.id}
+                                onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
+                                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
+                              >
+                                <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                                <div style={{ minWidth: 0, flex: 1 }}>
+                                  <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                                  <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                                </div>
+                                {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="absolute bottom-6 right-6 flex items-center gap-3">
                       <button
@@ -397,7 +390,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                             : "bg-white/5 text-zinc-600 cursor-not-allowed"
                         )}
                       >
-                        <Send className={cn("w-5 h-5 transition-transform", input.trim() && "group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5")} />
+                        <ArrowUp className={cn("w-5 h-5 transition-transform", input.trim() && "group-hover/btn:-translate-y-0.5")} />
                       </button>
                     </div>
                   </div>
@@ -602,55 +595,112 @@ const ChatImpl: React.FC<ChatProps> = ({
             />
 
             {/* Bottom row */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              {/* Left: Plus dropdown */}
-              <div ref={dropdownRef} style={{ position: 'relative' }}>
-                <button
-                  onClick={() => setDropdownOpen(o => !o)}
-                  style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa' }}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              {/* Left cluster: Plus · Model picker · Build/Chat */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                {/* Plus dropdown */}
+                <div ref={dropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+                  <button
+                    onClick={() => setDropdownOpen(o => !o)}
+                    title="Attach files, photos or a URL"
+                    style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa' }}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
 
-                {dropdownOpen && (
-                  <div style={{ position: 'absolute', bottom: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
-                    {[
-                      { icon: Paperclip, label: 'Add files or photos' },
-                      { icon: Camera,    label: 'Take a screenshot' },
-                      { icon: Link,      label: 'Add from URL' },
-                    ].map(({ icon: Icon, label }) => (
-                      <div
-                        key={label}
-                        onClick={() => setDropdownOpen(false)}
-                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
-                      >
-                        <Icon className="w-4 h-4" style={{ color: '#767575', flexShrink: 0 }} />
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  {dropdownOpen && (
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                      {[
+                        { icon: Paperclip, label: 'Add files or photos' },
+                        { icon: Camera,    label: 'Take a screenshot' },
+                        { icon: Link,      label: 'Add from URL' },
+                      ].map(({ icon: Icon, label }) => (
+                        <div
+                          key={label}
+                          onClick={() => setDropdownOpen(false)}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
+                        >
+                          <Icon className="w-4 h-4" style={{ color: '#767575', flexShrink: 0 }} />
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Model picker (Claude / Gemini) */}
+                <div ref={modelRef} style={{ position: 'relative', flexShrink: 1, minWidth: 0 }}>
+                  <button
+                    onClick={() => setModelOpen(o => !o)}
+                    title="Choose the AI model"
+                    style={{ height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', color: '#cfcfcf', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden' }}
+                  >
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff', flexShrink: 0 }} />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider === 'claude' ? 'Claude' : 'Gemini'}</span>
+                    <ChevronDown className="w-3 h-3" style={{ flexShrink: 0, opacity: 0.6 }} />
+                  </button>
+
+                  {modelOpen && (
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                      {MODELS.map(m => (
+                        <div
+                          key={m.id}
+                          onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
+                        >
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                            <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                          </div>
+                          {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Build/Chat dropdown */}
+                <ModeSwitch mode={mode} onChange={onModeChange} dropUp />
               </div>
 
-              {/* Right: Send button */}
-              <motion.button
-                whileHover={input.trim() && !isGenerating ? { scale: 1.05 } : {}}
-                whileTap={input.trim() && !isGenerating ? { scale: 0.95 } : {}}
-                onClick={onSend}
-                disabled={!input.trim() || isGenerating}
-                style={{
-                  width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                  background: input.trim() && !isGenerating ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
-                  color: input.trim() && !isGenerating ? '#0a0a0a' : '#52525b',
-                  border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                title={isGenerating ? "Generating..." : input.trim() ? "Send message" : "Type a message first"}
-              >
-                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              </motion.button>
+              {/* Right cluster: Mic · Send */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <button
+                  onClick={toggleListening}
+                  title={isListening ? 'Stop recording' : 'Speak your prompt'}
+                  style={{
+                    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                    background: isListening ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.06)',
+                    border: `1px solid ${isListening ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                    color: isListening ? '#f87171' : isTranscribing ? '#ff8b9b' : '#adaaaa',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                  className={isListening ? 'animate-pulse' : ''}
+                >
+                  {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+
+                <motion.button
+                  whileHover={input.trim() && !isGenerating ? { scale: 1.05 } : {}}
+                  whileTap={input.trim() && !isGenerating ? { scale: 0.95 } : {}}
+                  onClick={onSend}
+                  disabled={!input.trim() || isGenerating}
+                  style={{
+                    width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                    background: input.trim() && !isGenerating ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
+                    color: input.trim() && !isGenerating ? '#0a0a0a' : '#52525b',
+                    border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                  title={isGenerating ? "Generating..." : input.trim() ? "Send message" : "Type a message first"}
+                >
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                </motion.button>
+              </div>
             </div>
           </div>
         </motion.div>

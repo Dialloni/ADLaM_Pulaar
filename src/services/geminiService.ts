@@ -71,14 +71,17 @@ async function streamGeneration(
   return { ...final, code: final.code || code };
 }
 
+export type Provider = 'claude' | 'gemini';
+
 export async function generateProject(
   prompt: string,
   preferredLanguage: string,
   onStatus?: (status: string) => void,
-  onCode?: (codeSoFar: string) => void
+  onCode?: (codeSoFar: string) => void,
+  provider?: Provider
 ): Promise<GenerationResponse> {
   onStatus?.('Generating your app...');
-  return streamGeneration('/api/generate', { prompt, preferredLanguage }, onCode, onStatus);
+  return streamGeneration('/api/generate', { prompt, preferredLanguage, provider }, onCode, onStatus);
 }
 
 export async function editProject(
@@ -87,16 +90,68 @@ export async function editProject(
   history: Message[],
   preferredLanguage: string,
   onStatus?: (status: string) => void,
-  onCode?: (codeSoFar: string) => void
+  onCode?: (codeSoFar: string) => void,
+  provider?: Provider
 ): Promise<GenerationResponse> {
   onStatus?.('Applying your changes...');
   const trimmed = history.slice(-6).map((m) => ({ role: m.role, content: m.content }));
   return streamGeneration(
     '/api/edit',
-    { prompt, currentCode, history: trimmed, preferredLanguage },
+    { prompt, currentCode, history: trimmed, preferredLanguage, provider },
     onCode,
     onStatus
   );
+}
+
+/**
+ * Chat mode — stream a conversational answer (no app generation). Calls onToken with
+ * each chunk and resolves with the full answer text.
+ */
+export async function chatStream(
+  prompt: string,
+  history: Message[],
+  currentCode: string | undefined,
+  preferredLanguage: string,
+  onToken: (chunk: string) => void,
+  provider?: Provider
+): Promise<string> {
+  const trimmed = history.slice(-8).map((m) => ({ role: m.role, content: m.content }));
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify({ prompt, history: trimmed, currentCode, preferredLanguage, provider }),
+  });
+  if (!res.ok || !res.body) {
+    const data = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(data.error || `Request failed: ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let answer = '';
+  let streamError: string | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let sep: number;
+    while ((sep = buffer.indexOf('\n\n')) !== -1) {
+      const frame = buffer.slice(0, sep);
+      buffer = buffer.slice(sep + 2);
+      const line = frame.split('\n').find((l) => l.startsWith('data:'));
+      if (!line) continue;
+      try {
+        const msg = JSON.parse(line.slice(5).trim()) as { type: string; text?: string; error?: string };
+        if (msg.type === 'token' && msg.text) { answer += msg.text; onToken(answer); }
+        else if (msg.type === 'done' && typeof msg.text === 'string') { answer = msg.text || answer; }
+        else if (msg.type === 'error') { streamError = msg.error || 'Chat failed'; }
+      } catch { /* skip malformed frame */ }
+    }
+  }
+  if (streamError) throw new Error(streamError);
+  return answer;
 }
 
 export async function transcribeAudio(
