@@ -519,6 +519,8 @@ export default function App() {
   const [importMode, setImportMode] = useState<'describe' | 'github' | 'figma'>('describe');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [landingInput, setLandingInput] = useState('');
+  const [landingModelOpen, setLandingModelOpen] = useState(false);
+  const landingModelRef = useRef<HTMLDivElement>(null);
   const [twText, setTwText] = useState('');
   const [twIdx, setTwIdx] = useState(0);
   const [twDel, setTwDel] = useState(false);
@@ -674,6 +676,15 @@ export default function App() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [dashModelOpen]);
+
+  useEffect(() => {
+    if (!landingModelOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (landingModelRef.current && !landingModelRef.current.contains(e.target as Node)) setLandingModelOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [landingModelOpen]);
 
   useEffect(() => {
     if (!dashPlusOpen) return;
@@ -994,25 +1005,65 @@ export default function App() {
               className="gando-input"
               style={{ width: '100%', minHeight: 100, background: 'transparent', border: 'none', outline: 'none', resize: 'none', color: '#fff', fontSize: 16, lineHeight: 1.6, fontFamily: 'var(--font-sans)', display: 'block', boxSizing: 'border-box', overflowY: 'hidden' }}
             />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: 11, color: '#52525b', fontFamily: 'Inter, sans-serif', marginRight: 4 }}>or import from</span>
-                {([{ Icon: Github, label: 'GitHub' }, { Icon: Figma, label: 'Figma' }] as const).map(({ Icon, label }) => (
-                  <button key={label} onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:border-white/20 hover:text-white"
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#767575', fontFamily: MANROPE }}>
-                    <Icon className="w-3 h-3" />{label}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', gap: 8 }}>
+              {/* Left cluster: Plus · Model · Mode */}
+              <div className="flex items-center gap-2 min-w-0">
+                {/* Plus — opens auth */}
+                <button
+                  onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+                  title="Sign in to attach files"
+                  style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa', flexShrink: 0 }}>
+                  <Plus className="w-4 h-4" />
+                </button>
+                {/* Model picker — functional (just UI state) */}
+                <div ref={landingModelRef} style={{ position: 'relative', flexShrink: 0 }}>
+                  <button
+                    onClick={() => setLandingModelOpen(o => !o)}
+                    title="Choose AI model"
+                    style={{ height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', color: '#cfcfcf', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                    {provider === 'claude' ? 'Claude' : 'Gemini'}
+                    <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
-                ))}
+                  {landingModelOpen && (
+                    <div style={{ position: 'absolute', top: 44, left: 0, background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                      {([
+                        { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
+                        { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
+                      ]).map(m => (
+                        <div key={m.id} onClick={() => { setProvider(m.id); setLandingModelOpen(false); }}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                            <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                          </div>
+                          {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Build/Chat toggle */}
+                <ModeSwitch mode={mode} onChange={setMode} />
               </div>
-              <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-black text-sm transition-all hover:scale-[1.03] active:scale-95"
-                style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, flexShrink: 0 }}
-                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-lg)'}
-                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--glow-primary-sm)'}>
-                <Sparkles className="w-4 h-4" />
-                <span className={cn(isAdlam && 'font-adlam')}>{t.generateLabel}</span>
-              </button>
+              {/* Right cluster: Voice · Send */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+                  title="Sign in to use voice input"
+                  style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa' }}>
+                  <Mic className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
+                  title={mode === 'chat' ? 'Sign in to chat' : 'Sign in to build'}
+                  style={{ width: 38, height: 38, borderRadius: 12, flexShrink: 0, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: landingInput.trim() ? 'var(--gradient-brand)' : 'rgba(255,255,255,0.06)', color: landingInput.trim() ? '#0a0a0a' : '#52525b', boxShadow: landingInput.trim() ? 'var(--glow-primary-sm)' : 'none' }}>
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
