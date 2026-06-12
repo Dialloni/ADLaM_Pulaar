@@ -382,26 +382,26 @@ const ChatImpl: React.FC<ChatProps> = ({
                           onClick={() => setModelOpen(o => !o)}
                           title="Choose the AI model"
                           className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/5 transition-colors"
-                          style={{ fontSize: 11, fontWeight: 600, color: '#cfcfcf', fontFamily: 'Inter, sans-serif' }}
+                          style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}
                         >
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
                           {provider === 'claude' ? 'Claude' : 'Gemini'}
                           <ChevronDown className="w-3 h-3 opacity-60" />
                         </button>
                         {modelOpen && (
-                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                             {MODELS.map(m => (
                               <div
                                 key={m.id}
                                 onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
-                                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                                 onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                                 style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
                               >
                                 <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
                                 <div style={{ minWidth: 0, flex: 1 }}>
-                                  <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                                  <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                                 </div>
                                 {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                               </div>
@@ -644,12 +644,12 @@ const ChatImpl: React.FC<ChatProps> = ({
             {attachments.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {attachments.map(att => (
-                  <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '3px 8px', fontSize: 12, color: '#cfcfcf' }}>
+                  <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 8, padding: '3px 8px', fontSize: 12, color: 'var(--text-secondary)' }}>
                     {att.kind === 'image' && att.previewUrl
                       ? <img src={att.previewUrl} style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }} alt="" />
-                      : <Paperclip className="w-3 h-3" style={{ color: '#767575' }} />}
+                      : <Paperclip className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />}
                     <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
-                    <button onClick={() => setAttachments(prev => prev.filter(x => x.id !== att.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#767575', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
+                    <button onClick={() => setAttachments(prev => prev.filter(x => x.id !== att.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
                   </div>
                 ))}
               </div>
@@ -664,13 +664,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                   <button
                     onClick={() => setDropdownOpen(o => !o)}
                     title="Attach files, photos or a URL"
-                    style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa' }}
+                    style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
                   >
                     <Plus className="w-4 h-4" />
                   </button>
 
                   {dropdownOpen && (
-                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                       {[
                         { icon: Paperclip, label: 'Add files or photos', action: () => { setDropdownOpen(false); fileInputRef.current?.click(); } },
                         { icon: Camera,    label: 'Take a screenshot',   action: () => setDropdownOpen(false) },
@@ -679,11 +679,11 @@ const ChatImpl: React.FC<ChatProps> = ({
                         <div
                           key={label}
                           onClick={action}
-                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
                         >
-                          <Icon className="w-4 h-4" style={{ color: '#767575', flexShrink: 0 }} />
+                          <Icon className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                           {label}
                         </div>
                       ))}
@@ -696,7 +696,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   <button
                     onClick={() => setModelOpen(o => !o)}
                     title="Choose the AI model"
-                    style={{ height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', color: '#cfcfcf', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden' }}
+                    style={{ height: 32, borderRadius: 8, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden' }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff', flexShrink: 0 }} />
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider === 'claude' ? 'Claude' : 'Gemini'}</span>
@@ -704,19 +704,19 @@ const ChatImpl: React.FC<ChatProps> = ({
                   </button>
 
                   {modelOpen && (
-                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                       {MODELS.map(m => (
                         <div
                           key={m.id}
                           onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
-                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
                         >
                           <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                            <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                            <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                           </div>
                           {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                         </div>
@@ -752,7 +752,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   disabled={(!input.trim() && attachments.length === 0) || isGenerating || isSending}
                   style={{
                     width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                    background: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'rgba(255,255,255,0.05)',
+                    background: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'var(--hover-bg)',
                     color: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? '#0a0a0a' : '#52525b',
                     border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',

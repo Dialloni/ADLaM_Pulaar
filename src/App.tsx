@@ -993,12 +993,12 @@ export default function App() {
             {t.loginLine2}<br />
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
           </h1>
-          <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : 'Inter, sans-serif', fontSize: 16, color: '#767575', lineHeight: 1.65, maxWidth: 520, margin: '0 auto 40px' }}>
+          <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : 'Inter, sans-serif', fontSize: 16, color: 'var(--text-muted)', lineHeight: 1.65, maxWidth: 520, margin: '0 auto 40px' }}>
             {t.heroSubtitle}
           </p>
 
           {/* textarea card */}
-          <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 32px 80px -12px rgba(0,0,0,0.7)', padding: '18px 18px 14px', textAlign: 'left' }}>
+          <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: '1px solid var(--border)', boxShadow: '0 32px 80px -12px rgba(0,0,0,0.7)', padding: '18px 18px 14px', textAlign: 'left' }}>
             <textarea
               ref={landingTextareaRef}
               value={landingInput}
@@ -1021,7 +1021,7 @@ export default function App() {
                 <button
                   onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
                   title="Sign in to attach files"
-                  style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa', flexShrink: 0 }}>
+                  style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexShrink: 0 }}>
                   <Plus className="w-4 h-4" />
                 </button>
                 {/* Model picker — functional (just UI state) */}
@@ -1029,25 +1029,25 @@ export default function App() {
                   <button
                     onClick={() => setLandingModelOpen(o => !o)}
                     title="Choose AI model"
-                    style={{ height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', color: '#cfcfcf', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700 }}>
+                    style={{ height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
                     {provider === 'claude' ? 'Claude' : 'Gemini'}
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
                   {landingModelOpen && (
-                    <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                       {([
                         { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
                         { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
                       ]).map(m => (
                         <div key={m.id} onClick={() => { setProvider(m.id); setLandingModelOpen(false); }}
-                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}>
                           <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                            <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                            <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                           </div>
                           {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                         </div>
@@ -1063,7 +1063,7 @@ export default function App() {
                 <button
                   onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
                   title="Sign in to use voice input"
-                  style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa' }}>
+                  style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                   <Mic className="w-4 h-4" />
                 </button>
                 <button
@@ -1093,7 +1093,7 @@ export default function App() {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 24, color: 'var(--text-primary)', margin: 0 }}>{tl.pageTitle}</h2>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#767575', marginTop: 4 }}>{tl.pageSubtitle}</p>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{tl.pageSubtitle}</p>
               </div>
               <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
                 style={{ fontSize: 11, fontWeight: 900, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: MANROPE }}>
@@ -1124,7 +1124,7 @@ export default function App() {
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
-                        <span style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
+                        <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
                       </div>
                       <h3 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>{tr.name}</h3>
                       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#71717a', lineHeight: 1.5 }}>{tr.description}</p>
@@ -1160,7 +1160,7 @@ export default function App() {
                 <div className="space-y-2.5">
                   {col.links.map(lnk => (
                     <p key={lnk}
-                      style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: '#767575', cursor: 'default', transition: 'color 0.15s' }}
+                      style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'var(--text-muted)', cursor: 'default', transition: 'color 0.15s' }}
                       onMouseEnter={e => (e.currentTarget as HTMLParagraphElement).style.color = '#fff'}
                       onMouseLeave={e => (e.currentTarget as HTMLParagraphElement).style.color = '#767575'}>
                       {lnk}
@@ -1202,7 +1202,7 @@ export default function App() {
               <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 26, color: 'var(--text-primary)', marginBottom: 6 }}>
                 {authMode === 'login' ? 'Welcome back' : authMode === 'signup' ? 'Create account' : 'Get started free'}
               </h2>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#767575', marginBottom: 24 }}>
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>
                 {authMode === 'login' ? 'Sign in to continue building.' : authMode === 'signup' ? 'Build your first app in minutes.' : 'One click to start building.'}
               </p>
 
@@ -1217,7 +1217,7 @@ export default function App() {
                   {authError && <p className="text-red-400 text-xs text-center">{authError}</p>}
                   <button onClick={() => { setAuthMode('login'); setAuthError(null); }}
                     className="w-full text-sm font-medium transition-colors hover:text-white text-center"
-                    style={{ color: '#767575', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
+                    style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
                     Or use email & password
                   </button>
                 </div>
@@ -1524,23 +1524,23 @@ export default function App() {
                 <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" style={{ transform: 'rotate(90deg)' }} />
               </div>
               {userMenuOpen && (
-                <div style={{ position: 'absolute', top: '100%', left: 12, right: 12, background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                  <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
+                <div style={{ position: 'absolute', top: '100%', left: 12, right: 12, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                  <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
                   {([
                     { icon: Settings,   label: 'Settings'  },
                     { icon: Globe,      label: 'Language'  },
                     { icon: HelpCircle, label: 'Help'      },
                   ]).map(({ icon: Icon, label }) => (
                     <button key={label} onClick={e => { e.stopPropagation(); setUserMenuOpen(false); }}
-                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'}
+                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
                       onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                       <Icon size={14} /> {label}
                     </button>
                   ))}
                   <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
                   <button onClick={e => { e.stopPropagation(); logout(); setUserMenuOpen(false); }}
-                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.05)'}
+                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
                     onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                     <LogOut size={14} /> {t.signOut}
@@ -1554,7 +1554,7 @@ export default function App() {
           <div className="px-3 mb-3">
             <button onClick={() => searchRef.current?.querySelector('input')?.focus()}
               className={cn('w-full flex items-center rounded-xl transition-all text-zinc-500 hover:text-zinc-300 hover:bg-white/5', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2')}
-              style={{ background: sidebarCollapsed ? 'transparent' : 'rgba(255,255,255,0.03)', border: sidebarCollapsed ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+              style={{ background: sidebarCollapsed ? 'transparent' : 'rgba(255,255,255,0.03)', border: sidebarCollapsed ? 'none' : '1px solid var(--hover-bg)' }}>
               <Search className="w-4 h-4 flex-shrink-0" />
               {!sidebarCollapsed && (
                 <>
@@ -1597,7 +1597,7 @@ export default function App() {
                 {projects.slice(0, 5).map(p => (
                   <button key={p.id} onClick={() => { openProject(p); setMobileNavOpen(false); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all hover:bg-white/5"
-                    style={{ color: '#adaaaa' }}>
+                    style={{ color: 'var(--text-muted)' }}>
                     <Sparkles className="w-3 h-3 flex-shrink-0 opacity-60" style={{ color: P }} />
                     <span className="text-xs font-medium truncate" style={{ fontFamily: 'Inter, sans-serif' }}>{p.name}</span>
                   </button>
@@ -1662,15 +1662,15 @@ export default function App() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-                  <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--btn-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <button onClick={() => setActiveTab('preview')}
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={activeTab === 'preview' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: '#adaaaa' }}>
+                      style={activeTab === 'preview' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
                       <Eye className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.preview}</span>
                     </button>
                     <button onClick={() => setActiveTab('code')}
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={activeTab === 'code' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: '#adaaaa' }}>
+                      style={activeTab === 'code' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
                       <CodeIcon className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.code}</span>
                     </button>
                   </div>
@@ -1691,7 +1691,7 @@ export default function App() {
                   )}
                   <button onClick={handleDownload}
                     className="flex items-center gap-2 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold text-zinc-400 hover:text-white border border-white/10 hover:border-white/20 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    style={{ background: 'var(--btn-bg)' }}>
                     <Download className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.download}</span>
                   </button>
                 </div>
@@ -1717,7 +1717,7 @@ export default function App() {
                       initial={false}
                       animate={{ y: chatHidden ? '100%' : '0%' }}
                       transition={{ type: 'spring', damping: 32, stiffness: 240 }}
-                      style={{ height: '78vh', background: '#0d0d0d', borderTop: '1px solid rgba(255,255,255,0.08)', borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: 'hidden' }}>
+                      style={{ height: '78vh', background: '#0d0d0d', borderTop: '1px solid var(--border)', borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: 'hidden' }}>
                       <div className="flex items-center justify-center py-2 flex-shrink-0" onClick={() => setChatHidden(true)}>
                         <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
                       </div>
@@ -1806,7 +1806,7 @@ export default function App() {
               </div>
 
               {/* Filter tabs */}
-              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', width: 'fit-content' }}>
+              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--btn-bg)', border: '1px solid rgba(255,255,255,0.06)', width: 'fit-content' }}>
                 {(['all', 'live', 'building', 'draft'] as const).map(f => (
                   <button
                     key={f}
@@ -1925,7 +1925,7 @@ export default function App() {
                       style={isMobile ? { height: '68vh', flexShrink: 0 } : undefined}>
                       <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--app-bg)' }}>
                         <button onClick={() => setSelectedCommunity(null)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#adaaaa', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
                           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#fff'}
                           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#adaaaa'}>
                           <ChevronRight className="w-3 h-3 rotate-180" /> {t.templatesNav}
@@ -1939,14 +1939,14 @@ export default function App() {
                     </div>
                     {/* RIGHT (mobile: BELOW): info + actions */}
                     <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: 'var(--app-bg)', padding: 20 } : { width: 340, flexShrink: 0, background: 'var(--app-bg)', padding: 28 }}>
-                      <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedCommunity(null)}>{t.templatesNav}</span>
                         <ChevronRight className="w-3 h-3" />
-                        <span style={{ color: '#adaaaa' }}>{cc.name}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>{cc.name}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cc.language}</span>
-                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
+                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
                       </div>
                       <h2 className={cn('font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 26, lineHeight: 1.15 }}>{cc.name}</h2>
@@ -1958,7 +1958,7 @@ export default function App() {
                           {tl.useTemplate}
                         </button>
                         <button onClick={() => openFullPreview(cc.code)}
-                          style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#e5e5e5', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                          style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
                           Open full preview ↗
                         </button>
                       </div>
@@ -1966,7 +1966,7 @@ export default function App() {
                         <>
                           {/* original prompt (the language it was built in) */}
                           <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 12 }}>
-                            <p style={{ fontSize: 10, fontWeight: 700, color: '#767575', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Original prompt</p>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Original prompt</p>
                             <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description)}</p>
                           </div>
                           {/* translation into the selected language */}
@@ -1974,7 +1974,7 @@ export default function App() {
                             <div style={{ padding: '14px 16px', borderRadius: 12, background: `${T}0c`, border: `1px solid ${T}33`, marginBottom: 24 }}>
                               <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, fontWeight: 700, color: T, fontFamily: isAdlam ? undefined : 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>{selectedLang.name}</p>
                               {promptTr.loading ? (
-                                <p style={{ fontSize: 12, color: '#767575', fontFamily: 'Inter, sans-serif', fontStyle: 'italic' }}>…</p>
+                                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', fontStyle: 'italic' }}>…</p>
                               ) : (
                                 <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#d4d4d8', fontFamily: isAdlam ? undefined : 'Inter, sans-serif', lineHeight: 1.7, overflowWrap: 'anywhere' }}>{promptTr.text || cleanPrompt(cc.description)}</p>
                               )}
@@ -1999,7 +1999,7 @@ export default function App() {
                       <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--app-bg)' }}>
                         <button
                           onClick={() => setSelectedTemplate(null)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#adaaaa', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
                           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.color = '#fff'}
                           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = '#adaaaa'}
                         >
@@ -2031,7 +2031,7 @@ export default function App() {
                           const tt = tl.templates[t.id] || TEMPLATE_I18N.en.templates[t.id];
                           return (
                             <button key={t.id} onClick={() => setSelectedTemplate(t)}
-                              style={{ width: 72, height: 44, borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', background: t.color, flexShrink: 0, position: 'relative' }}
+                              style={{ width: 72, height: 44, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', background: t.color, flexShrink: 0, position: 'relative' }}
                               title={tt.name}>
                               {t.previewUrl && (
                                 <iframe src={t.previewUrl} title={tt.name} className="border-none pointer-events-none"
@@ -2046,16 +2046,16 @@ export default function App() {
                     {/* RIGHT (mobile: BELOW): info panel */}
                     <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: 'var(--app-bg)', padding: 20 } : { width: 340, flexShrink: 0, background: 'var(--app-bg)', padding: 28 }}>
                       {/* breadcrumb */}
-                      <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedTemplate(null)}>{t.templatesNav}</span>
                         <ChevronRight className="w-3 h-3" />
-                        <span style={{ color: '#adaaaa' }}>{tr.name}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>{tr.name}</span>
                       </div>
 
                       {/* category + city */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{selectedTemplate.category}</span>
-                        <span style={{ fontSize: 10, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{selectedTemplate.city}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{selectedTemplate.city}</span>
                       </div>
 
                       {/* name */}
@@ -2075,7 +2075,7 @@ export default function App() {
                         {selectedTemplate.previewUrl && (
                           <button
                             onClick={() => window.open(selectedTemplate.previewUrl!, '_blank')}
-                            style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#e5e5e5', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                            style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
                             Open full preview ↗
                           </button>
                         )}
@@ -2083,7 +2083,7 @@ export default function App() {
 
                       {/* starter prompt preview */}
                       <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 24 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: '#767575', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Starter prompt</p>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Starter prompt</p>
                         <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>{tr.starterPrompt}</p>
                       </div>
 
@@ -2133,7 +2133,7 @@ export default function App() {
                           <div className="p-4">
                             <div className="flex items-center gap-2 mb-2">
                               <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
-                              <span style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
+                              <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
                             </div>
                             <h3 className={cn('font-black text-white text-sm mb-1', isAdlam && 'font-adlam')}
                               style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{tr.name}</h3>
@@ -2170,7 +2170,7 @@ export default function App() {
                             <div className="p-4">
                               <div className="flex items-center gap-2 mb-2">
                                 <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ct.language}</span>
-                                <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 9, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
+                                <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
                               </div>
                               <h3 className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{ct.name}</h3>
                               <p className="text-zinc-500 text-xs line-clamp-2" style={{ fontFamily: 'Inter, sans-serif' }}>{ct.description}</p>
@@ -2181,7 +2181,7 @@ export default function App() {
                     </div>
                   )}
 
-                  <p style={{ textAlign: 'center', fontSize: 10, color: '#767575', fontFamily: 'Inter, sans-serif', marginTop: 32 }}>{tl.credit}</p>
+                  <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginTop: 32 }}>{tl.credit}</p>
                 </div>
               );
             })()
@@ -2214,7 +2214,7 @@ export default function App() {
                     return (
                       <div key={lang.code}
                         className="relative rounded-2xl border transition-all overflow-hidden"
-                        style={{ background: active ? `${P}0c` : '#131313', border: `1px solid ${active ? `${P}40` : 'rgba(255,255,255,0.08)'}`, boxShadow: active ? `var(--glow-primary-sm)` : 'none' }}>
+                        style={{ background: active ? `${P}0c` : '#131313', border: `1px solid ${active ? `${P}40` : 'var(--border)'}`, boxShadow: active ? `var(--glow-primary-sm)` : 'none' }}>
                         {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />}
                         <div className="p-5">
                           {/* language name + active badge */}
@@ -2222,7 +2222,7 @@ export default function App() {
                             <div>
                               <p className={cn('font-black text-white text-sm mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
                                 style={{ fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{lang.name}</p>
-                              <p style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.script}</p>
+                              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.script}</p>
                             </div>
                             {active && (
                               <span style={{ padding: '2px 10px', borderRadius: 9999, background: `${P}20`, color: P, fontSize: 10, fontWeight: 800, fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Active</span>
@@ -2240,11 +2240,11 @@ export default function App() {
                           <div className="flex gap-4 mb-4">
                             <div>
                               <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Speakers</p>
-                              <p style={{ fontSize: 13, fontWeight: 700, color: '#e5e5e5', fontFamily: MANROPE }}>{m.speakers}</p>
+                              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', fontFamily: MANROPE }}>{m.speakers}</p>
                             </div>
                             <div>
                               <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Region</p>
-                              <p style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}>{m.region}</p>
+                              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}>{m.region}</p>
                             </div>
                           </div>
 
@@ -2277,9 +2277,9 @@ export default function App() {
                     <div key={name} className="rounded-xl p-4 text-center border border-white/5 opacity-50"
                       style={{ background: 'var(--card-bg)' }}>
                       <p style={{ fontSize: 22, marginBottom: 6 }}>{flag}</p>
-                      <p style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: '#e5e5e5', marginBottom: 2 }}>{name}</p>
+                      <p style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: 'var(--text-primary)', marginBottom: 2 }}>{name}</p>
                       <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#52525b' }}>{region}</p>
-                      <span style={{ marginTop: 8, display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', fontSize: 9, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Soon</span>
+                      <span style={{ marginTop: 8, display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'var(--btn-bg)', border: '1px solid var(--border)', fontSize: 9, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Soon</span>
                     </div>
                   ))}
                 </div>
@@ -2299,7 +2299,7 @@ export default function App() {
                       </div>
                       <div>
                         <h3 className="font-black text-white mb-1" style={{ fontFamily: MANROPE }}>ADLaM Alphabet — Complete Reference</h3>
-                        <p style={{ fontSize: 13, color: '#767575', fontFamily: 'Inter, sans-serif' }}>
+                        <p style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
                           Unicode U+1E900–U+1E95F · RTL script by Ibrahima & Abdoulaye Barry · 28 core letters + 6 loan · 40M+ Fulani speakers
                         </p>
                       </div>
@@ -2323,11 +2323,11 @@ export default function App() {
                           { cap: '𞤌', sml: '𞤮', latin: 'o',  name: 'O',     ipa: '/ɔ/'  },
                           { cap: '𞤓', sml: '𞤵', latin: 'u',  name: 'U',     ipa: '/u/'  },
                         ].map(({ cap, sml, latin, name, ipa }) => (
-                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl hover:bg-white/4 transition-all" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl hover:bg-white/4 transition-all" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--btn-bg)' }}>
                             <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
-                            <span className="font-adlam text-lg" style={{ color: '#adaaaa', lineHeight: 1 }}>{sml}</span>
-                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: '#e5e5e5' }}>{latin}</span>
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#767575' }}>{name}</span>
+                            <span className="font-adlam text-lg" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>{sml}</span>
+                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>{latin}</span>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
                             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
                           </div>
                         ))}
@@ -2365,11 +2365,11 @@ export default function App() {
                           { cap: '𞤚', sml: '𞤼', latin: 't',      name: 'Tuu',        ipa: '/t/'   },
                           { cap: '𞤛', sml: '𞤽', latin: 'ŋ / nh', name: 'Nha',        ipa: '/ŋ/'   },
                         ].map(({ cap, sml, latin, name, ipa }) => (
-                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl hover:bg-white/4 transition-all" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl hover:bg-white/4 transition-all" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--btn-bg)' }}>
                             <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
-                            <span className="font-adlam text-lg" style={{ color: '#adaaaa', lineHeight: 1 }}>{sml}</span>
-                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: '#e5e5e5' }}>{latin}</span>
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#767575' }}>{name}</span>
+                            <span className="font-adlam text-lg" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>{sml}</span>
+                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>{latin}</span>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
                             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
                           </div>
                         ))}
@@ -2390,11 +2390,11 @@ export default function App() {
                           { cap: '𞤠', sml: '𞥂', latin: 'kp', name: 'Kpo',  ipa: '/k͡p/' },
                           { cap: '𞤡', sml: '𞥃', latin: 'sh', name: 'Sha',  ipa: '/ʃ/'   },
                         ].map(({ cap, sml, latin, name, ipa }) => (
-                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <div key={name} className="grid grid-cols-5 gap-1 items-center px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid var(--btn-bg)' }}>
                             <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
-                            <span className="font-adlam text-lg" style={{ color: '#adaaaa', lineHeight: 1 }}>{sml}</span>
-                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: '#e5e5e5' }}>{latin}</span>
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#767575' }}>{name}</span>
+                            <span className="font-adlam text-lg" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>{sml}</span>
+                            <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>{latin}</span>
+                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
                             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
                           </div>
                         ))}
@@ -2413,7 +2413,7 @@ export default function App() {
                         ].map(({ adlam, latin, meaning }) => (
                           <div key={latin} className="p-3 rounded-xl border border-white/6" style={{ background: 'rgba(255,255,255,0.02)' }}>
                             <p className="font-adlam text-white font-bold mb-0.5" style={{ fontSize: 20 }}>{adlam}</p>
-                            <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 12, color: '#adaaaa', marginBottom: 2 }}>{latin}</p>
+                            <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>{latin}</p>
                             <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#52525b' }}>{meaning}</p>
                           </div>
                         ))}
@@ -2439,13 +2439,13 @@ export default function App() {
                     {t.docsPageTitle}
                   </h1>
                   <p className={cn('text-zinc-500 mb-5', isAdlam && 'font-adlam')} style={{ fontSize: 14 }}>{t.docsPageSubtitle}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 14 }}>
-                    <Search className="w-4 h-4 flex-shrink-0" style={{ color: '#767575' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', marginBottom: 14 }}>
+                    <Search className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
                     <span style={{ fontSize: 13, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>Search docs — prompting, deploy, ADLaM...</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {['Getting Started', 'Prompting Guide', 'Deploy', 'API Reference', 'ADLaM support'].map(chip => (
-                      <span key={chip} style={{ padding: '4px 12px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', fontSize: 11, fontWeight: 600, color: '#adaaaa', fontFamily: MANROPE }}>{chip}</span>
+                      <span key={chip} style={{ padding: '4px 12px', borderRadius: 9999, background: 'var(--btn-bg)', border: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', fontFamily: MANROPE }}>{chip}</span>
                     ))}
                   </div>
                 </div>
@@ -2469,7 +2469,7 @@ export default function App() {
                           <div key={label} className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-default"
                             style={active
                               ? { background: 'rgba(255,139,155,0.12)', border: '1px solid rgba(255,139,155,0.25)', color: '#fff', fontWeight: 700 }
-                              : { background: 'transparent', border: '1px solid transparent', color: '#adaaaa', fontWeight: 500 }}>
+                              : { background: 'transparent', border: '1px solid transparent', color: 'var(--text-muted)', fontWeight: 500 }}>
                             <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? '#ff8b9b' : undefined }} />
                             <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
                           </div>
@@ -2486,7 +2486,7 @@ export default function App() {
                           { Icon: AlertTriangle, label: 'Contact Support' },
                         ].map(({ Icon, label }) => (
                           <div key={label} className="flex items-center justify-between px-3 py-2 rounded-xl transition-all hover:bg-white/5 cursor-default"
-                            style={{ color: '#767575' }}>
+                            style={{ color: 'var(--text-muted)' }}>
                             <div className="flex items-center gap-3">
                               <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                               <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 500 }}>{label}</span>
@@ -2508,7 +2508,7 @@ export default function App() {
                       </div>
                       <div>
                         <h2 className={cn('font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 20, marginBottom: 2 }}>{t.docsSection1Title}</h2>
-                        <p style={{ fontSize: 12, color: '#767575' }}>Your first app in under 5 minutes</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Your first app in under 5 minutes</p>
                       </div>
                     </div>
 
@@ -2525,8 +2525,8 @@ export default function App() {
                           <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', color: '#ff8b9b', fontFamily: MANROPE, fontWeight: 900, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             {n}
                           </div>
-                          <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontWeight: 600, color: '#e5e5e5', fontFamily: isAdlam ? undefined : MANROPE, flex: 1 }}>{label}</span>
-                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#767575' }} />
+                          <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: isAdlam ? undefined : MANROPE, flex: 1 }}>{label}</span>
+                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
                         </div>
                       ))}
                     </div>
@@ -2534,9 +2534,9 @@ export default function App() {
                     {/* ARTICLE CARD */}
                     <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#767575', textTransform: 'uppercase', marginBottom: 10, fontFamily: MANROPE }}>ARTICLE · 3 MIN READ</p>
+                      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10, fontFamily: MANROPE }}>ARTICLE · 3 MIN READ</p>
                       <h3 className={cn('font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 20, marginBottom: 12 }}>{t.docsSection2Title}</h3>
-                      <p className={cn('text-sm leading-relaxed', isAdlam && 'font-adlam')} style={{ color: '#adaaaa', marginBottom: 16 }}>{t.docsSection2Body}</p>
+                      <p className={cn('text-sm leading-relaxed', isAdlam && 'font-adlam')} style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{t.docsSection2Body}</p>
                       <div className="space-y-2 mb-4">
                         {[
                           { label: t.docsSection3Title, bold: true },
@@ -2556,7 +2556,7 @@ export default function App() {
                         </div>
                         <div>
                           <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 11, color: '#fff', lineHeight: 1.3 }}>Gando Team</p>
-                          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#767575', lineHeight: 1.3 }}>Updated 2 weeks ago</p>
+                          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.3 }}>Updated 2 weeks ago</p>
                         </div>
                       </div>
                     </div>
@@ -2623,7 +2623,7 @@ export default function App() {
                   <span className={cn('text-xs font-black uppercase tracking-widest px-3 py-1 rounded-full', isAdlam && 'font-adlam')}
                     style={status === 'ok' ? { background: 'rgba(74,222,128,0.1)', color: '#4ade80' }
                       : status === 'degraded' ? { background: `${S}15`, color: S }
-                      : status === 'checking' ? { background: 'rgba(255,255,255,0.05)', color: '#999' }
+                      : status === 'checking' ? { background: 'var(--hover-bg)', color: '#999' }
                       : { background: 'rgba(248,113,113,0.1)', color: '#f87171' }}>
                     {status === 'ok' ? t.statusOperational : status === 'degraded' ? t.statusDegraded : status === 'checking' ? t.statusChecking : t.statusDown}
                   </span>
@@ -2713,8 +2713,8 @@ export default function App() {
                         style={{
                           fontFamily: MANROPE,
                           color: importMode === im ? '#fff' : '#71717a',
-                          background: importMode === im ? 'rgba(255,255,255,0.08)' : 'transparent',
-                          border: importMode === im ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                          background: importMode === im ? 'var(--border)' : 'transparent',
+                          border: importMode === im ? '1px solid var(--border)' : '1px solid transparent',
                         }}>
                         <Icon className="w-3 h-3" />{label}
                       </button>
@@ -2743,12 +2743,12 @@ export default function App() {
                     {dashAttachments.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                         {dashAttachments.map(att => (
-                          <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '3px 8px', fontSize: 12, color: '#cfcfcf' }}>
+                          <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', borderRadius: 8, padding: '3px 8px', fontSize: 12, color: 'var(--text-secondary)' }}>
                             {att.kind === 'image' && att.previewUrl
                               ? <img src={att.previewUrl} style={{ width: 18, height: 18, borderRadius: 3, objectFit: 'cover' }} alt="" />
-                              : <Paperclip className="w-3 h-3" style={{ color: '#767575' }} />}
+                              : <Paperclip className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />}
                             <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</span>
-                            <button onClick={() => setDashAttachments(prev => prev.filter(x => x.id !== att.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#767575', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
+                            <button onClick={() => setDashAttachments(prev => prev.filter(x => x.id !== att.id))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 0, lineHeight: 1, fontSize: 14 }}>×</button>
                           </div>
                         ))}
                       </div>
@@ -2762,12 +2762,12 @@ export default function App() {
                               <button
                                 onClick={() => setDashPlusOpen(o => !o)}
                                 title="Attach files, photos or a URL"
-                                style={{ width: 38, height: 38, borderRadius: 12, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#adaaaa' }}
+                                style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
                               {dashPlusOpen && (
-                                <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                                <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                                   {([
                                     { icon: Paperclip, label: 'Add files or photos', action: () => { setDashPlusOpen(false); dashFileInputRef.current?.click(); } },
                                     { icon: Camera,    label: 'Take a screenshot',   action: () => setDashPlusOpen(false) },
@@ -2776,11 +2776,11 @@ export default function App() {
                                     <div
                                       key={label}
                                       onClick={action}
-                                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                                       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
                                     >
-                                      <Icon className="w-4 h-4" style={{ color: '#767575', flexShrink: 0 }} />
+                                      <Icon className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                                       {label}
                                     </div>
                                   ))}
@@ -2793,14 +2793,14 @@ export default function App() {
                                 onClick={() => setDashModelOpen(o => !o)}
                                 title="Choose the AI model"
                                 className="flex items-center gap-1.5 py-2 px-3 rounded-xl transition-colors"
-                                style={{ fontSize: 12, fontWeight: 700, color: '#cfcfcf', fontFamily: 'Inter, sans-serif', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                                style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', background: 'var(--btn-bg)', border: '1px solid var(--border)' }}
                               >
                                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
                                 {provider === 'claude' ? 'Claude' : 'Gemini'}
                                 <ChevronDown className="w-3 h-3 opacity-60" />
                               </button>
                               {dashModelOpen && (
-                                <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                                <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
                                   {([
                                     { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
                                     { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
@@ -2808,14 +2808,14 @@ export default function App() {
                                     <div
                                       key={m.id}
                                       onClick={() => { setProvider(m.id); setDashModelOpen(false); }}
-                                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.05)'}
+                                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                                       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
                                     >
                                       <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
                                       <div style={{ minWidth: 0, flex: 1 }}>
-                                        <div style={{ fontSize: 13, color: '#e5e5e5', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                                        <div style={{ fontSize: 11, color: '#767575', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
+                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                                       </div>
                                       {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                                     </div>
@@ -2838,8 +2838,8 @@ export default function App() {
                             className={dashVoice.isListening ? 'animate-pulse' : ''}
                             style={{
                               width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-                              background: dashVoice.isListening ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.04)',
-                              border: `1px solid ${dashVoice.isListening ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                              background: dashVoice.isListening ? 'rgba(239,68,68,0.18)' : 'var(--btn-bg)',
+                              border: `1px solid ${dashVoice.isListening ? 'rgba(239,68,68,0.4)' : 'var(--border)'}`,
                               color: dashVoice.isListening ? '#f87171' : dashVoice.isTranscribing ? '#ff8b9b' : '#adaaaa',
                               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
@@ -2870,7 +2870,7 @@ export default function App() {
                       {['E-commerce store', 'Portfolio site', 'Restaurant menu', 'Event landing page'].map(ex => (
                         <button key={ex} onClick={() => { setInput(ex); heroTextareaRef.current?.focus(); }}
                           className="px-4 py-2 rounded-full text-sm font-bold text-zinc-400 hover:text-white transition-all hover:border-white/20"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          style={{ background: 'var(--btn-bg)', border: '1px solid var(--border)' }}>
                           {ex}
                         </button>
                       ))}
