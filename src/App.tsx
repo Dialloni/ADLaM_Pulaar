@@ -433,7 +433,7 @@ const MODEL_OPTIONS: { id: Provider; label: string; sub: string }[] = [
   { id: 'claude', label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
   { id: 'gemini', label: 'Gemini 2.5 Flash', sub: 'Free tier · Google' },
   { id: 'groq-llama', label: 'Llama 3.3 70B', sub: 'Free · Groq · Fast' },
-  { id: 'groq-qwen', label: 'Qwen 2.5 Coder 32B', sub: 'Free · Groq · Code-focused' },
+  { id: 'groq-qwen', label: 'Qwen3 32B', sub: 'Free · Groq · Code-focused' },
 ];
 
 /* ════════════════════════════════════════════════════

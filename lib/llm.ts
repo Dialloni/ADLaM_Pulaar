@@ -30,7 +30,7 @@ const groqKey = () => process.env.GROQ_API_KEY || '';
 
 const GROQ_MODEL_IDS: Record<string, string> = {
   'groq-llama': 'llama-3.3-70b-versatile',
-  'groq-qwen': 'qwen-2.5-coder-32b',
+  'groq-qwen': 'qwen/qwen3-32b',
 };
 
 const BASE_RULES = `You are Gando AI, an African-language-first AI app builder.
@@ -237,6 +237,7 @@ async function runGroq(
       ],
       max_tokens: maxTokens(),
       temperature: 0.8,
+      reasoning_format: 'hidden', // strip <think> reasoning (Qwen3); ignored by non-reasoning models
       stream: true,
     }),
   });
@@ -421,6 +422,7 @@ async function chatGroq(opts: ChatOpts, modelId: string, onToken: (chunk: string
       ],
       max_tokens: 4096,
       temperature: 0.7,
+      reasoning_format: 'hidden', // strip <think> reasoning (Qwen3); ignored by non-reasoning models
       stream: true,
     }),
   });
