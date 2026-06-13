@@ -1,6 +1,6 @@
-> 🚀 **[Try it live → gando-ai.vercel.app](https://gando-ai.vercel.app)**
-
 # 𞤘𞤢𞤲𞤣𞤮 AI — Gando AI
+
+> 🚀 **[Try it live → gando-ai.up.railway.app](https://gando-ai.up.railway.app)**
 
 ## African-Language-First App Builder
 
@@ -36,6 +36,7 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 - 👁 Live preview — generated HTML/CSS/JS renders in a sandboxed browser frame
 - 💬 Iterative chat — refine your app through conversation; AI makes incremental edits
 - 🔄 Version history + revert — every AI response saves a code snapshot; one click to go back
+- 🔀 Build / Chat mode switch — toggle between app generation and pure conversation
 
 ### UI / UX
 
@@ -45,11 +46,16 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 - 🔍 Live project search — header search with instant results dropdown
 - 🎨 Nexus Builder design — dark obsidian theme, pink/orange neon gradients, Manrope font
 - ✍️ Typewriter placeholder — animated cycling phrases on landing page and dashboard textarea
+- 🌙 Light / dark mode — system preference auto-detection + manual toggle
+- 𞤘 Animated Gando logo — spinning ring, inner glow, ADLaM character pulse
+- 🤖 Model picker — switch between Gemini models in the chat bar
 
 ### Platform
 
 - 🔐 Firebase Auth — Google sign-in + email/password
 - 💾 Firestore persistence — projects and chat history saved automatically
+- 📎 File attach + OCR — attach images or PDFs in chat; Gemini extracts text automatically
+- 🎙 Voice input — record audio directly in chat; transcribed and used as your prompt
 - 📖 Documentation page — in-app translated docs (EN / FR / ADLaM)
 - 🟢 System status page — real backend health check (server uptime, Gemini latency, Firebase)
 - 🌐 Languages page — active language switcher, coming-soon languages, full ADLaM alphabet reference (28 core letters + 6 loan, with IPA)
@@ -63,18 +69,25 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 - ✅ Review queue — admin verification workflow; approve / reject / export as JSONL
 - 📤 JSONL export — one-click download of verified corpus entries for fine-tuning
 
+### Gando Collector (Admin)
+
+- 📷 Image upload — snap or upload real-world ADLaM photos (signs, books, handwriting)
+- 🎙 Pulaar audio recording — record spoken Pulaar phrases with domain tagging (casual, tech, religion, news, literature, UI vocab)
+- 🌐 Multi-script text collection — capture Pulaar in ADLaM script, Latin, Arabic, French, and English in one form
+- 🗂 Domain tagging — label every entry by subject matter for structured fine-tuning datasets
+
 ---
 
 ## Tech Stack
 
-| Layer      | Technology                                               |
-| ---------- | -------------------------------------------------------- |
-| Frontend   | React 19, TypeScript, Vite 6, Tailwind CSS v4            |
-| UI         | Manrope + Noto Sans Adlam + ADLaM Display, Lucide icons  |
-| Backend    | Express + tsx (Node.js dev server)                       |
-| AI         | Google Gemini 2.5 Flash + 2.0 Flash via `@google/genai` |
-| Auth & DB  | Firebase Authentication + Firestore + Storage            |
-| Deploy     | Vercel (frontend + serverless API)                       |
+| Layer | Technology |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite 6, Tailwind CSS v4 |
+| UI | Manrope + Noto Sans Adlam + ADLaM Display, Lucide icons |
+| Backend | Express + tsx (Node.js) |
+| AI | Google Gemini 2.5 Flash + 2.0 Flash via `@google/genai` |
+| Auth & DB | Firebase Authentication + Firestore + Storage |
+| Deploy | Railway (full-stack Node server) |
 
 ---
 
@@ -83,6 +96,7 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 ```text
 ADLaM_Pulaar/
 ├── server.ts                     # Express entry — mounts /api/* routes, serves Vite in dev
+├── bot.py                        # Railway scraper entry point — delegates to scraper/bot.py
 ├── api/
 │   ├── generate.ts               # POST /api/generate   — Gemini app generation
 │   ├── edit.ts                   # POST /api/edit       — Gemini iterative edits
@@ -91,6 +105,8 @@ ADLaM_Pulaar/
 │   └── status.ts                 # GET  /api/status     — health check
 ├── lib/
 │   └── firebaseAdmin.ts          # Firebase Admin SDK init (server-side)
+├── scraper/                      # Telegram ADLaM corpus scraper (separate Railway service)
+├── scripts/                      # Eval harness and utility scripts
 ├── public/
 │   └── fonts/
 │       └── ADLaMDisplay-Regular.woff2  # Microsoft ADLaM Display font (OFL-1.1)
@@ -103,8 +119,11 @@ ADLaM_Pulaar/
 │   ├── firebase.ts               # Firebase client SDK init + Firestore helpers
 │   ├── components/
 │   │   ├── AdminPortal.tsx       # Corpus admin — PDF OCR, paste text, review queue, JSONL export
-│   │   ├── GandoLogo.tsx         # SVG logo component (color + mono variants)
-│   │   ├── Chat.tsx              # Chat panel (messages, input, voice, revert buttons)
+│   │   ├── GandoCollector.tsx    # Multimodal data collector — images, audio, multi-script text
+│   │   ├── AudioRecorder.tsx     # In-browser audio recording with waveform UI
+│   │   ├── GandoLogo.tsx         # Animated SVG logo — spinning ring, inner glow, 𞤘 pulse
+│   │   ├── ModeSwitch.tsx        # Build / Chat mode dropdown
+│   │   ├── Chat.tsx              # Chat panel (messages, input, voice, file attach, revert)
 │   │   ├── Preview.tsx           # Sandboxed iframe browser preview
 │   │   ├── CodeEditor.tsx        # Syntax-highlighted code editor
 │   │   ├── LanguageSelector.tsx  # Portal-based language dropdown
@@ -115,6 +134,9 @@ ADLaM_Pulaar/
 │   │   └── AuthContext.tsx       # Firebase auth state (Google + email/password)
 │   └── lib/
 │       └── utils.ts              # cn() Tailwind class helper
+├── railway.toml                  # Railway config — web app service
+├── railway.scraper.toml          # Railway config — scraper service
+├── Procfile                      # Process definition for Railway
 ├── .env.example                  # Required env vars template
 ├── .firebaserc                   # Firebase project alias
 ├── firebase.json                 # Firebase config (Firestore rules path)
@@ -181,7 +203,8 @@ FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
 
 Enable **Google sign-in** in Firebase Console → Authentication → Sign-in method.
 
-**Vercel deployment:** add `https://your-app.vercel.app` to:
+**Railway deployment:** add `https://gando-ai.up.railway.app` to:
+
 1. Firebase Console → Authentication → Authorized Domains
 2. Google Cloud Console → APIs & Services → Credentials → OAuth Web Client → Authorized JavaScript Origins + Redirect URIs (`/__/auth/handler`)
 
@@ -284,17 +307,27 @@ npm run lint     # TypeScript type check
 - [ ] More African language UI translations (Swahili, Yoruba, Hausa)
 - [ ] Telethon scraper — pull ADLaM messages from Telegram groups for corpus
 - [ ] RAG pipeline — inject verified ADLaM corpus into Gemini system prompt (Pinecone / pgvector)
-- [ ] LoRA fine-tune on Llama 3.2 3B with verified ADLaM corpus
-- [ ] GANDO Collector — in-app labeled image upload for real-world ADLaM data
+- [ ] Custom ADLaM tokenizer extension (summer 2026)
+- [ ] LoRA fine-tune on Qwen/Llama/Gemma with verified ADLaM corpus (summer 2026)
 - [ ] Mobile-responsive layout
 - [ ] Export to GitHub Gist
+- [ ] Cross-dialect grouping for Gando Collector entries
+- [x] Build / Chat mode switch
+- [x] File attach + OCR in chat
+- [x] Voice input (audio recording + transcription)
+- [x] Light / dark mode (system preference + manual toggle)
+- [x] Animated Gando logo with ADLaM character 𞤘
+- [x] Model picker (Gemini model selector in chat bar)
+- [x] Landing page matching logged-in dashboard UI
+- [x] Gando Collector — multimodal labeled data collection (image, audio, multi-script)
+- [x] Admin Pulaar audio recording with domain tagging
 - [x] Template gallery (landing page + dashboard)
 - [x] Language switcher UI (ADLaM / FR / EN) with live landing page translation
 - [x] ADLaM Display font (Microsoft OFL) in hero heading
 - [x] PDF OCR via Gemini 2.0 Flash multimodal
 - [x] Admin corpus portal — review queue, paste text, JSONL export
 - [x] Pre-Unicode ADLaM font decoder (Arabic-mapped → Unicode ADLaM)
-- [x] Vercel production deployment with Firebase Auth
+- [x] Railway production deployment with Firebase Auth
 
 ---
 
