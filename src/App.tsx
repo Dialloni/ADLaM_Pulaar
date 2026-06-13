@@ -17,7 +17,7 @@ import {
   handleFirestoreError, OperationType, auth,
 } from './firebase';
 import { Project, Message } from './types';
-import { generateProject, editProject, chatStream } from './services/geminiService';
+import { generateProject, editProject, chatStream, type Provider } from './services/geminiService';
 import { Chat } from './components/Chat';
 import { Preview } from './components/Preview';
 import { CodeEditor } from './components/CodeEditor';
@@ -415,6 +415,27 @@ function useIsMobile() {
   return isMobile;
 }
 
+const PROVIDER_LABEL: Record<Provider, string> = {
+  'claude': 'Claude',
+  'gemini': 'Gemini',
+  'groq-llama': 'Llama 3.3',
+  'groq-qwen': 'Qwen Coder',
+};
+
+const PROVIDER_COLOR: Record<Provider, string> = {
+  'claude': '#ff8b9b',
+  'gemini': '#5b9bff',
+  'groq-llama': '#22c55e',
+  'groq-qwen': '#f59e0b',
+};
+
+const MODEL_OPTIONS: { id: Provider; label: string; sub: string }[] = [
+  { id: 'claude', label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
+  { id: 'gemini', label: 'Gemini 2.5 Flash', sub: 'Free tier · Google' },
+  { id: 'groq-llama', label: 'Llama 3.3 70B', sub: 'Free · Groq · Fast' },
+  { id: 'groq-qwen', label: 'Qwen 2.5 Coder 32B', sub: 'Free · Groq · Code-focused' },
+];
+
 /* ════════════════════════════════════════════════════
    ROOT APP
 ════════════════════════════════════════════════════ */
@@ -452,10 +473,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
   const [selectedLang, setSelectedLang] = useState(LANGS[0]);
   // AI model picker — Claude (eval winner) default; remembered per browser.
-  const [provider, setProviderState] = useState<'claude' | 'gemini'>(
-    () => (typeof window !== 'undefined' && (localStorage.getItem('gando_provider') as 'claude' | 'gemini')) || 'claude'
+  const [provider, setProviderState] = useState<Provider>(
+    () => (typeof window !== 'undefined' && (localStorage.getItem('gando_provider') as Provider)) || 'claude'
   );
-  const setProvider = (p: 'claude' | 'gemini') => {
+  const setProvider = (p: Provider) => {
     setProviderState(p);
     try { localStorage.setItem('gando_provider', p); } catch { /* ignore */ }
   };
@@ -1030,21 +1051,18 @@ export default function App() {
                     onClick={() => setLandingModelOpen(o => !o)}
                     title="Choose AI model"
                     style={{ height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
-                    {provider === 'claude' ? 'Claude' : 'Gemini'}
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider] }} />
+                    {PROVIDER_LABEL[provider]}
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
                   {landingModelOpen && (
-                    <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
-                      {([
-                        { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
-                        { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
-                      ]).map(m => (
+                    <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
+                      {MODEL_OPTIONS.map(m => (
                         <div key={m.id} onClick={() => { setProvider(m.id); setLandingModelOpen(false); }}
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}>
-                          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
@@ -2795,16 +2813,13 @@ export default function App() {
                                 className="flex items-center gap-1.5 py-2 px-3 rounded-xl transition-colors"
                                 style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', background: 'var(--btn-bg)', border: '1px solid var(--border)' }}
                               >
-                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
-                                {provider === 'claude' ? 'Claude' : 'Gemini'}
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider] }} />
+                                {PROVIDER_LABEL[provider]}
                                 <ChevronDown className="w-3 h-3 opacity-60" />
                               </button>
                               {dashModelOpen && (
-                                <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
-                                  {([
-                                    { id: 'claude' as const, label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
-                                    { id: 'gemini' as const, label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
-                                  ]).map(m => (
+                                <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
+                                  {MODEL_OPTIONS.map(m => (
                                     <div
                                       key={m.id}
                                       onClick={() => { setProvider(m.id); setDashModelOpen(false); }}
@@ -2812,7 +2827,7 @@ export default function App() {
                                       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
                                     >
-                                      <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                                      <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                                       <div style={{ minWidth: 0, flex: 1 }}>
                                         <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                                         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>

@@ -26,6 +26,12 @@ const geminiModel = () => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const maxTokens = () => Number(process.env.GANDO_MAX_OUTPUT_TOKENS) || 16000;
 const anthropicKey = () => process.env.ANTHROPIC_API_KEY || '';
 const geminiKey = () => process.env.GEMINI_API_KEY || '';
+const groqKey = () => process.env.GROQ_API_KEY || '';
+
+const GROQ_MODEL_IDS: Record<string, string> = {
+  'groq-llama': 'llama-3.3-70b-versatile',
+  'groq-qwen': 'qwen-2.5-coder-32b',
+};
 
 const BASE_RULES = `You are Gando AI, an African-language-first AI app builder.
 
@@ -97,7 +103,7 @@ export interface RunStreamOpts {
   preferredLanguage?: string;
   currentCode?: string;
   history?: { role: string; content: string }[];
-  provider?: 'claude' | 'gemini';
+  provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-qwen';
 }
 
 function buildUserContent(o: RunStreamOpts): string {
@@ -138,6 +144,9 @@ export async function runStream(
   onStatus?: (text: string) => void
 ): Promise<GenResult> {
   const provider = opts.provider || 'claude';
+  if (provider === 'groq-llama' || provider === 'groq-qwen') {
+    return runGroq(opts, GROQ_MODEL_IDS[provider], onCode, onStatus);
+  }
   if (provider === 'claude' && anthropicKey()) {
     try {
       return await runClaude(opts, onCode, onStatus);
@@ -209,6 +218,92 @@ async function runClaude(
   return splitOutput(buf);
 }
 
+async function runGroq(
+  opts: RunStreamOpts,
+  modelId: string,
+  onCode: (chunk: string) => void,
+  onStatus?: (text: string) => void
+): Promise<GenResult> {
+  if (!groqKey()) throw new Error('GROQ_API_KEY not configured. Add it to your .env file.');
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${groqKey()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: modelId,
+      messages: [
+        { role: 'system', content: opts.kind === 'edit' ? EDIT_SYSTEM : GENERATE_SYSTEM },
+        { role: 'user', content: buildUserContent(opts) },
+      ],
+      max_tokens: maxTokens(),
+      temperature: 0.8,
+      stream: true,
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    throw new Error((err as { error?: { message?: string } })?.error?.message || `Groq error: ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = '';
+  let buf = '';
+  let statusDone = false;
+  let codeStart = 0;
+  let codeEmitted = 0;
+  let inMeta = false;
+
+  const processToken = (token: string) => {
+    buf += token;
+    if (!statusDone) {
+      while (true) {
+        const nl = buf.indexOf('\n', codeStart);
+        if (nl === -1) break;
+        const line = buf.slice(codeStart, nl).trimStart();
+        if (line.startsWith(STATUS_PREFIX)) {
+          onStatus?.(line.slice(STATUS_PREFIX.length).trim());
+          codeStart = nl + 1;
+          codeEmitted = codeStart;
+        } else { statusDone = true; break; }
+      }
+      if (!statusDone) return;
+    }
+    if (inMeta) return;
+    const idx = buf.indexOf(META_DELIM, codeStart);
+    if (idx === -1) {
+      const safe = buf.length - (META_DELIM.length - 1);
+      if (safe > codeEmitted) { onCode(buf.slice(codeEmitted, safe)); codeEmitted = safe; }
+    } else {
+      if (idx > codeEmitted) onCode(buf.slice(codeEmitted, idx));
+      codeEmitted = idx;
+      inMeta = true;
+    }
+  };
+
+  outer: while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    sseBuffer += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = sseBuffer.indexOf('\n')) !== -1) {
+      const line = sseBuffer.slice(0, nl).trim();
+      sseBuffer = sseBuffer.slice(nl + 1);
+      if (!line.startsWith('data: ')) continue;
+      const payload = line.slice(6);
+      if (payload === '[DONE]') break outer;
+      try {
+        const json = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] };
+        const token = json.choices?.[0]?.delta?.content ?? '';
+        if (token) processToken(token);
+      } catch { /* skip malformed SSE frame */ }
+    }
+  }
+
+  return splitOutput(buf);
+}
+
 // Gemini fallback: non-streaming structured JSON, emitted as one code chunk.
 const GEMINI_SCHEMA = {
   type: Type.OBJECT,
@@ -260,7 +355,7 @@ export interface ChatOpts {
   history?: { role: string; content: string }[];
   currentCode?: string;
   preferredLanguage?: string;
-  provider?: 'claude' | 'gemini';
+  provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-qwen';
 }
 
 function buildChatContent(o: ChatOpts): string {
@@ -274,6 +369,9 @@ function buildChatContent(o: ChatOpts): string {
 /** Stream a chat answer token-by-token. Resolves with the full answer text. */
 export async function chatStream(opts: ChatOpts, onToken: (chunk: string) => void): Promise<string> {
   const provider = opts.provider || 'claude';
+  if (provider === 'groq-llama' || provider === 'groq-qwen') {
+    return chatGroq(opts, GROQ_MODEL_IDS[provider], onToken);
+  }
   if (provider === 'claude' && anthropicKey()) {
     try {
       const client = new Anthropic({ apiKey: anthropicKey() });
@@ -307,6 +405,56 @@ export async function chatStream(opts: ChatOpts, onToken: (chunk: string) => voi
   const out = (res.text || '').trim();
   if (out) onToken(out);
   return out;
+}
+
+async function chatGroq(opts: ChatOpts, modelId: string, onToken: (chunk: string) => void): Promise<string> {
+  if (!groqKey()) throw new Error('GROQ_API_KEY not configured.');
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${groqKey()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: modelId,
+      messages: [
+        { role: 'system', content: CHAT_SYSTEM },
+        { role: 'user', content: buildChatContent(opts) },
+      ],
+      max_tokens: 4096,
+      temperature: 0.7,
+      stream: true,
+    }),
+  });
+
+  if (!res.ok || !res.body) {
+    const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    throw new Error((err as { error?: { message?: string } })?.error?.message || `Groq error: ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let sseBuffer = '';
+  let full = '';
+
+  outer: while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    sseBuffer += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = sseBuffer.indexOf('\n')) !== -1) {
+      const line = sseBuffer.slice(0, nl).trim();
+      sseBuffer = sseBuffer.slice(nl + 1);
+      if (!line.startsWith('data: ')) continue;
+      const payload = line.slice(6);
+      if (payload === '[DONE]') break outer;
+      try {
+        const json = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] };
+        const token = json.choices?.[0]?.delta?.content ?? '';
+        if (token) { full += token; onToken(token); }
+      } catch { /* skip */ }
+    }
+  }
+
+  return full;
 }
 
 // Lightweight non-streaming translation for UI text (e.g. community template
