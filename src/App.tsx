@@ -1056,7 +1056,7 @@ export default function App() {
                     <ChevronDown className="w-3 h-3 opacity-60" />
                   </button>
                   {landingModelOpen && (
-                    <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
                       {MODEL_OPTIONS.map(m => (
                         <div key={m.id} onClick={() => { setProvider(m.id); setLandingModelOpen(false); }}
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
@@ -2818,7 +2818,7 @@ export default function App() {
                                 <ChevronDown className="w-3 h-3 opacity-60" />
                               </button>
                               {dashModelOpen && (
-                                <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
+                                <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
                                   {MODEL_OPTIONS.map(m => (
                                     <div
                                       key={m.id}

@@ -405,7 +405,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           <ChevronDown className="w-3 h-3 opacity-60" />
                         </button>
                         {modelOpen && (
-                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
+                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
                             {MODELS.map(m => (
                               <div
                                 key={m.id}
@@ -720,7 +720,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   </button>
 
                   {modelOpen && (
-                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
                       {MODELS.map(m => (
                         <div
                           key={m.id}
