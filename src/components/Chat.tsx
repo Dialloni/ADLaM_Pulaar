@@ -6,8 +6,22 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { ModeSwitch } from './ModeSwitch';
+import { type Provider } from '../services/geminiService';
 
 type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
+
+const PROVIDER_COLOR: Record<Provider, string> = {
+  'claude': '#ff8b9b',
+  'gemini': '#5b9bff',
+  'groq-llama': '#22c55e',
+  'groq-qwen': '#f59e0b',
+};
+const PROVIDER_LABEL: Record<Provider, string> = {
+  'claude': 'Claude',
+  'gemini': 'Gemini',
+  'groq-llama': 'Llama 3.3',
+  'groq-qwen': 'Qwen Coder',
+};
 
 interface ChatProps {
   messages: Message[];
@@ -23,17 +37,19 @@ interface ChatProps {
   onLanguageSelect?: (lang: { code: any; name: string }) => void;
   languageCode: string;
   t: any;
-  provider?: 'claude' | 'gemini';
-  onProviderChange?: (p: 'claude' | 'gemini') => void;
+  provider?: Provider;
+  onProviderChange?: (p: Provider) => void;
   mode?: 'build' | 'chat';
   onModeChange?: (m: 'build' | 'chat') => void;
   currentCode?: string;
   onRevert?: (snapshot: string) => void;
 }
 
-const MODELS: { id: 'claude' | 'gemini'; label: string; sub: string }[] = [
+const MODELS: { id: Provider; label: string; sub: string }[] = [
   { id: 'claude', label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
-  { id: 'gemini', label: 'Gemini 2.5 Flash', sub: 'Faster, lighter' },
+  { id: 'gemini', label: 'Gemini 2.5 Flash', sub: 'Free tier · Google' },
+  { id: 'groq-llama', label: 'Llama 3.3 70B', sub: 'Free · Groq · Fast' },
+  { id: 'groq-qwen', label: 'Qwen 2.5 Coder 32B', sub: 'Free · Groq · Code-focused' },
 ];
 
 
@@ -384,12 +400,12 @@ const ChatImpl: React.FC<ChatProps> = ({
                           className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/5 transition-colors"
                           style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}
                         >
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
-                          {provider === 'claude' ? 'Claude' : 'Gemini'}
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider ?? 'claude'] }} />
+                          {PROVIDER_LABEL[provider ?? 'claude']}
                           <ChevronDown className="w-3 h-3 opacity-60" />
                         </button>
                         {modelOpen && (
-                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                          <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
                             {MODELS.map(m => (
                               <div
                                 key={m.id}
@@ -398,7 +414,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                                 onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                                 style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
                               >
-                                <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                                <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                                 <div style={{ minWidth: 0, flex: 1 }}>
                                   <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
@@ -698,13 +714,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                     title="Choose the AI model"
                     style={{ height: 32, borderRadius: 8, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden' }}
                   >
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: provider === 'claude' ? '#ff8b9b' : '#5b9bff', flexShrink: 0 }} />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{provider === 'claude' ? 'Claude' : 'Gemini'}</span>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider ?? 'claude'], flexShrink: 0 }} />
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{PROVIDER_LABEL[provider ?? 'claude']}</span>
                     <ChevronDown className="w-3 h-3" style={{ flexShrink: 0, opacity: 0.6 }} />
                   </button>
 
                   {modelOpen && (
-                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
+                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 240, zIndex: 50 }}>
                       {MODELS.map(m => (
                         <div
                           key={m.id}
@@ -713,7 +729,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
                         >
-                          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: m.id === 'claude' ? '#ff8b9b' : '#5b9bff' }} />
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                           <div style={{ minWidth: 0, flex: 1 }}>
                             <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
