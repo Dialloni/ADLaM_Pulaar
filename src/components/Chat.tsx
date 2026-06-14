@@ -337,7 +337,7 @@ const ChatImpl: React.FC<ChatProps> = ({
   const maxChars = 2000;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[#0e0e0e] relative">
+    <div className="flex-1 flex flex-col overflow-hidden relative" style={{ background: 'var(--app-bg)' }}>
       {/* Header bar */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 10 }}>
         <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>Chat with Gando</span>
@@ -394,7 +394,7 @@ const ChatImpl: React.FC<ChatProps> = ({
 
                 <div className="relative max-w-3xl mx-auto group">
                   <div className="absolute -inset-1 bg-gradient-to-r from-[#ff8b9b]/20 via-blue-500/20 to-purple-500/20 rounded-[2.5rem] blur-2xl opacity-50 group-focus-within:opacity-100 transition-opacity duration-700" />
-                  <div className="relative bg-zinc-900/40 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-3 shadow-2xl group-focus-within:border-[#ff8b9b]/50 transition-all duration-500 input-glow">
+                  <div className="relative backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-3 shadow-2xl group-focus-within:border-[#ff8b9b]/50 transition-all duration-500 input-glow" style={{ background: 'var(--card-elevated)' }}>
                     <textarea 
                       ref={textareaRef}
                       value={input}
