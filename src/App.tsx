@@ -17,7 +17,7 @@ import {
   handleFirestoreError, OperationType, auth,
 } from './firebase';
 import { Project, Message } from './types';
-import { generateProject, editProject, chatStream, type Provider } from './services/geminiService';
+import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider } from './services/geminiService';
 import { Chat } from './components/Chat';
 import { Preview } from './components/Preview';
 import { CodeEditor } from './components/CodeEditor';
@@ -420,6 +420,11 @@ const PROVIDER_LABEL: Record<Provider, string> = {
   'gemini': 'Gemini',
   'groq-llama': 'Llama 3.3',
   'groq-scout': 'Llama 4 Scout',
+  'byok-openai': 'OpenAI',
+  'byok-anthropic': 'Claude',
+  'byok-gemini': 'Gemini',
+  'byok-deepseek': 'DeepSeek',
+  'byok-groq': 'Groq',
 };
 
 const PROVIDER_COLOR: Record<Provider, string> = {
@@ -427,6 +432,11 @@ const PROVIDER_COLOR: Record<Provider, string> = {
   'gemini': '#5b9bff',
   'groq-llama': '#22c55e',
   'groq-scout': '#f59e0b',
+  'byok-openai': '#10a37f',
+  'byok-anthropic': '#d97757',
+  'byok-gemini': '#5b9bff',
+  'byok-deepseek': '#4d6bfe',
+  'byok-groq': '#f55036',
 };
 
 const MODEL_OPTIONS: { id: Provider; label: string; sub: string }[] = [
@@ -435,6 +445,75 @@ const MODEL_OPTIONS: { id: Provider; label: string; sub: string }[] = [
   { id: 'groq-llama', label: 'Llama 3.3 70B', sub: 'Free · Groq · Fast' },
   { id: 'groq-scout', label: 'Llama 4 Scout', sub: 'Free · Groq · Multimodal' },
 ];
+
+// BYOK provider registry — used by the "Bring your own key" settings modal and to
+// build dynamic model-picker entries for any provider the user has saved a key for.
+const BYOK_PROVIDERS: { id: ByokProvider; label: string; model: string; placeholder: string; keysUrl: string }[] = [
+  { id: 'openai',    label: 'OpenAI (ChatGPT)',   model: 'gpt-4o',                  placeholder: 'sk-...',     keysUrl: 'https://platform.openai.com/api-keys' },
+  { id: 'anthropic', label: 'Claude (Anthropic)', model: 'claude-sonnet-4-6',       placeholder: 'sk-ant-...', keysUrl: 'https://console.anthropic.com/settings/keys' },
+  { id: 'gemini',    label: 'Gemini (Google)',    model: 'gemini-2.5-flash',        placeholder: 'AIza...',    keysUrl: 'https://aistudio.google.com/app/apikey' },
+  { id: 'deepseek',  label: 'DeepSeek',           model: 'deepseek-chat',           placeholder: 'sk-...',     keysUrl: 'https://platform.deepseek.com/api_keys' },
+  { id: 'groq',      label: 'Groq (Llama)',       model: 'llama-3.3-70b-versatile', placeholder: 'gsk_...',    keysUrl: 'https://console.groq.com/keys' },
+];
+
+const BYOK_STORAGE_KEY = 'gando_byok';
+
+function loadByokKeys(): Partial<Record<ByokProvider, string>> {
+  if (typeof window === 'undefined') return {};
+  try { return JSON.parse(localStorage.getItem(BYOK_STORAGE_KEY) || '{}'); } catch { return {}; }
+}
+
+// Settings modal for pasting your own provider API keys. Keys live in this browser
+// (localStorage) only — never sent to our database, only forwarded per-request to
+// the chosen provider. Each user's key has its own quota.
+const ByokModal: React.FC<{
+  open: boolean;
+  keys: Partial<Record<ByokProvider, string>>;
+  onSave: (next: Partial<Record<ByokProvider, string>>) => void;
+  onClose: () => void;
+}> = ({ open, keys, onSave, onClose }) => {
+  const [draft, setDraft] = useState<Partial<Record<ByokProvider, string>>>(keys);
+  useEffect(() => { if (open) setDraft(keys); }, [open, keys]);
+  if (!open) return null;
+  const save = () => {
+    const cleaned = Object.fromEntries(
+      Object.entries(draft).filter(([, v]) => v && v.trim()).map(([k, v]) => [k, (v as string).trim()])
+    );
+    onSave(cleaned);
+    onClose();
+  };
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', padding: 24, fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Bring your own API key</h2>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X className="w-5 h-5" /></button>
+        </div>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.5 }}>
+          Paste a key to use that provider with your own quota. Keys are stored in this browser only — never on our servers. Leave blank to remove.
+        </p>
+        {BYOK_PROVIDERS.map(p => (
+          <div key={p.id} style={{ marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{p.label}</label>
+              <a href={p.keysUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#ff8b9b', textDecoration: 'none' }}>Get key →</a>
+            </div>
+            <input
+              type="password" autoComplete="off" spellCheck={false}
+              value={draft[p.id] || ''} placeholder={p.placeholder}
+              onChange={e => setDraft(d => ({ ...d, [p.id]: e.target.value }))}
+              style={{ width: '100%', boxSizing: 'border-box', height: 38, borderRadius: 10, background: 'var(--btn-bg)', border: '1px solid var(--border)', padding: '0 12px', color: 'var(--text-primary)', fontSize: 13, outline: 'none', fontFamily: 'monospace' }}
+            />
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} style={{ flex: 1, height: 40, borderRadius: 10, background: 'var(--btn-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={save} style={{ flex: 1, height: 40, borderRadius: 10, background: 'var(--gradient-brand)', border: 'none', color: '#0a0a0a', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Save keys</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /* ════════════════════════════════════════════════════
    ROOT APP
@@ -480,6 +559,18 @@ export default function App() {
     setProviderState(p);
     try { localStorage.setItem('gando_provider', p); } catch { /* ignore */ }
   };
+  // BYOK — user's own API keys, stored in this browser only (never sent to our DB).
+  const [byokKeys, setByokKeys] = useState<Partial<Record<ByokProvider, string>>>(loadByokKeys);
+  const [byokModalOpen, setByokModalOpen] = useState(false);
+  const saveByokKeys = (next: Partial<Record<ByokProvider, string>>) => {
+    setByokKeys(next);
+    try { localStorage.setItem(BYOK_STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  };
+  // Free models + one entry per provider the user has saved a key for.
+  const byokModelOptions: { id: Provider; label: string; sub: string }[] = BYOK_PROVIDERS
+    .filter(p => byokKeys[p.id])
+    .map(p => ({ id: `byok-${p.id}` as Provider, label: `${p.label.split(' (')[0]} · your key`, sub: 'Your key · your own quota' }));
+  const modelOptions = [...MODEL_OPTIONS, ...byokModelOptions];
   const [dashModelOpen, setDashModelOpen] = useState(false);
   const dashModelRef = useRef<HTMLDivElement>(null);
   const [dashPlusOpen, setDashPlusOpen] = useState(false);
@@ -748,7 +839,7 @@ export default function App() {
   };
 
   const createNewProject = async (prompt: string) => {
-    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider);
+    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys));
     const data = {
       userId: user!.uid, name: result.name, description: prompt,
       language: selectedLang.name, languageCode: selectedLang.code,
@@ -767,7 +858,7 @@ export default function App() {
     if (!currentProject) return;
     try {
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
-      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider);
+      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys));
       await updateDoc(doc(db, 'projects', currentProject.id), { code: result.code, updatedAt: serverTimestamp() });
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${currentProject.id}`); }
@@ -794,7 +885,8 @@ export default function App() {
           copy[copy.length - 1] = { ...aiMsg, content: full };
           return copy;
         }),
-        provider
+        provider,
+        resolveByok(provider, byokKeys)
       );
     } catch (err: any) {
       const m = err.message || 'Chat failed.';
@@ -957,6 +1049,8 @@ export default function App() {
     <div className={cn('min-h-screen relative overflow-x-hidden', isAdlam && 'font-adlam')}
       style={{ background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
 
+      <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} />
+
       {/* ambient blobs + grid */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute w-[65%] h-[65%] rounded-full top-[-20%] left-[-10%]"
@@ -1057,7 +1151,7 @@ export default function App() {
                   </button>
                   {landingModelOpen && (
                     <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
-                      {MODEL_OPTIONS.map(m => (
+                      {modelOptions.map(m => (
                         <div key={m.id} onClick={() => { setProvider(m.id); setLandingModelOpen(false); }}
                           onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                           onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
@@ -1070,6 +1164,13 @@ export default function App() {
                           {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                         </div>
                       ))}
+                      <div onClick={() => { setByokModalOpen(true); setLandingModelOpen(false); }}
+                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
+                        <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1278,6 +1379,8 @@ export default function App() {
   ═════════════════════════════════════════════════ */
   return (
     <div className={cn('w-screen flex flex-col overflow-hidden', isAdlam && 'font-adlam')} style={{ background: 'var(--app-bg)', color: 'var(--text-primary)', height: '100dvh' }}>
+
+      <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} />
 
       {/* global error toast */}
       <AnimatePresence>
@@ -1746,6 +1849,7 @@ export default function App() {
                           languages={LANGS} onLanguageSelect={setSelectedLang}
                           languageCode={selectedLang.code} t={t}
                           provider={provider} onProviderChange={setProvider}
+                          byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                           mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert} />
                       </div>
@@ -1765,6 +1869,7 @@ export default function App() {
                           languages={LANGS} onLanguageSelect={setSelectedLang}
                           languageCode={selectedLang.code} t={t}
                           provider={provider} onProviderChange={setProvider}
+                          byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                           mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert} />
                       </div>
@@ -1800,6 +1905,7 @@ export default function App() {
                   languages={LANGS} onLanguageSelect={setSelectedLang}
                   languageCode={selectedLang.code} t={t}
                   provider={provider} onProviderChange={setProvider}
+                  byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                   mode={mode} onModeChange={setMode} />
               </div>
             </div>
@@ -2819,7 +2925,7 @@ export default function App() {
                               </button>
                               {dashModelOpen && (
                                 <div style={{ position: 'absolute', top: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
-                                  {MODEL_OPTIONS.map(m => (
+                                  {modelOptions.map(m => (
                                     <div
                                       key={m.id}
                                       onClick={() => { setProvider(m.id); setDashModelOpen(false); }}
@@ -2835,6 +2941,13 @@ export default function App() {
                                       {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                                     </div>
                                   ))}
+                                  <div onClick={() => { setByokModalOpen(true); setDashModelOpen(false); }}
+                                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
+                                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
+                                    <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                                    <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                                  </div>
                                 </div>
                               )}
                             </div>

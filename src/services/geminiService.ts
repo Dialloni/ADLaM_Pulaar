@@ -71,17 +71,32 @@ async function streamGeneration(
   return { ...final, code: final.code || code };
 }
 
-export type Provider = 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
+export type FreeProvider = 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
+export type ByokProvider = 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'groq';
+export type Provider = FreeProvider | `byok-${ByokProvider}`;
+
+export interface Byok { provider: ByokProvider; apiKey: string; }
+
+// When the selected provider is a BYOK one, resolve {provider, apiKey} from the
+// saved keys so the request can carry the user's own key. Returns undefined for
+// free models (server uses its shared keys).
+export function resolveByok(provider: Provider | undefined, keys: Partial<Record<ByokProvider, string>>): Byok | undefined {
+  if (!provider || !provider.startsWith('byok-')) return undefined;
+  const p = provider.slice('byok-'.length) as ByokProvider;
+  const apiKey = keys[p];
+  return apiKey ? { provider: p, apiKey } : undefined;
+}
 
 export async function generateProject(
   prompt: string,
   preferredLanguage: string,
   onStatus?: (status: string) => void,
   onCode?: (codeSoFar: string) => void,
-  provider?: Provider
+  provider?: Provider,
+  byok?: Byok
 ): Promise<GenerationResponse> {
   onStatus?.('Generating your app...');
-  return streamGeneration('/api/generate', { prompt, preferredLanguage, provider }, onCode, onStatus);
+  return streamGeneration('/api/generate', { prompt, preferredLanguage, provider, byok }, onCode, onStatus);
 }
 
 export async function editProject(
@@ -91,13 +106,14 @@ export async function editProject(
   preferredLanguage: string,
   onStatus?: (status: string) => void,
   onCode?: (codeSoFar: string) => void,
-  provider?: Provider
+  provider?: Provider,
+  byok?: Byok
 ): Promise<GenerationResponse> {
   onStatus?.('Applying your changes...');
   const trimmed = history.slice(-6).map((m) => ({ role: m.role, content: m.content }));
   return streamGeneration(
     '/api/edit',
-    { prompt, currentCode, history: trimmed, preferredLanguage, provider },
+    { prompt, currentCode, history: trimmed, preferredLanguage, provider, byok },
     onCode,
     onStatus
   );
@@ -113,13 +129,14 @@ export async function chatStream(
   currentCode: string | undefined,
   preferredLanguage: string,
   onToken: (chunk: string) => void,
-  provider?: Provider
+  provider?: Provider,
+  byok?: Byok
 ): Promise<string> {
   const trimmed = history.slice(-8).map((m) => ({ role: m.role, content: m.content }));
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify({ prompt, history: trimmed, currentCode, preferredLanguage, provider }),
+    body: JSON.stringify({ prompt, history: trimmed, currentCode, preferredLanguage, provider, byok }),
   });
   if (!res.ok || !res.body) {
     const data = await res.json().catch(() => ({ error: res.statusText }));
