@@ -61,14 +61,14 @@ interface PdfResult {
   error?: string;
 }
 
-const P = '#ff8b9b';
+const P = '#3b82f6';
 const MANROPE = 'Manrope, sans-serif';
 const DOMAINS: SubmissionDomain[] = ['tech', 'religion', 'news', 'casual', 'literature', 'ui_vocab'];
 
 const DOMAIN_COLORS: Record<SubmissionDomain, string> = {
   tech:       '#bca2ff',
   religion:   '#fd8b00',
-  news:       '#ff8b9b',
+  news:       '#3b82f6',
   casual:     '#4ade80',
   literature: '#60a5fa',
   ui_vocab:   '#f59e0b',
@@ -967,7 +967,7 @@ export function AdminPortal({ user }: { user: User }) {
                 style={{
                   fontFamily: '"Noto Sans Adlam", serif',
                   border: addAdlam.trim() === ''
-                    ? '1px solid rgba(255,139,155,0.25)'
+                    ? '1px solid rgba(59,130,246,0.25)'
                     : adlamRatio(addAdlam) >= 0.8
                       ? '1px solid #4ade80'
                       : '1px solid #f87171',
@@ -1071,7 +1071,7 @@ export function AdminPortal({ user }: { user: User }) {
                             dir="rtl"
                             placeholder="ADLaM script…"
                             className="w-full rounded-lg px-3 py-2 text-white text-xl bg-black/40 outline-none"
-                            style={{ fontFamily: '"Noto Sans Adlam", serif', border: '1px solid rgba(255,139,155,0.3)' }}
+                            style={{ fontFamily: '"Noto Sans Adlam", serif', border: '1px solid rgba(59,130,246,0.3)' }}
                           />
                           <div className="flex gap-2">
                             <input
@@ -1295,7 +1295,7 @@ export function AdminPortal({ user }: { user: User }) {
                               fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif',
                               fontSize: 18,
                               background: 'rgba(0,0,0,0.4)',
-                              border: '1px solid rgba(255,139,155,0.3)',
+                              border: '1px solid rgba(59,130,246,0.3)',
                               outline: 'none',
                             }}
                           />

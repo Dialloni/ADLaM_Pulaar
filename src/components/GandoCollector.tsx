@@ -15,7 +15,7 @@ const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =
       setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)),
   ]);
 
-const P = '#ff8b9b';
+const P = '#3b82f6';
 const MANROPE = 'Manrope, sans-serif';
 const ADLAM_FONT = '"Noto Sans Adlam", "ADLaM Display", serif';
 
@@ -288,7 +288,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
               dir="rtl"
               placeholder="𞤢𞤣𞤤𞤢𞤥…"
               className={inputCls}
-              style={{ border: '1px solid rgba(255,139,155,0.25)', fontFamily: ADLAM_FONT, fontSize: 18, lineHeight: 1.8 }} />
+              style={{ border: '1px solid rgba(59,130,246,0.25)', fontFamily: ADLAM_FONT, fontSize: 18, lineHeight: 1.8 }} />
           </div>
         </div>
 

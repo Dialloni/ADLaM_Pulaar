@@ -12,7 +12,7 @@ import { type Provider } from '../services/geminiService';
 type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
 
 const PROVIDER_COLOR: Record<Provider, string> = {
-  'claude': '#ff8b9b',
+  'claude': '#3b82f6',
   'gemini': '#5b9bff',
   'groq-llama': '#22c55e',
   'groq-scout': '#f59e0b',
@@ -80,8 +80,8 @@ const SUGGESTIONS = (t: any) => [
     icon: GraduationCap, 
     label: t.languageLearning, 
     prompt: t.languageLearningPrompt, 
-    color: "text-[#ff8b9b]", 
-    bg: "bg-[#ff8b9b]/10" 
+    color: "text-[#3b82f6]", 
+    bg: "bg-[#3b82f6]/10" 
   },
   { 
     icon: Globe, 
@@ -122,7 +122,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ code, language = 'javascript', on
           title="Copy code"
         >
           {copied ? (
-            <div className="w-4 h-4 text-[#ff8b9b]">✓</div>
+            <div className="w-4 h-4 text-[#3b82f6]">✓</div>
           ) : (
             <Copy className="w-4 h-4" />
           )}
@@ -168,7 +168,7 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
         title="Copy message"
       >
         {copied ? (
-          <div className="w-4 h-4 text-[#ff8b9b]">✓</div>
+          <div className="w-4 h-4 text-[#3b82f6]">✓</div>
         ) : (
           <Copy className="w-4 h-4" />
         )}
@@ -185,10 +185,10 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
       {message.role === 'assistant' && message.codeSnapshot && onRevert && (
         isCurrentVersion ? (
           <span
-            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#ff8b9b]/10 text-[#ff8b9b] text-[10px] font-bold uppercase tracking-wider border border-[#ff8b9b]/20"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[#3b82f6]/10 text-[#3b82f6] text-[10px] font-bold uppercase tracking-wider border border-[#3b82f6]/20"
             title="This is the current version"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#ff8b9b]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]" />
             Current
           </span>
         ) : (
@@ -344,7 +344,7 @@ const ChatImpl: React.FC<ChatProps> = ({
       </div>
       {/* Background Glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#ff8b9b]/5 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#3b82f6]/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full" />
       </div>
 
@@ -367,7 +367,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.2, duration: 0.5 }}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#ff8b9b]/10 border border-[#ff8b9b]/20 text-[#ff8b9b] text-[10px] font-bold uppercase tracking-widest mb-4"
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#3b82f6] text-[10px] font-bold uppercase tracking-widest mb-4"
                   >
                     <Sparkles className="w-3 h-3" />
                     <span>{t.appName} {t.beta}</span>
@@ -380,7 +380,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                       t.chatWelcome
                     ) : (
                       <>
-                        {t.chatWelcome.split('build')[0]} <span className="text-[#ff8b9b]">{t.chatWelcome.includes('build') ? 'build' : ''}</span> {t.chatWelcome.split('build')[1]}
+                        {t.chatWelcome.split('build')[0]} <span className="text-[#3b82f6]">{t.chatWelcome.includes('build') ? 'build' : ''}</span> {t.chatWelcome.split('build')[1]}
                       </>
                     )}
                   </h1>
@@ -393,8 +393,8 @@ const ChatImpl: React.FC<ChatProps> = ({
                 </div>
 
                 <div className="relative max-w-3xl mx-auto group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#ff8b9b]/20 via-blue-500/20 to-purple-500/20 rounded-[2.5rem] blur-2xl opacity-50 group-focus-within:opacity-100 transition-opacity duration-700" />
-                  <div className="relative backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-3 shadow-2xl group-focus-within:border-[#ff8b9b]/50 transition-all duration-500 input-glow" style={{ background: 'var(--card-elevated)' }}>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-[#3b82f6]/20 via-blue-500/20 to-purple-500/20 rounded-[2.5rem] blur-2xl opacity-50 group-focus-within:opacity-100 transition-opacity duration-700" />
+                  <div className="relative backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-3 shadow-2xl group-focus-within:border-[#3b82f6]/50 transition-all duration-500 input-glow" style={{ background: 'var(--card-elevated)' }}>
                     <textarea 
                       ref={textareaRef}
                       value={input}
@@ -439,14 +439,14 @@ const ChatImpl: React.FC<ChatProps> = ({
                                   <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                                 </div>
-                                {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                                {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                               </div>
                             ))}
                             <div onClick={() => { onManageKeys?.(); setModelOpen(false); }}
                               onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                               onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
-                              <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                              <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
                               <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
                             </div>
                           </div>
@@ -462,7 +462,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           isListening 
                             ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse" 
                             : isTranscribing
-                            ? "bg-[#ff8b9b]/20 text-[#ff8b9b] border border-[#ff8b9b]/30 animate-spin"
+                            ? "bg-[#3b82f6]/20 text-[#3b82f6] border border-[#3b82f6]/30 animate-spin"
                             : "bg-white/5 text-zinc-400 border border-white/5 hover:bg-white/10 hover:text-white"
                         )}
                       >
@@ -500,7 +500,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                         </div>
                         <div className="space-y-1 min-w-0 flex-1">
                           <h3 className={cn(
-                            "text-sm font-bold text-white group-hover:text-[#ff8b9b] transition-colors break-words",
+                            "text-sm font-bold text-white group-hover:text-[#3b82f6] transition-colors break-words",
                             languageCode === 'ff-adlm' && "font-adlam"
                           )}>{s.label}</h3>
                           <p className={cn(
@@ -533,7 +533,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           <img src={userPhoto} alt={userName || 'You'} className="w-10 h-10 rounded-2xl object-cover flex-shrink-0 mt-0.5 shadow-xl border border-white/10" />
                         ) : (
                           <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xl border text-white border-white/10"
-                            style={{ background: `linear-gradient(135deg, #ff8b9b, #fd8b00)` }}>
+                            style={{ background: `linear-gradient(135deg, #3b82f6, #fd8b00)` }}>
                             <span className="text-sm font-black">{(userName || 'U')[0].toUpperCase()}</span>
                           </div>
                         )
@@ -552,8 +552,8 @@ const ChatImpl: React.FC<ChatProps> = ({
                         )}>
                           <div className={cn("p-4 transition-all", languageCode === 'ff-adlm' && "font-adlam")}
                             style={m.role === 'user' ? {
-                              background: 'linear-gradient(135deg, rgba(255,139,155,0.14), rgba(253,139,0,0.08))',
-                              border: '1px solid rgba(255,139,155,0.25)',
+                              background: 'linear-gradient(135deg, rgba(59,130,246,0.14), rgba(253,139,0,0.08))',
+                              border: '1px solid rgba(59,130,246,0.25)',
                               borderRadius: '14px 14px 4px 14px',
                               fontSize: 13,
                               lineHeight: 1.6,
@@ -606,14 +606,14 @@ const ChatImpl: React.FC<ChatProps> = ({
                     className="flex items-start gap-3"
                   >
                     <GandoSpark size={32} active className="mt-0.5" />
-                    <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: 'var(--card-bg)', border: '1px solid rgba(255,139,155,0.2)', maxWidth: '90%' }}>
+                    <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: 'var(--card-bg)', border: '1px solid rgba(59,130,246,0.2)', maxWidth: '90%' }}>
                       {generationSteps.length === 0 ? (
                         <div className="flex items-center gap-1.5">
                           {[0, 1, 2].map(i => (
                             <motion.div key={i}
                               animate={{ opacity: [0.3, 1, 0.3] }}
                               transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
-                              style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff8b9b' }}
+                              style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6' }}
                             />
                           ))}
                         </div>
@@ -626,10 +626,10 @@ const ChatImpl: React.FC<ChatProps> = ({
                               <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
                                 className="flex items-center gap-2.5">
                                 <div style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  background: done ? 'rgba(40,200,64,0.15)' : 'rgba(255,139,155,0.12)' }}>
+                                  background: done ? 'rgba(40,200,64,0.15)' : 'rgba(59,130,246,0.12)' }}>
                                   {done
                                     ? <Check className="w-3 h-3" style={{ color: '#28c840' }} />
-                                    : <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#ff8b9b' }} />}
+                                    : <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#3b82f6' }} />}
                                 </div>
                                 <span style={{ fontSize: 13, lineHeight: 1.4, color: done ? '#8a8a8a' : '#e4e4e4' }}>{step}</span>
                               </motion.div>
@@ -763,14 +763,14 @@ const ChatImpl: React.FC<ChatProps> = ({
                             <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                           </div>
-                          {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                          {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                         </div>
                       ))}
                       <div onClick={() => { onManageKeys?.(); setModelOpen(false); }}
                         onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
-                        <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                        <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
                         <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
                       </div>
                     </div>
@@ -789,7 +789,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                     width: 32, height: 32, borderRadius: 8, flexShrink: 0,
                     background: isListening ? 'rgba(239,68,68,0.18)' : 'rgba(255,255,255,0.06)',
                     border: `1px solid ${isListening ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.1)'}`,
-                    color: isListening ? '#f87171' : isTranscribing ? '#ff8b9b' : '#adaaaa',
+                    color: isListening ? '#f87171' : isTranscribing ? '#3b82f6' : '#adaaaa',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                   className={isListening ? 'animate-pulse' : ''}
@@ -804,7 +804,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   disabled={(!input.trim() && attachments.length === 0) || isGenerating || isSending}
                   style={{
                     width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                    background: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? 'linear-gradient(135deg, #ff8b9b, #fd8b00)' : 'var(--hover-bg)',
+                    background: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? 'linear-gradient(135deg, #3b82f6, #fd8b00)' : 'var(--hover-bg)',
                     color: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? '#0a0a0a' : '#52525b',
                     border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',

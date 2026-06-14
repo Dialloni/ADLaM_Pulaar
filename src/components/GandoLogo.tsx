@@ -13,8 +13,8 @@ const STYLE = `
   50%       { opacity: 1;    transform: scale(1.08); }
 }
 @keyframes gando-char-pulse {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(255,139,155,0.5)); }
-  50%       { filter: drop-shadow(0 0 8px rgba(253,139,0,0.9)) drop-shadow(0 0 16px rgba(255,139,155,0.4)); }
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(59,130,246,0.5)); }
+  50%       { filter: drop-shadow(0 0 8px rgba(253,139,0,0.9)) drop-shadow(0 0 16px rgba(59,130,246,0.4)); }
 }
 `;
 
@@ -48,7 +48,7 @@ export function GandoLogo({ size = 32, mono = false, className = '' }: GandoLogo
         borderRadius: br + ring,
         background: mono
           ? 'conic-gradient(from 0deg, #3f3f46, #cfcfcf, #3f3f46)'
-          : 'conic-gradient(from 0deg, #ff8b9b 0%, #fd8b00 35%, #ff6bcb 65%, #ff8b9b 100%)',
+          : 'conic-gradient(from 0deg, #3b82f6 0%, #fd8b00 35%, #60a5fa 65%, #3b82f6 100%)',
         animation: 'gando-spin 3.5s linear infinite',
       }} />
 
@@ -75,7 +75,7 @@ export function GandoLogo({ size = 32, mono = false, className = '' }: GandoLogo
         fontFamily: '"Noto Sans Adlam", sans-serif',
         fontSize: size * 0.58,
         lineHeight: 1,
-        background: mono ? '#d4d4d8' : 'linear-gradient(135deg, #ffb3be, #ff8b9b 40%, #fd8b00)',
+        background: mono ? '#d4d4d8' : 'linear-gradient(135deg, #93c5fd, #3b82f6 40%, #fd8b00)',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',

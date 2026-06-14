@@ -58,7 +58,7 @@ function latinToAdlam(input: string): string {
   return out;
 }
 
-const P = '#ff8b9b';
+const P = '#3b82f6';
 const S = '#fd8b00';
 const T = '#bca2ff';
 const MANROPE = 'Manrope, sans-serif';
@@ -428,7 +428,7 @@ const PROVIDER_LABEL: Record<Provider, string> = {
 };
 
 const PROVIDER_COLOR: Record<Provider, string> = {
-  'claude': '#ff8b9b',
+  'claude': '#3b82f6',
   'gemini': '#5b9bff',
   'groq-llama': '#22c55e',
   'groq-scout': '#f59e0b',
@@ -496,7 +496,7 @@ const ByokModal: React.FC<{
           <div key={p.id} style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{p.label}</label>
-              <a href={p.keysUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#ff8b9b', textDecoration: 'none' }}>Get key →</a>
+              <a href={p.keysUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#3b82f6', textDecoration: 'none' }}>Get key →</a>
             </div>
             <input
               type="password" autoComplete="off" spellCheck={false}
@@ -1224,14 +1224,14 @@ export default function App() {
                             <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                           </div>
-                          {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                          {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                         </div>
                       ))}
                       <div onClick={() => { setByokModalOpen(true); setLandingModelOpen(false); }}
                         onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
-                        <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                        <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
                         <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
                       </div>
                     </div>
@@ -1745,7 +1745,7 @@ export default function App() {
                       className="gando-input bg-transparent border-b text-white text-sm font-bold outline-none w-48 px-1"
                       style={{ borderColor: `${P}60` }} />
                   ) : (
-                    <span className={cn('text-sm font-black text-white cursor-pointer hover:text-[#ff8b9b] transition-colors truncate max-w-[120px] md:max-w-none', isAdlam && 'font-adlam')}
+                    <span className={cn('text-sm font-black text-white cursor-pointer hover:text-[#3b82f6] transition-colors truncate max-w-[120px] md:max-w-none', isAdlam && 'font-adlam')}
                       style={{ fontFamily: isAdlam ? undefined : MANROPE }}
                       onClick={() => { setIsRenaming(true); setNewName(currentProject.name); }}>
                       {currentProject.name}
@@ -1760,12 +1760,12 @@ export default function App() {
                   <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--btn-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <button onClick={() => setActiveTab('preview')}
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={activeTab === 'preview' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
+                      style={activeTab === 'preview' ? { background: 'rgba(59,130,246,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
                       <Eye className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.preview}</span>
                     </button>
                     <button onClick={() => setActiveTab('code')}
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={activeTab === 'code' ? { background: 'rgba(255,139,155,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
+                      style={activeTab === 'code' ? { background: 'rgba(59,130,246,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
                       <CodeIcon className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.code}</span>
                     </button>
                   </div>
@@ -1935,7 +1935,7 @@ export default function App() {
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${P}15` }}>
                         <MessageSquare className="w-4 h-4" style={{ color: P }} />
                       </div>
-                      <p className="text-sm font-bold text-white truncate group-hover:text-[#ff8b9b] transition-colors pr-6" style={{ fontFamily: MANROPE }}>{c.title || 'Untitled chat'}</p>
+                      <p className="text-sm font-bold text-white truncate group-hover:text-[#3b82f6] transition-colors pr-6" style={{ fontFamily: MANROPE }}>{c.title || 'Untitled chat'}</p>
                       <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{c.messages?.[c.messages.length - 1]?.content?.slice(0, 90) || '—'}</p>
                       <p className="text-[10px] text-zinc-600 mt-3 uppercase tracking-widest" style={{ fontFamily: MANROPE }}>{c.messages?.length || 0} {selectedLang.code === 'fr' ? 'messages' : 'messages'}</p>
                     </div>
@@ -2590,7 +2590,7 @@ export default function App() {
               <div className="w-full p-8 md:p-10 space-y-8">
 
                 {/* ── SEARCH HERO CARD ── */}
-                <div style={{ background: 'linear-gradient(135deg, rgba(255,139,155,0.1), rgba(253,139,0,0.06) 60%, rgba(19,19,19,1))', border: '1px solid rgba(255,139,155,0.2)', borderRadius: 20, padding: 28, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(253,139,0,0.06) 60%, rgba(19,19,19,1))', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 20, padding: 28, position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: P, textTransform: 'uppercase', marginBottom: 12, fontFamily: MANROPE }}>DOCUMENTATION</p>
                   <h1 className={cn('font-black text-white tracking-tighter mb-2', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 32 }}>
@@ -2626,9 +2626,9 @@ export default function App() {
                         ].map(({ Icon, label, active }) => (
                           <div key={label} className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-default"
                             style={active
-                              ? { background: 'rgba(255,139,155,0.12)', border: '1px solid rgba(255,139,155,0.25)', color: '#fff', fontWeight: 700 }
+                              ? { background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: '#fff', fontWeight: 700 }
                               : { background: 'transparent', border: '1px solid transparent', color: 'var(--text-muted)', fontWeight: 500 }}>
-                            <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? '#ff8b9b' : undefined }} />
+                            <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? '#3b82f6' : undefined }} />
                             <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
                           </div>
                         ))}
@@ -2661,7 +2661,7 @@ export default function App() {
                     {/* Section header */}
                     <div className="flex items-center gap-4 p-5 rounded-2xl relative overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <BookOpen className="w-4 h-4" style={{ color: P }} />
                       </div>
                       <div>
@@ -2680,7 +2680,7 @@ export default function App() {
                       ].map(({ n, label }) => (
                         <div key={n} className="flex items-center gap-3 transition-all hover:bg-white/5 cursor-pointer"
                           style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(255,139,155,0.1)', border: '1px solid rgba(255,139,155,0.2)', color: '#ff8b9b', fontFamily: MANROPE, fontWeight: 900, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#3b82f6', fontFamily: MANROPE, fontWeight: 900, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             {n}
                           </div>
                           <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: isAdlam ? undefined : MANROPE, flex: 1 }}>{label}</span>
@@ -2877,7 +2877,7 @@ export default function App() {
                   )}
 
                   {/* big textarea card */}
-                  <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: `1px solid ${inputShake ? 'rgba(255,139,155,0.6)' : 'rgba(255,255,255,0.1)'}`, boxShadow: '0 24px 80px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)', padding: '18px 18px 14px', transition: 'border-color 0.2s' }}
+                  <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: `1px solid ${inputShake ? 'rgba(59,130,246,0.6)' : 'rgba(255,255,255,0.1)'}`, boxShadow: '0 24px 80px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03)', padding: '18px 18px 14px', transition: 'border-color 0.2s' }}
                     className={inputShake ? 'animate-shake' : ''}>
                     <textarea
                       ref={heroTextareaRef}
@@ -2968,14 +2968,14 @@ export default function App() {
                                         <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
                                         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                                       </div>
-                                      {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+                                      {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                                     </div>
                                   ))}
                                   <div onClick={() => { setByokModalOpen(true); setDashModelOpen(false); }}
                                     onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
                                     onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
-                                    <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                                    <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
                                     <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
                                   </div>
                                 </div>
@@ -2998,7 +2998,7 @@ export default function App() {
                               width: 38, height: 38, borderRadius: 12, flexShrink: 0,
                               background: dashVoice.isListening ? 'rgba(239,68,68,0.18)' : 'var(--btn-bg)',
                               border: `1px solid ${dashVoice.isListening ? 'rgba(239,68,68,0.4)' : 'var(--border)'}`,
-                              color: dashVoice.isListening ? '#f87171' : dashVoice.isTranscribing ? '#ff8b9b' : '#adaaaa',
+                              color: dashVoice.isListening ? '#f87171' : dashVoice.isTranscribing ? '#3b82f6' : '#adaaaa',
                               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             }}>
                             {dashVoice.isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : dashVoice.isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}

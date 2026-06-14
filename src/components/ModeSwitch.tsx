@@ -41,7 +41,7 @@ export const ModeSwitch: React.FC<{
           color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600,
         }}
       >
-        <active.Icon className="w-3.5 h-3.5" style={{ color: '#ff8b9b' }} />
+        <active.Icon className="w-3.5 h-3.5" style={{ color: '#3b82f6' }} />
         <span style={{ whiteSpace: 'nowrap' }}>{active.label}</span>
         <ChevronDown className="w-3 h-3" style={{ opacity: 0.6, flexShrink: 0 }} />
       </button>
@@ -56,12 +56,12 @@ export const ModeSwitch: React.FC<{
               onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
             >
-              <o.Icon className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+              <o.Icon className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{o.label}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{o.sub}</div>
               </div>
-              {mode === o.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
+              {mode === o.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
             </div>
           ))}
         </div>
