@@ -217,6 +217,15 @@
 [data-theme="light"] .bg-white\/8        { background: var(--btn-bg)     !important; }
 [data-theme="light"] .hover\:bg-white\/5:hover { background: var(--hover-bg) !important; }
 
+/* ── ADLaM is RIGHT-TO-LEFT ── render ADLaM text per-paragraph RTL (correct
+   punctuation/word order) WITHOUT flipping the LTR flex layout. unicode-bidi:
+   plaintext picks direction from the content; it does not reverse flex rows.
+   Applied to text-bearing descendants of any .font-adlam container. */
+.font-adlam :where(h1,h2,h3,h4,h5,h6,p,span,a,button,label,li,textarea,input),
+.font-adlam {
+  unicode-bidi: plaintext;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    SEMANTIC TYPE ROLES
    Use these as classes or re-declarations (h1, p, etc).
