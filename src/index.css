@@ -169,6 +169,7 @@
   --chat-bar-bg: rgba(10,10,10,0.70);
   --input-bg: rgba(255,255,255,0.04);
   --hover-bg: rgba(255,255,255,0.05);
+  --sidebar-bg: #0a0a0a;
 }
 [data-theme="light"] {
   --app-bg: #f7f7f8;
@@ -185,6 +186,7 @@
   --chat-bar-bg: rgba(247,247,248,0.90);
   --input-bg: rgba(0,0,0,0.04);
   --hover-bg: rgba(0,0,0,0.04);
+  --sidebar-bg: #ffffff;
 }
 
 /* ── LIGHT MODE: fix prose-invert (markdown chat bubbles) ── */

@@ -1582,7 +1582,7 @@ export default function App() {
             'transition-transform duration-200 md:transition-none',
             mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
           )}
-          style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
+          style={{ background: 'var(--sidebar-bg)', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
 
           {sidebarCollapsed ? (
             /* Collapsed: Gando logo that morphs into the "Open sidebar" toggle on hover (Gemini-style) */
@@ -1728,7 +1728,7 @@ export default function App() {
             <div className="flex flex-1 overflow-hidden relative z-10">
               {/* workspace top bar */}
               <div className="absolute top-0 left-0 right-0 h-14 flex items-center justify-between px-3 md:px-6 border-b border-white/5 z-20 gap-2"
-                style={{ background: 'rgba(14,14,14,0.85)', backdropFilter: 'blur(12px)' }}>
+                style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(12px)' }}>
                 <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink">
                   <button onClick={() => setCurrentProject(null)} className="p-1.5 rounded-lg text-zinc-500 hover:text-white transition-colors" title={t.recentProjects}>
                     <RotateCcw className="w-4 h-4" />
@@ -1812,7 +1812,7 @@ export default function App() {
                       initial={false}
                       animate={{ y: chatHidden ? '100%' : '0%' }}
                       transition={{ type: 'spring', damping: 32, stiffness: 240 }}
-                      style={{ height: '78vh', background: '#0d0d0d', borderTop: '1px solid var(--border)', borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: 'hidden' }}>
+                      style={{ height: '78vh', background: 'var(--app-bg)', borderTop: '1px solid var(--border)', borderTopLeftRadius: 18, borderTopRightRadius: 18, overflow: 'hidden' }}>
                       <div className="flex items-center justify-center py-2 flex-shrink-0" onClick={() => setChatHidden(true)}>
                         <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
                       </div>
@@ -1824,6 +1824,7 @@ export default function App() {
                           languageCode={selectedLang.code} t={t}
                           provider={provider} onProviderChange={setProvider}
                           byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
+                          userPhoto={user.photoURL} userName={user.displayName || user.email}
                           mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert} />
                       </div>
@@ -1835,7 +1836,7 @@ export default function App() {
                     <motion.div className="flex-shrink-0 flex flex-col"
                       animate={{ width: chatHidden ? 0 : 480, opacity: chatHidden ? 0 : 1, marginRight: chatHidden ? 0 : 12 }}
                       transition={{ type: 'spring', damping: 30, stiffness: 200 }}
-                      style={{ background: '#0d0d0d', border: chatHidden ? 'none' : '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+                      style={{ background: 'var(--app-bg)', border: chatHidden ? 'none' : '1px solid var(--border-subtle)', borderRadius: 16, overflow: 'hidden' }}>
                       <div className="flex flex-col h-full" style={{ width: 480, minWidth: 480 }}>
                         <Chat messages={mode === 'chat' ? chatMessages : messages} input={input} setInput={setInput} onSend={handleSend}
                           isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={mode === 'chat' ? [] : generationSteps}
@@ -1844,6 +1845,7 @@ export default function App() {
                           languageCode={selectedLang.code} t={t}
                           provider={provider} onProviderChange={setProvider}
                           byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
+                          userPhoto={user.photoURL} userName={user.displayName || user.email}
                           mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert} />
                       </div>
@@ -1880,6 +1882,7 @@ export default function App() {
                   languageCode={selectedLang.code} t={t}
                   provider={provider} onProviderChange={setProvider}
                   byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
+                          userPhoto={user.photoURL} userName={user.displayName || user.email}
                   mode={mode} onModeChange={setMode} />
               </div>
             </div>
