@@ -33,6 +33,23 @@ const GROQ_MODEL_IDS: Record<string, string> = {
   'groq-scout': 'meta-llama/llama-4-scout-17b-16e-instruct',
 };
 
+// ── BYOK (Bring Your Own Key) ───────────────────────────────────────────────
+// Users can paste their OWN provider key in Settings; it's sent per-request and
+// used transiently here (never stored server-side, never logged). Each user's
+// key has its own quota — independent of the shared free-tier pool.
+export type ByokProvider = 'openai' | 'anthropic' | 'gemini' | 'deepseek' | 'groq';
+export interface Byok { provider: ByokProvider; apiKey: string; }
+
+// kind decides the transport: 'openai' = OpenAI-compatible /chat/completions,
+// 'anthropic' = Anthropic SDK, 'gemini' = Google GenAI SDK.
+const BYOK_DEFAULTS: Record<ByokProvider, { kind: 'openai' | 'anthropic' | 'gemini'; baseUrl?: string; model: string }> = {
+  openai:    { kind: 'openai',    baseUrl: 'https://api.openai.com/v1',     model: 'gpt-4o' },
+  deepseek:  { kind: 'openai',    baseUrl: 'https://api.deepseek.com/v1',   model: 'deepseek-chat' },
+  groq:      { kind: 'openai',    baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
+  anthropic: { kind: 'anthropic', model: 'claude-sonnet-4-6' },
+  gemini:    { kind: 'gemini',    model: 'gemini-2.5-flash' },
+};
+
 const BASE_RULES = `You are Gando AI, an African-language-first AI app builder.
 
 Given a user prompt in ANY language (especially African languages like Fulani/Pulaar in ADLaM script, Swahili, Yoruba, Wolof, Amharic, Zulu, Hausa, Igbo, Bambara, Fon):
@@ -104,6 +121,7 @@ export interface RunStreamOpts {
   currentCode?: string;
   history?: { role: string; content: string }[];
   provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
+  byok?: Byok;
 }
 
 function buildUserContent(o: RunStreamOpts): string {
@@ -143,9 +161,17 @@ export async function runStream(
   onCode: (chunk: string) => void,
   onStatus?: (text: string) => void
 ): Promise<GenResult> {
+  // BYOK takes priority — user's own key, used transiently, no fallback to our keys.
+  if (opts.byok?.apiKey) {
+    const d = BYOK_DEFAULTS[opts.byok.provider];
+    if (!d) throw new Error(`Unknown provider: ${opts.byok.provider}`);
+    if (d.kind === 'openai') return runOpenAICompatible(opts, d.baseUrl!, opts.byok.apiKey, d.model, onCode, onStatus);
+    if (d.kind === 'anthropic') return runClaude(opts, onCode, onStatus, opts.byok.apiKey, d.model);
+    return runGemini(opts, onCode, opts.byok.apiKey, d.model);
+  }
   const provider = opts.provider || 'claude';
   if (provider === 'groq-llama' || provider === 'groq-scout') {
-    return runGroq(opts, GROQ_MODEL_IDS[provider], onCode, onStatus);
+    return runOpenAICompatible(opts, 'https://api.groq.com/openai/v1', groqKey(), GROQ_MODEL_IDS[provider], onCode, onStatus);
   }
   if (provider === 'claude' && anthropicKey()) {
     try {
@@ -161,11 +187,13 @@ export async function runStream(
 async function runClaude(
   opts: RunStreamOpts,
   onCode: (chunk: string) => void,
-  onStatus?: (text: string) => void
+  onStatus?: (text: string) => void,
+  apiKey: string = anthropicKey(),
+  model: string = claudeModel()
 ): Promise<GenResult> {
-  const client = new Anthropic({ apiKey: anthropicKey() });
+  const client = new Anthropic({ apiKey });
   const stream = client.messages.stream({
-    model: claudeModel(),
+    model,
     max_tokens: maxTokens(),
     system: opts.kind === 'edit' ? EDIT_SYSTEM : GENERATE_SYSTEM,
     messages: [{ role: 'user', content: buildUserContent(opts) }],
@@ -218,17 +246,22 @@ async function runClaude(
   return splitOutput(buf);
 }
 
-async function runGroq(
+// Works with any OpenAI-compatible /chat/completions endpoint: Groq (free), and
+// BYOK OpenAI / DeepSeek / Groq. Streams SSE token-by-token via the shared protocol.
+async function runOpenAICompatible(
   opts: RunStreamOpts,
+  baseUrl: string,
+  apiKey: string,
   modelId: string,
   onCode: (chunk: string) => void,
   onStatus?: (text: string) => void
 ): Promise<GenResult> {
-  if (!groqKey()) throw new Error('GROQ_API_KEY not configured. Add it to your .env file.');
+  if (!apiKey) throw new Error('API key not configured for this provider.');
+  const isGroq = baseUrl.includes('groq.com');
 
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${groqKey()}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: modelId,
       messages: [
@@ -237,14 +270,15 @@ async function runGroq(
       ],
       max_tokens: maxTokens(),
       temperature: 0.8,
-      reasoning_format: 'hidden', // strip <think> reasoning (Qwen3); ignored by non-reasoning models
+      // reasoning_format is Groq-only; sending it to OpenAI/DeepSeek would 400.
+      ...(isGroq ? { reasoning_format: 'hidden' } : {}),
       stream: true,
     }),
   });
 
   if (!res.ok || !res.body) {
     const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
-    throw new Error((err as { error?: { message?: string } })?.error?.message || `Groq error: ${res.status}`);
+    throw new Error((err as { error?: { message?: string } })?.error?.message || `Provider error: ${res.status}`);
   }
 
   const reader = res.body.getReader();
@@ -317,14 +351,19 @@ const GEMINI_SCHEMA = {
   required: ['language', 'name', 'code', 'explanation'],
 };
 
-async function runGemini(opts: RunStreamOpts, onCode: (chunk: string) => void): Promise<GenResult> {
-  if (!geminiKey()) throw new Error('No LLM provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY).');
-  const ai = new GoogleGenAI({ apiKey: geminiKey() });
+async function runGemini(
+  opts: RunStreamOpts,
+  onCode: (chunk: string) => void,
+  apiKey: string = geminiKey(),
+  model: string = geminiModel()
+): Promise<GenResult> {
+  if (!apiKey) throw new Error('No LLM provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY).');
+  const ai = new GoogleGenAI({ apiKey });
   // Gemini still uses the legacy JSON-schema contract (it doesn't follow the delimiter as reliably).
   const sys = (opts.kind === 'edit' ? EDIT_SYSTEM : GENERATE_SYSTEM).replace(OUTPUT_PROTOCOL,
     'Return strict JSON with keys: language, name, code, explanation. No markdown fences.');
   const res = await ai.models.generateContent({
-    model: geminiModel(),
+    model,
     contents: buildUserContent(opts),
     config: {
       systemInstruction: sys,
@@ -357,6 +396,7 @@ export interface ChatOpts {
   currentCode?: string;
   preferredLanguage?: string;
   provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
+  byok?: Byok;
 }
 
 function buildChatContent(o: ChatOpts): string {
@@ -369,37 +409,63 @@ function buildChatContent(o: ChatOpts): string {
 
 /** Stream a chat answer token-by-token. Resolves with the full answer text. */
 export async function chatStream(opts: ChatOpts, onToken: (chunk: string) => void): Promise<string> {
+  // BYOK takes priority — user's own key, no fallback to our keys.
+  if (opts.byok?.apiKey) {
+    const d = BYOK_DEFAULTS[opts.byok.provider];
+    if (!d) throw new Error(`Unknown provider: ${opts.byok.provider}`);
+    if (d.kind === 'openai') return chatOpenAICompatible(opts, d.baseUrl!, opts.byok.apiKey, d.model, onToken);
+    if (d.kind === 'anthropic') return chatClaude(opts, onToken, opts.byok.apiKey, d.model);
+    return chatGeminiOnce(opts, onToken, opts.byok.apiKey, d.model);
+  }
   const provider = opts.provider || 'claude';
   if (provider === 'groq-llama' || provider === 'groq-scout') {
-    return chatGroq(opts, GROQ_MODEL_IDS[provider], onToken);
+    return chatOpenAICompatible(opts, 'https://api.groq.com/openai/v1', groqKey(), GROQ_MODEL_IDS[provider], onToken);
   }
   if (provider === 'claude' && anthropicKey()) {
     try {
-      const client = new Anthropic({ apiKey: anthropicKey() });
-      const stream = client.messages.stream({
-        model: claudeModel(),
-        max_tokens: 4096,
-        system: CHAT_SYSTEM,
-        messages: [{ role: 'user', content: buildChatContent(opts) }],
-      });
-      let full = '';
-      for await (const ev of stream) {
-        if (ev.type === 'content_block_delta' && ev.delta.type === 'text_delta') {
-          full += ev.delta.text;
-          onToken(ev.delta.text);
-        }
-      }
-      await stream.finalMessage();
-      return full;
+      return await chatClaude(opts, onToken);
     } catch (err) {
       if (!geminiKey()) throw err;
     }
   }
-  // Gemini fallback — non-streaming, emit the whole answer as one chunk.
-  if (!geminiKey()) throw new Error('No LLM provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY).');
-  const ai = new GoogleGenAI({ apiKey: geminiKey() });
+  return chatGeminiOnce(opts, onToken);
+}
+
+async function chatClaude(
+  opts: ChatOpts,
+  onToken: (chunk: string) => void,
+  apiKey: string = anthropicKey(),
+  model: string = claudeModel()
+): Promise<string> {
+  const client = new Anthropic({ apiKey });
+  const stream = client.messages.stream({
+    model,
+    max_tokens: 4096,
+    system: CHAT_SYSTEM,
+    messages: [{ role: 'user', content: buildChatContent(opts) }],
+  });
+  let full = '';
+  for await (const ev of stream) {
+    if (ev.type === 'content_block_delta' && ev.delta.type === 'text_delta') {
+      full += ev.delta.text;
+      onToken(ev.delta.text);
+    }
+  }
+  await stream.finalMessage();
+  return full;
+}
+
+// Gemini chat — non-streaming, emit the whole answer as one chunk.
+async function chatGeminiOnce(
+  opts: ChatOpts,
+  onToken: (chunk: string) => void,
+  apiKey: string = geminiKey(),
+  model: string = geminiModel()
+): Promise<string> {
+  if (!apiKey) throw new Error('No LLM provider configured (set ANTHROPIC_API_KEY or GEMINI_API_KEY).');
+  const ai = new GoogleGenAI({ apiKey });
   const res = await ai.models.generateContent({
-    model: geminiModel(),
+    model,
     contents: buildChatContent(opts),
     config: { systemInstruction: CHAT_SYSTEM, maxOutputTokens: 4096, temperature: 0.7 },
   });
@@ -408,12 +474,20 @@ export async function chatStream(opts: ChatOpts, onToken: (chunk: string) => voi
   return out;
 }
 
-async function chatGroq(opts: ChatOpts, modelId: string, onToken: (chunk: string) => void): Promise<string> {
-  if (!groqKey()) throw new Error('GROQ_API_KEY not configured.');
+// Works with any OpenAI-compatible endpoint: Groq (free) and BYOK OpenAI/DeepSeek/Groq.
+async function chatOpenAICompatible(
+  opts: ChatOpts,
+  baseUrl: string,
+  apiKey: string,
+  modelId: string,
+  onToken: (chunk: string) => void
+): Promise<string> {
+  if (!apiKey) throw new Error('API key not configured for this provider.');
+  const isGroq = baseUrl.includes('groq.com');
 
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${groqKey()}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: modelId,
       messages: [
@@ -422,14 +496,14 @@ async function chatGroq(opts: ChatOpts, modelId: string, onToken: (chunk: string
       ],
       max_tokens: 4096,
       temperature: 0.7,
-      reasoning_format: 'hidden', // strip <think> reasoning (Qwen3); ignored by non-reasoning models
+      ...(isGroq ? { reasoning_format: 'hidden' } : {}),
       stream: true,
     }),
   });
 
   if (!res.ok || !res.body) {
     const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
-    throw new Error((err as { error?: { message?: string } })?.error?.message || `Groq error: ${res.status}`);
+    throw new Error((err as { error?: { message?: string } })?.error?.message || `Provider error: ${res.status}`);
   }
 
   const reader = res.body.getReader();

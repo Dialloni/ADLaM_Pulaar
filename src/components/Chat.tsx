@@ -15,12 +15,22 @@ const PROVIDER_COLOR: Record<Provider, string> = {
   'gemini': '#5b9bff',
   'groq-llama': '#22c55e',
   'groq-scout': '#f59e0b',
+  'byok-openai': '#10a37f',
+  'byok-anthropic': '#d97757',
+  'byok-gemini': '#5b9bff',
+  'byok-deepseek': '#4d6bfe',
+  'byok-groq': '#f55036',
 };
 const PROVIDER_LABEL: Record<Provider, string> = {
   'claude': 'Claude',
   'gemini': 'Gemini',
   'groq-llama': 'Llama 3.3',
   'groq-scout': 'Llama 4 Scout',
+  'byok-openai': 'OpenAI',
+  'byok-anthropic': 'Claude',
+  'byok-gemini': 'Gemini',
+  'byok-deepseek': 'DeepSeek',
+  'byok-groq': 'Groq',
 };
 
 interface ChatProps {
@@ -39,6 +49,8 @@ interface ChatProps {
   t: any;
   provider?: Provider;
   onProviderChange?: (p: Provider) => void;
+  byokModels?: { id: Provider; label: string; sub: string }[];
+  onManageKeys?: () => void;
   mode?: 'build' | 'chat';
   onModeChange?: (m: 'build' | 'chat') => void;
   currentCode?: string;
@@ -213,6 +225,8 @@ const ChatImpl: React.FC<ChatProps> = ({
   t,
   provider = 'claude',
   onProviderChange,
+  byokModels = [],
+  onManageKeys,
   mode = 'build',
   onModeChange,
   currentCode,
@@ -224,6 +238,7 @@ const ChatImpl: React.FC<ChatProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [modelOpen, setModelOpen] = useState(false);
   const modelRef = useRef<HTMLDivElement>(null);
+  const modelOptions = [...MODELS, ...byokModels];
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSending, setIsSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -406,7 +421,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                         </button>
                         {modelOpen && (
                           <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
-                            {MODELS.map(m => (
+                            {modelOptions.map(m => (
                               <div
                                 key={m.id}
                                 onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
@@ -422,6 +437,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                                 {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                               </div>
                             ))}
+                            <div onClick={() => { onManageKeys?.(); setModelOpen(false); }}
+                              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
+                              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
+                              <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -721,7 +743,7 @@ const ChatImpl: React.FC<ChatProps> = ({
 
                   {modelOpen && (
                     <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
-                      {MODELS.map(m => (
+                      {modelOptions.map(m => (
                         <div
                           key={m.id}
                           onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
@@ -737,6 +759,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                           {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />}
                         </div>
                       ))}
+                      <div onClick={() => { onManageKeys?.(); setModelOpen(false); }}
+                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
+                        <Plus className="w-3.5 h-3.5" style={{ color: '#ff8b9b', flexShrink: 0 }} />
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                      </div>
                     </div>
                   )}
                 </div>
