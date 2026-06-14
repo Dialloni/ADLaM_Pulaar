@@ -25,8 +25,8 @@
 
 :root {
   /* ── BRAND PALETTE ── Nexus Builder neon */
-  --color-primary:        #ff8b9b;   /* rose / flamingo — hero accent */
-  --color-primary-dim:    #e31754;   /* hover / pressed */
+  --color-primary:        #3b82f6;   /* rose / flamingo — hero accent */
+  --color-primary-dim:    #2563eb;   /* hover / pressed */
   --color-secondary:      #fd8b00;   /* orange — gradient partner + warnings */
   --color-tertiary:        #bca2ff;  /* lavender — language chip accent */
 
@@ -35,10 +35,10 @@
   --color-accent-red:     #f87171;   /* status down / destructive */
 
   /* ── GRADIENTS ── Signature primary → secondary */
-  --gradient-brand:       linear-gradient(135deg, #ff8b9b, #fd8b00);
-  --gradient-brand-soft:  linear-gradient(135deg, rgba(255,139,155,0.18), rgba(253,139,0,0.18));
-  --gradient-horizontal:  linear-gradient(to right,  #ff8b9b, #fd8b00);
-  --gradient-ambient-1:   radial-gradient(at 0% 0%,   rgba(255,139,155,0.05) 0, transparent 55%);
+  --gradient-brand:       linear-gradient(135deg, #3b82f6, #fd8b00);
+  --gradient-brand-soft:  linear-gradient(135deg, rgba(59,130,246,0.18), rgba(253,139,0,0.18));
+  --gradient-horizontal:  linear-gradient(to right,  #3b82f6, #fd8b00);
+  --gradient-ambient-1:   radial-gradient(at 0% 0%,   rgba(59,130,246,0.05) 0, transparent 55%);
   --gradient-ambient-2:   radial-gradient(at 100% 100%, rgba(253,139,0,0.05) 0, transparent 55%);
 
   /* ── DARK SURFACES ── (obsidian scale) */
@@ -63,7 +63,7 @@
   --line-2:               rgba(255,255,255,0.08);  /* card border */
   --line-3:               rgba(255,255,255,0.10);  /* stronger border */
   --line-4:               rgba(255,255,255,0.15);  /* hover / focus */
-  --line-accent:          rgba(255,139,155,0.30);  /* focused brand border */
+  --line-accent:          rgba(59,130,246,0.30);  /* focused brand border */
 
   /* ── GLASSMORPHISM ── */
   --glass-1:              rgba(255,255,255,0.03);
@@ -76,13 +76,13 @@
   --blur-xl:              blur(120px);    /* login-screen orbs */
 
   /* ── NEON GLOWS ── box-shadow halos */
-  --glow-primary-sm:      0 0 20px rgba(255,139,155,0.25);
-  --glow-primary-md:      0 0 24px rgba(255,139,155,0.40);
-  --glow-primary-lg:      0 0 32px rgba(255,139,155,0.45);
+  --glow-primary-sm:      0 0 20px rgba(59,130,246,0.25);
+  --glow-primary-md:      0 0 24px rgba(59,130,246,0.40);
+  --glow-primary-lg:      0 0 32px rgba(59,130,246,0.45);
   --glow-secondary:       0 0 24px rgba(253,139,0,0.40);
   --glow-card:            0 40px 100px -20px rgba(0,0,0,0.8);
   --glow-sidebar:         20px 0 40px rgba(0,0,0,0.4);
-  --glow-input-focus:     0 0 50px -12px rgba(255,139,155,0.2);
+  --glow-input-focus:     0 0 50px -12px rgba(59,130,246,0.2);
 
   /* ── RADII ── generous on Gando; never square */
   --radius-xs:            6px;     /* tiny pills */
@@ -329,9 +329,9 @@ body {
 }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,139,155,0.15); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,139,155,0.35); }
-::selection { background: rgba(255,139,155,0.25); color: #fff; }
+::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.15); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(59,130,246,0.35); }
+::selection { background: rgba(59,130,246,0.25); color: #fff; }
 .ds-gradient-text {
   background: var(--gradient-brand);
   -webkit-background-clip: text;

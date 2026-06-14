@@ -10,7 +10,7 @@ export function AudioRecorder({
   onChange,
   label,
   hint,
-  accent = '#ff8b9b',
+  accent = '#3b82f6',
   disabled = false,
 }: {
   value: Blob | null;

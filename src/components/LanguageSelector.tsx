@@ -83,7 +83,7 @@ export function LanguageSelector({
             currentLanguage.code === lang.code ? 'text-black' : 'text-zinc-300',
           )}
           style={currentLanguage.code === lang.code
-            ? { background: 'linear-gradient(135deg,#ff8b9b,#fd8b00)' }
+            ? { background: 'linear-gradient(135deg,#3b82f6,#fd8b00)' }
             : undefined}
         >
           <Globe className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
