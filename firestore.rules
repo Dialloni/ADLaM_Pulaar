@@ -42,6 +42,15 @@ service cloud.firestore {
       }
     }
 
+    // ── Chats ────────────────────────────────────────────────────────────────
+    // Chat-mode conversation threads. Owner-only; messages stored inline.
+    match /chats/{chatId} {
+      allow read, update, delete: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+    }
+
     // ── Corpus submissions (any authenticated user) ───────────────────────────
     // Admin UI is gated by email check in frontend — Firestore just requires login
     match /corpus_submissions/{docId} {
