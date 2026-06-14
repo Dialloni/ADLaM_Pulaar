@@ -31,10 +31,10 @@ import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode } from './translations';
 
 /* ── constants ──────────────────────────────────── */
-const LANGS: { code: LanguageCode; name: string }[] = [
-  { code: 'ff-adlm', name: '𞤆𞤓𞤂𞤀𞥄𞤈 (𞤀𞤁𞤂𞤀𞤃)' },
-  { code: 'en',      name: 'ENGLISH' },
-  { code: 'fr',      name: 'FRANÇAIS' },
+const LANGS: { code: LanguageCode; name: string; short: string }[] = [
+  { code: 'ff-adlm', name: '𞤆𞤓𞤂𞤀𞥄𞤈 (𞤀𞤁𞤂𞤀𞤃)', short: '𞤀𞤁𞤂𞤀𞤃' },
+  { code: 'en',      name: 'ENGLISH',          short: 'EN' },
+  { code: 'fr',      name: 'FRANÇAIS',         short: 'FR' },
 ];
 // Transliterate a Latin-script name into ADLaM letters — phonetic, the same way
 // a name is written in Arabic. The first letter uses the ADLaM capital form
@@ -550,7 +550,7 @@ export default function App() {
     if (now - lastPreviewAt.current > 1500) { lastPreviewAt.current = now; setPreviewCode(c); }
   };
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
-  const [selectedLang, setSelectedLang] = useState(LANGS[0]);
+  const [selectedLang, setSelectedLang] = useState<{ code: LanguageCode; name: string; short?: string }>(LANGS[0]);
   // AI model picker — Claude (eval winner) default; remembered per browser.
   const [provider, setProviderState] = useState<Provider>(
     () => (typeof window !== 'undefined' && (localStorage.getItem('gando_provider') as Provider)) || 'claude'
@@ -631,6 +631,8 @@ export default function App() {
   const [projectFilter, setProjectFilter] = useState<'all' | 'live' | 'building' | 'draft'>('all');
   const [headerSearch, setHeaderSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false); // command-palette search (projects + chats)
+  const [searchQuery, setSearchQuery] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
   const [importMode, setImportMode] = useState<'describe' | 'github' | 'figma'>('describe');
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -1443,6 +1445,80 @@ export default function App() {
 
       <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} />
 
+      {/* ════ SEARCH (command palette) ════ */}
+      {searchModalOpen && (() => {
+        const q = searchQuery.toLowerCase().trim();
+        const projHits = projects.filter(p =>
+          !q || p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q) || (p.language || '').toLowerCase().includes(q)
+        ).slice(0, 6);
+        const chatHits = chats.filter(c =>
+          !q || (c.title || '').toLowerCase().includes(q) || c.messages?.some(m => m.content.toLowerCase().includes(q))
+        ).slice(0, 6);
+        return (
+          <div onClick={() => setSearchModalOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 400, padding: '12vh 16px 16px' }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 16, width: '100%', maxWidth: 560, maxHeight: '70vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid var(--border)' }}>
+                <Search className="w-4 h-4 flex-shrink-0" style={{ color: '#71717a' }} />
+                <input autoFocus value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Escape') setSearchModalOpen(false); }}
+                  placeholder={selectedLang.code === 'fr' ? 'Rechercher projets et discussions…' : 'Search projects and chats…'}
+                  className="gando-input"
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 15, fontFamily: 'Inter, sans-serif' }} />
+                <button onClick={() => setSearchModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X className="w-4 h-4" /></button>
+              </div>
+              <div style={{ overflowY: 'auto', padding: 8 }}>
+                {projHits.length === 0 && chatHits.length === 0 && (
+                  <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
+                    {selectedLang.code === 'fr' ? 'Aucun résultat' : 'No results'}{q ? ` for "${searchQuery}"` : ''}
+                  </div>
+                )}
+                {projHits.length > 0 && (
+                  <>
+                    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#71717a', padding: '8px 12px 4px', fontFamily: MANROPE }}>{t.myProjectsLabel}</p>
+                    {projHits.map(p => (
+                      <button key={p.id} onClick={() => { openProject(p); setCurrentProject(p); setSearchModalOpen(false); }}
+                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'left' }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${P}18` }}>
+                          <Sparkles className="w-4 h-4" style={{ color: P }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</p>
+                          <p style={{ fontSize: 11, color: '#71717a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.language} · {p.description?.slice(0, 50) || '—'}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+                {chatHits.length > 0 && (
+                  <>
+                    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#71717a', padding: '8px 12px 4px', fontFamily: MANROPE }}>{selectedLang.code === 'fr' ? 'Discussions' : 'Chats'}</p>
+                    {chatHits.map(c => (
+                      <button key={c.id} onClick={() => { openChat(c); setSearchModalOpen(false); }}
+                        onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, cursor: 'pointer', border: 'none', background: 'transparent', textAlign: 'left' }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${P}18` }}>
+                          <MessageSquare className="w-4 h-4" style={{ color: P }} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.title || 'Untitled chat'}</p>
+                          <p style={{ fontSize: 11, color: '#71717a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.messages?.[c.messages.length - 1]?.content?.slice(0, 50) || '—'}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* global error toast */}
       <AnimatePresence>
         {globalError && (
@@ -1476,105 +1552,8 @@ export default function App() {
         </div>
 
 
-        {/* search + icons + profile */}
+        {/* icons + language */}
         <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-          {/* mobile: search icon → jumps to Projects page (full search lives there) */}
-          <button onClick={() => { setCurrentProject(null); setPage('projects'); }}
-            className="sm:hidden p-2 rounded-xl text-zinc-400 hover:text-white transition-colors"
-            aria-label="Search projects">
-            <Search className="w-5 h-5" />
-          </button>
-          {/* ── header search (desktop) ── */}
-          <div ref={searchRef} className="relative hidden sm:block">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full transition-all"
-              style={{ background: searchOpen ? '#1a1a1a' : '#131313', border: searchOpen ? '1px solid rgba(255,139,155,0.3)' : '1px solid transparent' }}>
-              <Search className="w-4 h-4 flex-shrink-0" style={{ color: searchOpen ? P : '#71717a' }} />
-              <input
-                value={headerSearch}
-                onChange={e => { setHeaderSearch(e.target.value); setSearchOpen(e.target.value.length > 0); }}
-                onFocus={() => { if (headerSearch.length > 0) setSearchOpen(true); }}
-                onKeyDown={e => {
-                  if (e.key === 'Escape') { setHeaderSearch(''); setSearchOpen(false); }
-                  if (e.key === 'Enter' && headerSearch.trim()) {
-                    setProjectSearch(headerSearch.trim());
-                    setPage('projects');
-                    setCurrentProject(null);
-                    setSearchOpen(false);
-                  }
-                }}
-                placeholder={t.searchPlaceholder}
-                className={cn('gando-input bg-transparent border-none outline-none text-sm w-40 text-white placeholder-zinc-600', isAdlam && 'font-adlam')}
-              />
-              {headerSearch && (
-                <button onClick={() => { setHeaderSearch(''); setSearchOpen(false); }}
-                  className="text-zinc-500 hover:text-white transition-colors flex-shrink-0">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* results dropdown */}
-            <AnimatePresence>
-              {searchOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-12 w-72 rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50"
-                  style={{ background: 'var(--card-bg)' }}
-                >
-                  {(() => {
-                    const q = headerSearch.toLowerCase().trim();
-                    const hits = projects.filter(p =>
-                      p.name.toLowerCase().includes(q) ||
-                      (p.description || '').toLowerCase().includes(q) ||
-                      (p.language || '').toLowerCase().includes(q)
-                    ).slice(0, 5);
-
-                    return hits.length === 0 ? (
-                      <div className="px-4 py-5 text-center">
-                        <Search className="w-5 h-5 mx-auto mb-2 text-zinc-600" />
-                        <p className="text-sm text-zinc-500">No projects match <span className="text-white font-bold">"{headerSearch}"</span></p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="px-4 pt-3 pb-1">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Projects</p>
-                        </div>
-                        {hits.map(p => (
-                          <button
-                            key={p.id}
-                            onClick={() => { openProject(p); setHeaderSearch(''); setSearchOpen(false); setCurrentProject(p); }}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-all text-left group"
-                          >
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                              style={{ background: `${P}18` }}>
-                              <Sparkles className="w-4 h-4" style={{ color: P }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-white truncate group-hover:text-[#ff8b9b] transition-colors">{p.name}</p>
-                              <p className="text-[10px] text-zinc-500 truncate">{p.language} · {p.description?.slice(0, 40) || '—'}</p>
-                            </div>
-                            <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-white transition-colors flex-shrink-0" />
-                          </button>
-                        ))}
-                        {projects.length > 5 && (
-                          <button
-                            onClick={() => { setProjectSearch(headerSearch); setPage('projects'); setCurrentProject(null); setSearchOpen(false); }}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-t border-white/5 text-xs font-bold transition-all hover:bg-white/5"
-                            style={{ color: P }}
-                          >
-                            View all results in Projects <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </>
-                    );
-                  })()}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
           <button onClick={toggleTheme} title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             className="p-2 rounded-xl transition-colors"
             style={{ color: 'var(--text-muted)', background: 'transparent' }}
@@ -1606,20 +1585,20 @@ export default function App() {
           )}
           style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
 
-          {/* collapse toggle + search (next to the slider) */}
+          {/* search (left) + collapse slider (right edge), Claude-style */}
           <div className="flex items-center px-3 pt-4 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
+            {!sidebarCollapsed && (
+              <button onClick={() => { setSearchQuery(''); setSearchModalOpen(true); }}
+                className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
+                title="Search projects & chats">
+                <Search className="w-4 h-4" />
+              </button>
+            )}
             <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
               title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
               <PanelLeft className="w-4 h-4" />
             </button>
-            {!sidebarCollapsed && (
-              <button onClick={() => searchRef.current?.querySelector('input')?.focus()}
-                className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
-                title="Search">
-                <Search className="w-4 h-4" />
-              </button>
-            )}
           </div>
 
           {/* new project (Claude-style, top) */}

@@ -4,10 +4,11 @@ import { Globe, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { LanguageCode } from '../translations';
 
+interface Lang { code: LanguageCode; name: string; short?: string }
 interface LanguageSelectorProps {
-  currentLanguage: { code: LanguageCode; name: string };
-  languages: { code: LanguageCode; name: string }[];
-  onSelect: (lang: { code: LanguageCode; name: string }) => void;
+  currentLanguage: Lang;
+  languages: Lang[];
+  onSelect: (lang: Lang) => void;
   className?: string;
   dropUp?: boolean;
   buttonClassName?: string;
@@ -100,7 +101,7 @@ export function LanguageSelector({
         )}
       >
         <Globe className="w-4 h-4 group-hover:rotate-12 transition-transform flex-shrink-0" />
-        <span className="text-xs font-bold tracking-wider uppercase truncate">{currentLanguage.name}</span>
+        <span className="text-xs font-bold tracking-wider uppercase truncate">{currentLanguage.short || currentLanguage.name}</span>
         <ChevronDown className={cn('w-3 h-3 transition-transform flex-shrink-0', isOpen && 'rotate-180')} />
       </button>
       {menu}
