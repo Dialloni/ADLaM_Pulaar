@@ -1585,6 +1585,16 @@ export default function App() {
           )}
           style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
 
+          {/* Gando logo at top of the rail (Gemini-style) — prominent when collapsed */}
+          {sidebarCollapsed && (
+            <div className="flex justify-center pt-4 pb-1">
+              <button onClick={() => { setCurrentProject(null); setPage('dashboard'); setChatActive(false); }}
+                className="transition-transform hover:scale-110" title={t.appName}>
+                <GandoLogo size={28} />
+              </button>
+            </div>
+          )}
+
           {/* search (left) + collapse slider (right edge), Claude-style */}
           <div className="flex items-center px-3 pt-4 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
             {!sidebarCollapsed && (
