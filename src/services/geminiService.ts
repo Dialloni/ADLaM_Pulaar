@@ -71,7 +71,7 @@ async function streamGeneration(
   return { ...final, code: final.code || code };
 }
 
-export type Provider = 'claude' | 'gemini' | 'groq-llama' | 'groq-qwen';
+export type Provider = 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
 
 export async function generateProject(
   prompt: string,
