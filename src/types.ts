@@ -23,6 +23,15 @@ export interface Message {
   codeSnapshot?: string;
 }
 
+export interface ChatThread {
+  id: string;
+  userId: string;
+  title: string;
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  createdAt: any;
+  updatedAt: any;
+}
+
 export interface GenerationResult {
   code: string;
   explanation: string;

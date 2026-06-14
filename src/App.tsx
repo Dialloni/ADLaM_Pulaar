@@ -16,7 +16,7 @@ import {
   onSnapshot, deleteDoc, db, serverTimestamp,
   handleFirestoreError, OperationType, auth,
 } from './firebase';
-import { Project, Message } from './types';
+import { Project, Message, ChatThread } from './types';
 import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider } from './services/geminiService';
 import { Chat } from './components/Chat';
 import { Preview } from './components/Preview';
@@ -63,7 +63,7 @@ const S = '#fd8b00';
 const T = '#bca2ff';
 const MANROPE = 'Manrope, sans-serif';
 
-type NavPage = 'dashboard' | 'projects' | 'assets' | 'templates' | 'docs' | 'status' | 'collector' | 'admin';
+type NavPage = 'dashboard' | 'projects' | 'chats' | 'assets' | 'templates' | 'docs' | 'status' | 'collector' | 'admin';
 
 const TEMPLATE_I18N: Record<string, { pageTitle: string; pageSubtitle: string; viewAll: string; preview: string; useTemplate: string; credit: string; templates: Record<string, { name: string; description: string; starterPrompt: string }> }> = {
   en: {
@@ -604,8 +604,10 @@ export default function App() {
     setModeState(m);
     try { localStorage.setItem('gando_mode', m); } catch { /* ignore */ }
   };
-  const [chatMessages, setChatMessages] = useState<Message[]>([]); // ephemeral chat-mode thread
+  const [chatMessages, setChatMessages] = useState<Message[]>([]); // active chat-mode thread (in-memory)
   const [chatActive, setChatActive] = useState(false);             // dashboard chat view open
+  const [chats, setChats] = useState<ChatThread[]>([]);            // saved chat threads (per user)
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const t = TRANSLATIONS[selectedLang.code] || TRANSLATIONS.en;
   const isAdlam = selectedLang.code === 'ff-adlm';
 
@@ -715,6 +717,15 @@ export default function App() {
       }
     }, err => setGlobalError(`Permission Error: ${err.message}`));
   }, [user, currentProject?.id]);
+
+  /* chats listener (per user) */
+  useEffect(() => {
+    if (!user) { setChats([]); return; }
+    const q = query(collection(db, 'chats'), where('userId', '==', user.uid), orderBy('updatedAt', 'desc'));
+    return onSnapshot(q,
+      snap => setChats(snap.docs.map(d => ({ id: d.id, ...d.data() } as ChatThread))),
+      () => {});
+  }, [user]);
 
   /* community templates listener (admin-approved, public) */
   useEffect(() => {
@@ -864,7 +875,53 @@ export default function App() {
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${currentProject.id}`); }
   };
 
-  // Chat mode — converse with the AI, no app generation. Ephemeral thread (chatMessages).
+  // Open a saved chat thread into the live view.
+  const openChat = (c: ChatThread) => {
+    setCurrentChatId(c.id);
+    setChatMessages(c.messages.map((m, i) => ({ id: `${c.id}-${i}`, projectId: '', role: m.role, content: m.content, timestamp: Date.now() })));
+    setCurrentProject(null);
+    setChatActive(true);
+    setMode('chat');
+    setMobileNavOpen(false);
+  };
+
+  // Start a fresh chat thread.
+  const startNewChat = () => {
+    setCurrentChatId(null);
+    setChatMessages([]);
+    setCurrentProject(null);
+    setChatActive(true);
+    setMode('chat');
+    setInput('');
+    setMobileNavOpen(false);
+  };
+
+  // Persist a completed chat exchange to Firestore (per user). New thread on first
+  // message, append after that. Best-effort — a save failure never breaks the chat.
+  const persistChat = async (userText: string, aiText: string) => {
+    if (!user) return;
+    const pair = [{ role: 'user' as const, content: userText }, { role: 'assistant' as const, content: aiText }];
+    try {
+      if (currentChatId) {
+        const existing = chats.find(c => c.id === currentChatId);
+        await updateDoc(doc(db, 'chats', currentChatId), {
+          messages: [...(existing?.messages ?? []), ...pair],
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        const ref = await addDoc(collection(db, 'chats'), {
+          userId: user.uid,
+          title: userText.slice(0, 60),
+          messages: pair,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        setCurrentChatId(ref.id);
+      }
+    } catch (err) { console.error('chat save failed:', err); }
+  };
+
+  // Chat mode — converse with the AI, no app generation. Thread saved per user (chats).
   const runChat = async (typedPrompt: string, extraContext?: string) => {
     if (!currentProject) setChatActive(true); // dashboard chat opens the full-screen session
     const fullPrompt = extraContext ? `${extraContext}\n\n${typedPrompt}` : typedPrompt;
@@ -874,8 +931,9 @@ export default function App() {
     setChatMessages(prev => [...prev, userMsg, aiMsg]);
     setInput('');
     setIsGenerating(true);
+    let finalAnswer = '';
     try {
-      await chatStream(
+      finalAnswer = await chatStream(
         fullPrompt,
         history,
         currentProject?.code,
@@ -890,12 +948,15 @@ export default function App() {
       );
     } catch (err: any) {
       const m = err.message || 'Chat failed.';
+      finalAnswer = `⚠️ ${m}`;
       setChatMessages(prev => {
         const copy = [...prev];
-        copy[copy.length - 1] = { ...aiMsg, content: `⚠️ ${m}` };
+        copy[copy.length - 1] = { ...aiMsg, content: finalAnswer };
         return copy;
       });
     } finally { setIsGenerating(false); }
+    // Save the exchange (dashboard chat threads only — project chats live with the project).
+    if (!currentProject) await persistChat(typedPrompt, finalAnswer);
   };
 
   const handleSend = async (extraContext?: string) => {
@@ -1523,79 +1584,6 @@ export default function App() {
           </button>
           {/* language selector — global, lives in the top bar */}
           <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
-          <div ref={notifRef} className="relative">
-            <button onClick={() => setNotifOpen(o => !o)} className="p-2 rounded-xl text-zinc-400 hover:text-white transition-colors relative">
-              <Bell className="w-5 h-5" />
-            </button>
-            <AnimatePresence>
-              {notifOpen && (
-                <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-12 w-72 rounded-2xl shadow-2xl border border-white/10 z-50 p-6 flex flex-col items-center gap-3"
-                  style={{ background: 'var(--card-bg)' }}>
-                  <Bell className="w-8 h-8 text-zinc-600" />
-                  <p className="text-sm font-bold text-zinc-500 text-center">No notifications yet</p>
-                  <p className="text-xs text-zinc-600 text-center">Activity on your projects will show up here.</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* profile dropdown */}
-          <div ref={profileRef} className="relative">
-            <button onClick={() => setProfileOpen(o => !o)} className="flex items-center gap-2 rounded-full p-0.5 border-2 transition-all"
-              style={{ borderColor: profileOpen ? P : `${P}50` }}>
-              {user.photoURL
-                ? <img src={user.photoURL} alt="" className="w-9 h-9 rounded-full object-cover" />
-                : <div className="w-9 h-9 rounded-full flex items-center justify-center font-black text-sm text-black"
-                    style={{ background: `linear-gradient(135deg,${P},${S})` }}>
-                    {(user.displayName || user.email || 'U')[0].toUpperCase()}
-                  </div>
-              }
-            </button>
-
-            <AnimatePresence>
-              {profileOpen && (
-                <motion.div initial={{ opacity: 0, y: 8, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-14 w-64 rounded-2xl shadow-2xl border border-white/10 overflow-hidden z-50"
-                  style={{ background: 'var(--card-bg)' }}>
-                  {/* user info */}
-                  <div className="p-4 border-b border-white/5">
-                    <div className="flex items-center gap-3">
-                      {user.photoURL
-                        ? <img src={user.photoURL} alt="" className="w-10 h-10 rounded-xl object-cover" />
-                        : <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-black"
-                            style={{ background: `linear-gradient(135deg,${P},${S})` }}>
-                            {(user.displayName || user.email || 'U')[0].toUpperCase()}
-                          </div>
-                      }
-                      <div className="min-w-0">
-                        <p className="text-sm font-black text-white truncate" style={{ fontFamily: MANROPE }}>{user.displayName || 'User'}</p>
-                        <p className="text-xs text-zinc-500 truncate">{user.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                  {/* actions */}
-                  <div className="p-2">
-                    <button onClick={() => { setPage('status'); setProfileOpen(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:bg-white/5 hover:text-white transition-all text-left">
-                      <Activity className="w-4 h-4 flex-shrink-0" /> {t.systemStatusLabel}
-                    </button>
-                    <button onClick={() => { setPage('docs'); setProfileOpen(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:bg-white/5 hover:text-white transition-all text-left">
-                      <BookOpen className="w-4 h-4 flex-shrink-0" /> {t.documentationLabel}
-                    </button>
-                    <div className="my-1 border-t border-white/5" />
-                    <button onClick={() => { logout(); setProfileOpen(false); }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all text-left">
-                      <LogOut className="w-4 h-4 flex-shrink-0" /> {t.signOut}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
       </header>
 
@@ -1618,71 +1606,30 @@ export default function App() {
           )}
           style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
 
-          {/* collapse toggle */}
-          <div className="flex items-center px-3 pt-4 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-end' }}>
+          {/* collapse toggle + search (next to the slider) */}
+          <div className="flex items-center px-3 pt-4 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
             <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all">
+              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
               <PanelLeft className="w-4 h-4" />
             </button>
+            {!sidebarCollapsed && (
+              <button onClick={() => searchRef.current?.querySelector('input')?.focus()}
+                className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
+                title="Search">
+                <Search className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
-          {/* user / workspace */}
-          {!sidebarCollapsed && (
-            <div className="px-3 mb-3 user-menu-container" style={{ position: 'relative' }}>
-              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 transition-all"
-                onClick={() => setUserMenuOpen(o => !o)}>
-                {user.photoURL
-                  ? <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-                  : <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-black flex-shrink-0"
-                      style={{ background: `linear-gradient(135deg,${P},${S})` }}>
-                      {(user.displayName || user.email || 'U')[0].toUpperCase()}
-                    </div>
-                }
-                <span className={cn('flex-1 min-w-0 text-sm font-bold text-white truncate', isAdlam && 'font-adlam')}
-                  style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                  {user.displayName || user.email?.split('@')[0] || 'Builder'}
-                </span>
-                <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" style={{ transform: 'rotate(90deg)' }} />
-              </div>
-              {userMenuOpen && (
-                <div style={{ position: 'absolute', top: '100%', left: 12, right: 12, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                  <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
-                  {([
-                    { icon: Settings,   label: 'Settings'  },
-                    { icon: Globe,      label: 'Language'  },
-                    { icon: HelpCircle, label: 'Help'      },
-                  ]).map(({ icon: Icon, label }) => (
-                    <button key={label} onClick={e => { e.stopPropagation(); setUserMenuOpen(false); }}
-                      onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
-                      onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
-                      <Icon size={14} /> {label}
-                    </button>
-                  ))}
-                  <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-                  <button onClick={e => { e.stopPropagation(); logout(); setUserMenuOpen(false); }}
-                    onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
-                    <LogOut size={14} /> {t.signOut}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* search */}
+          {/* new project (Claude-style, top) */}
           <div className="px-3 mb-3">
-            <button onClick={() => searchRef.current?.querySelector('input')?.focus()}
-              className={cn('w-full flex items-center rounded-xl transition-all text-zinc-500 hover:text-zinc-300 hover:bg-white/5', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-3 py-2')}
-              style={{ background: sidebarCollapsed ? 'transparent' : 'rgba(255,255,255,0.03)', border: sidebarCollapsed ? 'none' : '1px solid var(--hover-bg)' }}>
-              <Search className="w-4 h-4 flex-shrink-0" />
-              {!sidebarCollapsed && (
-                <>
-                  <span className="flex-1 text-left text-sm" style={{ fontFamily: 'Inter, sans-serif' }}>Search…</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded text-zinc-600" style={{ background: 'rgba(255,255,255,0.06)', fontFamily: 'Inter, sans-serif' }}>⌘K</span>
-                </>
-              )}
+            <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); setImportMode('describe'); setMobileNavOpen(false); }}
+              className={cn('w-full flex items-center rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2 px-3 py-2.5', isAdlam && 'font-adlam')}
+              style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: isAdlam ? undefined : MANROPE, fontSize: 13 }}
+              title={t.newProject}>
+              <Plus className="w-4 h-4 flex-shrink-0" />
+              {!sidebarCollapsed && <span>{t.newProject}</span>}
             </button>
           </div>
 
@@ -1691,6 +1638,7 @@ export default function App() {
             {([
               { icon: LayoutDashboard, label: t.dashboardNav,       pg: 'dashboard' as NavPage },
               { icon: FolderKanban,   label: t.myProjectsLabel,     pg: 'projects'  as NavPage },
+              { icon: MessageSquare,  label: selectedLang.code === 'fr' ? 'Discussions' : 'Chats', pg: 'chats' as NavPage },
               { icon: Layers,         label: t.templatesNav,         pg: 'templates' as NavPage },
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
               { icon: BookOpen,       label: t.documentationLabel,   pg: 'docs'      as NavPage },
@@ -1700,7 +1648,7 @@ export default function App() {
             ]).map(({ icon: Icon, label, pg }) => {
               const active = page === pg && !currentProject;
               return (
-                <button key={pg} onClick={() => { setPage(pg); setCurrentProject(null); setMobileNavOpen(false); }}
+                <button key={pg} onClick={() => { setPage(pg); setCurrentProject(null); setChatActive(false); setMobileNavOpen(false); }}
                   className={cn('w-full flex items-center rounded-xl transition-all', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2', isAdlam && 'font-adlam')}
                   style={{ background: active ? 'rgba(255,255,255,0.07)' : 'transparent', color: active ? '#fff' : '#71717a', border: 'none', fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 600, fontSize: 13 }}>
                   <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? P : undefined }} />
@@ -1730,13 +1678,53 @@ export default function App() {
           {/* spacer */}
           <div className="flex-1" />
 
-          {/* new project */}
-          <div className="p-3">
-            <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); setImportMode('describe'); }}
-              className={cn('w-full rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', isAdlam && 'font-adlam')}
-              style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: isAdlam ? undefined : MANROPE, fontSize: 12, padding: sidebarCollapsed ? '8px 4px' : '12px' }}>
-              {sidebarCollapsed ? '+' : `+ ${t.newProject}`}
-            </button>
+          {/* user (Claude-style, bottom) */}
+          <div className="p-3 user-menu-container" style={{ position: 'relative' }}>
+            <div className={cn('flex items-center rounded-xl cursor-pointer hover:bg-white/5 transition-all', sidebarCollapsed ? 'justify-center p-2' : 'gap-2.5 px-3 py-2.5')}
+              onClick={() => setUserMenuOpen(o => !o)}>
+              {user.photoURL
+                ? <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+                : <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-black flex-shrink-0"
+                    style={{ background: `linear-gradient(135deg,${P},${S})` }}>
+                    {(user.displayName || user.email || 'U')[0].toUpperCase()}
+                  </div>
+              }
+              {!sidebarCollapsed && (
+                <>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn('text-sm font-bold text-white truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                      {user.displayName || user.email?.split('@')[0] || 'Builder'}
+                    </p>
+                    <p className="text-[11px] text-zinc-500 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>{user.email}</p>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" style={{ transform: 'rotate(-90deg)' }} />
+                </>
+              )}
+            </div>
+            {userMenuOpen && (
+              <div style={{ position: 'absolute', bottom: '100%', left: 12, right: 12, marginBottom: 6, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
+                <button onClick={e => { e.stopPropagation(); setPage('status'); setCurrentProject(null); setUserMenuOpen(false); setMobileNavOpen(false); }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  <Activity size={14} /> {t.systemStatusLabel}
+                </button>
+                <button onClick={e => { e.stopPropagation(); setPage('docs'); setCurrentProject(null); setUserMenuOpen(false); setMobileNavOpen(false); }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  <BookOpen size={14} /> {t.documentationLabel}
+                </button>
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+                <button onClick={e => { e.stopPropagation(); logout(); setUserMenuOpen(false); }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  <LogOut size={14} /> {t.signOut}
+                </button>
+              </div>
+            )}
           </div>
 
         </aside>
@@ -1891,7 +1879,7 @@ export default function App() {
             /* ══ CHAT SESSION (chat mode, no project) ══ */
             <div className="flex flex-1 flex-col overflow-hidden relative z-10">
               <div className="h-14 flex items-center gap-3 px-4 md:px-6 border-b border-white/5 flex-shrink-0">
-                <button onClick={() => { setChatActive(false); setChatMessages([]); }}
+                <button onClick={() => { setChatActive(false); setChatMessages([]); setCurrentChatId(null); setPage('chats'); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
                   style={{ fontFamily: MANROPE }}>
                   <ArrowLeft className="w-4 h-4" /> Back
@@ -1908,6 +1896,63 @@ export default function App() {
                   byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                   mode={mode} onModeChange={setMode} />
               </div>
+            </div>
+
+          ) : page === 'chats' ? (
+            /* ══ CHATS PAGE ══ */
+            <div className="flex-1 overflow-y-auto relative z-10 p-8 md:p-10 space-y-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h1 className={cn('text-4xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                    {selectedLang.code === 'fr' ? 'Discussions' : 'Chats'}
+                  </h1>
+                  <p className={cn('text-zinc-500 mt-1', isAdlam && 'font-adlam')}>
+                    {selectedLang.code === 'fr' ? 'Vos conversations avec Gando' : 'Your conversations with Gando'}
+                  </p>
+                </div>
+                <button onClick={startNewChat}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95"
+                  style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, fontSize: 13 }}>
+                  <Plus className="w-4 h-4" /> {selectedLang.code === 'fr' ? 'Nouvelle discussion' : 'New chat'}
+                </button>
+              </div>
+
+              {chats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: `${P}15` }}>
+                    <MessageSquare className="w-8 h-8" style={{ color: P }} />
+                  </div>
+                  <p className="text-zinc-500 text-center">
+                    {selectedLang.code === 'fr' ? 'Aucune discussion pour le moment.' : 'No chats yet.'}<br />
+                    {selectedLang.code === 'fr' ? 'Démarrez-en une pour la retrouver ici.' : 'Start one and it will show up here.'}
+                  </p>
+                  <button onClick={startNewChat}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.02]"
+                    style={{ background: 'var(--gradient-brand)', fontFamily: MANROPE, fontSize: 13 }}>
+                    <Plus className="w-4 h-4" /> {selectedLang.code === 'fr' ? 'Nouvelle discussion' : 'New chat'}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {chats.map(c => (
+                    <div key={c.id} onClick={() => openChat(c)}
+                      className="group relative p-5 rounded-2xl border border-white/10 cursor-pointer transition-all hover:border-white/20 hover:scale-[1.01]"
+                      style={{ background: 'var(--card-bg)' }}>
+                      <button onClick={async e => { e.stopPropagation(); try { await deleteDoc(doc(db, 'chats', c.id)); if (currentChatId === c.id) { setCurrentChatId(null); setChatMessages([]); } } catch (err) { console.error(err); } }}
+                        className="absolute top-3 right-3 p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
+                        title={selectedLang.code === 'fr' ? 'Supprimer' : 'Delete'}>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: `${P}15` }}>
+                        <MessageSquare className="w-4 h-4" style={{ color: P }} />
+                      </div>
+                      <p className="text-sm font-bold text-white truncate group-hover:text-[#ff8b9b] transition-colors pr-6" style={{ fontFamily: MANROPE }}>{c.title || 'Untitled chat'}</p>
+                      <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{c.messages?.[c.messages.length - 1]?.content?.slice(0, 90) || '—'}</p>
+                      <p className="text-[10px] text-zinc-600 mt-3 uppercase tracking-widest" style={{ fontFamily: MANROPE }}>{c.messages?.length || 0} {selectedLang.code === 'fr' ? 'messages' : 'messages'}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           ) : page === 'projects' ? (
