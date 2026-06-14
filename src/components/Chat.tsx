@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, Bot, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare } from 'lucide-react';
+import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare } from 'lucide-react';
+import { GandoSpark } from './GandoSpark';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -523,14 +524,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                       m.role === 'user' ? "flex-row-reverse" : "flex-row"
                     )}>
                       {/* Avatar */}
-                      <div className={cn(
-                        "w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xl border",
-                        m.role === 'user' 
-                          ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400/30" 
-                          : "bg-gradient-to-br from-[#ff8b9b] to-[#fd8b00] text-white border-[#ff8b9b]/30"
-                      )}>
-                        {m.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-                      </div>
+                      {m.role === 'user' ? (
+                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xl border bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400/30">
+                          <User className="w-5 h-5" />
+                        </div>
+                      ) : (
+                        <GandoSpark size={40} className="mt-0.5" />
+                      )}
 
                       {/* Message Content */}
                       <div className={cn(
@@ -596,9 +596,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="flex items-start gap-3"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#ff8b9b] to-[#fd8b00] flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
+                    <GandoSpark size={32} className="mt-0.5" />
                     <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: 'var(--card-bg)', border: '1px solid rgba(255,139,155,0.2)', maxWidth: '90%' }}>
                       {generationSteps.length === 0 ? (
                         <div className="flex items-center gap-1.5">
