@@ -1534,7 +1534,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* ════════ HEADER ════════ */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 md:h-20 flex items-center justify-between px-4 md:px-8 flex-shrink-0"
+      <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-4 md:px-8 flex-shrink-0"
         style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
         {/* brand + nav */}
         <div className="flex items-center gap-2 md:gap-8 min-w-0 flex-shrink-0">
@@ -1543,7 +1543,6 @@ export default function App() {
             aria-label="Menu">
             <PanelLeft className="w-5 h-5" />
           </button>
-          <GandoLogo size={28} />
           <span className={cn('text-lg md:text-2xl font-black tracking-tight cursor-pointer select-none', isAdlam && 'font-adlam')}
             style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
             onClick={() => { setCurrentProject(null); setPage('dashboard'); }}>
@@ -1567,7 +1566,7 @@ export default function App() {
       </header>
 
       {/* ════════ BODY ════════ */}
-      <div className="flex flex-1 overflow-hidden pt-16 md:pt-20">
+      <div className="flex flex-1 overflow-hidden pt-14">
 
 
         {/* mobile drawer backdrop */}
@@ -1579,7 +1578,7 @@ export default function App() {
         {/* ════ SIDEBAR ════ */}
         <aside className={cn(
             'flex-shrink-0 flex flex-col border-r border-white/5',
-            'fixed md:static top-16 md:top-0 bottom-0 left-0 z-[100] md:z-auto',
+            'fixed md:static top-14 md:top-0 bottom-0 left-0 z-[100] md:z-auto',
             'transition-transform duration-200 md:transition-none',
             mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
           )}
@@ -1630,8 +1629,6 @@ export default function App() {
               { icon: MessageSquare,  label: selectedLang.code === 'fr' ? 'Discussions' : 'Chats', pg: 'chats' as NavPage },
               { icon: Layers,         label: t.templatesNav,         pg: 'templates' as NavPage },
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
-              { icon: BookOpen,       label: t.documentationLabel,   pg: 'docs'      as NavPage },
-              { icon: Activity,       label: t.systemStatusLabel,    pg: 'status'    as NavPage },
               { icon: Camera,         label: selectedLang.code === 'fr' ? 'Collecteur' : 'Collector', pg: 'collector' as NavPage },
               ...(isAdmin ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
             ]).map(({ icon: Icon, label, pg }) => {
