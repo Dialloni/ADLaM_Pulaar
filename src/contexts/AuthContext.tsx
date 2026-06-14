@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User, db, doc, setDoc, getDoc, serverTimestamp, createUserWithEmailAndPassword, signInWithEmailAndPassword } from '../firebase';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, User, db, doc, setDoc, getDoc, serverTimestamp, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, deleteUser } from '../firebase';
 import { signInWithRedirect, getRedirectResult } from 'firebase/auth';
 
 const BOOTSTRAP_ADMIN = 'gandoadlam25@gmail.com';
@@ -12,6 +12,9 @@ interface AuthContextType {
   signIn: () => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string) => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
+  updateAvatar: (photoURL: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -22,6 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [, setProfileVersion] = useState(0); // bump to re-render after a profile edit
 
   useEffect(() => {
     // Failsafe: never let the app hang on a loading spinner. If auth init stalls
@@ -122,6 +126,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Let the user set/correct their display name (Google/email sign-up often
+  // seeds it from the email prefix). Persists to Firebase Auth + the Firestore
+  // users doc, then forces a re-render so the new name shows everywhere.
+  const updateDisplayName = async (name: string) => {
+    const cur = auth.currentUser;
+    if (!cur) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    await updateProfile(cur, { displayName: trimmed });
+    await cur.reload();
+    setUser(auth.currentUser);
+    setProfileVersion(v => v + 1);
+    try {
+      await setDoc(doc(db, 'users', cur.uid), { displayName: trimmed, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (err) {
+      console.error('[Auth] displayName Firestore sync failed (non-blocking):', err);
+    }
+  };
+
+  const updateAvatar = async (photoURL: string) => {
+    const cur = auth.currentUser;
+    if (!cur) return;
+    await updateProfile(cur, { photoURL });
+    await cur.reload();
+    setUser(auth.currentUser);
+    setProfileVersion(v => v + 1);
+    try {
+      await setDoc(doc(db, 'users', cur.uid), { photoURL, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (err) {
+      console.error('[Auth] photoURL Firestore sync failed (non-blocking):', err);
+    }
+  };
+
+  // Real account deletion (GDPR-compliant): removes the Firebase auth account.
+  // Their Firestore docs are purged best-effort by the caller before this runs.
+  // May throw 'auth/requires-recent-login' — caller surfaces "log in again".
+  const deleteAccount = async () => {
+    const cur = auth.currentUser;
+    if (!cur) return;
+    await deleteUser(cur);
+  };
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -132,7 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, error, signIn, signInWithEmail, signUpWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, error, signIn, signInWithEmail, signUpWithEmail, updateDisplayName, updateAvatar, deleteAccount, logout }}>
       {children}
     </AuthContext.Provider>
   );

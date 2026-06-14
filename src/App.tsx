@@ -12,9 +12,10 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
 import {
-  collection, addDoc, updateDoc, doc, query, where, orderBy,
+  collection, addDoc, updateDoc, doc, setDoc, getDoc, query, where, orderBy,
   onSnapshot, deleteDoc, db, serverTimestamp,
   handleFirestoreError, OperationType, auth,
+  storage, ref, uploadBytes, getDownloadURL,
 } from './firebase';
 import { Project, Message, ChatThread } from './types';
 import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider } from './services/geminiService';
@@ -27,6 +28,7 @@ import { ModeSwitch } from './components/ModeSwitch';
 import { useTheme } from './lib/useTheme';
 import { AdminPortal } from './components/AdminPortal';
 import { GandoCollector } from './components/GandoCollector';
+import { SettingsModal, type UserPrefs } from './components/SettingsModal';
 import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode } from './translations';
 
@@ -471,7 +473,8 @@ const ByokModal: React.FC<{
   keys: Partial<Record<ByokProvider, string>>;
   onSave: (next: Partial<Record<ByokProvider, string>>) => void;
   onClose: () => void;
-}> = ({ open, keys, onSave, onClose }) => {
+  fr?: boolean;
+}> = ({ open, keys, onSave, onClose, fr = false }) => {
   const [draft, setDraft] = useState<Partial<Record<ByokProvider, string>>>(keys);
   useEffect(() => { if (open) setDraft(keys); }, [open, keys]);
   if (!open) return null;
@@ -486,17 +489,19 @@ const ByokModal: React.FC<{
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, padding: 16 }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', padding: 24, fontFamily: 'Inter, sans-serif' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>Bring your own API key</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{fr ? 'Utilisez votre propre clé API' : 'Bring your own API key'}</h2>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X className="w-5 h-5" /></button>
         </div>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 18, lineHeight: 1.5 }}>
-          Paste a key to use that provider with your own quota. Keys are stored in this browser only — never on our servers. Leave blank to remove.
+          {fr
+            ? 'Collez une clé pour utiliser ce fournisseur avec votre propre quota. Les clés sont stockées uniquement dans ce navigateur — jamais sur nos serveurs. Laissez vide pour retirer.'
+            : 'Paste a key to use that provider with your own quota. Keys are stored in this browser only — never on our servers. Leave blank to remove.'}
         </p>
         {BYOK_PROVIDERS.map(p => (
           <div key={p.id} style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{p.label}</label>
-              <a href={p.keysUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#3b82f6', textDecoration: 'none' }}>Get key →</a>
+              <a href={p.keysUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#3b82f6', textDecoration: 'none' }}>{fr ? 'Obtenir une clé →' : 'Get key →'}</a>
             </div>
             <input
               type="password" autoComplete="off" spellCheck={false}
@@ -507,8 +512,8 @@ const ByokModal: React.FC<{
           </div>
         ))}
         <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-          <button onClick={onClose} style={{ flex: 1, height: 40, borderRadius: 10, background: 'var(--btn-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={save} style={{ flex: 1, height: 40, borderRadius: 10, background: 'var(--gradient-brand)', border: 'none', color: '#0a0a0a', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Save keys</button>
+          <button onClick={onClose} style={{ flex: 1, height: 40, borderRadius: 10, background: 'var(--btn-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{fr ? 'Annuler' : 'Cancel'}</button>
+          <button onClick={save} style={{ flex: 1, height: 40, borderRadius: 10, background: 'var(--gradient-brand)', border: 'none', color: '#0a0a0a', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>{fr ? 'Enregistrer' : 'Save keys'}</button>
         </div>
       </div>
     </div>
@@ -521,7 +526,7 @@ const ByokModal: React.FC<{
 export default function App() {
   const isMobile = useIsMobile();
   const { toggle: toggleTheme, resolved: resolvedTheme } = useTheme();
-  const { user, isAdmin, loading, error: authContextError, signIn, signInWithEmail, signUpWithEmail, logout } = useAuth();
+  const { user, isAdmin, loading, error: authContextError, signIn, signInWithEmail, signUpWithEmail, updateDisplayName, updateAvatar, deleteAccount, logout } = useAuth();
 
   /* auth */
   const [email, setEmail]     = useState('');
@@ -562,6 +567,15 @@ export default function App() {
   // BYOK — user's own API keys, stored in this browser only (never sent to our DB).
   const [byokKeys, setByokKeys] = useState<Partial<Record<ByokProvider, string>>>(loadByokKeys);
   const [byokModalOpen, setByokModalOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false); // account settings (tabbed)
+  const [userPrefs, setUserPrefs] = useState<UserPrefs>({});
+  const saveUserPrefs = (partial: UserPrefs) => {
+    setUserPrefs(prev => ({ ...prev, ...partial }));
+    if (user) {
+      try { void setDoc(doc(db, 'users', user.uid), { ...partial, updatedAt: serverTimestamp() }, { merge: true }); }
+      catch (err) { console.error('prefs save failed:', err); }
+    }
+  };
   const saveByokKeys = (next: Partial<Record<ByokProvider, string>>) => {
     setByokKeys(next);
     try { localStorage.setItem(BYOK_STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
@@ -719,6 +733,22 @@ export default function App() {
       }
     }, err => setGlobalError(`Permission Error: ${err.message}`));
   }, [user, currentProject?.id]);
+
+  /* user prefs listener (preferredName, occupation, training/location toggles) */
+  useEffect(() => {
+    if (!user) { setUserPrefs({}); return; }
+    return onSnapshot(doc(db, 'users', user.uid),
+      snap => {
+        const d = snap.data() || {};
+        setUserPrefs({
+          preferredName: d.preferredName,
+          occupation: d.occupation,
+          allowTraining: d.allowTraining,
+          allowPreciseLocation: d.allowPreciseLocation,
+        });
+      },
+      () => {});
+  }, [user]);
 
   /* chats listener (per user) */
   useEffect(() => {
@@ -923,6 +953,46 @@ export default function App() {
     } catch (err) { console.error('chat save failed:', err); }
   };
 
+  // Upload a new avatar image to Storage (reuses the collector/{uid} path which
+  // already allows owner image writes), then set it as the profile photo.
+  const changeAvatar = async (file: File) => {
+    if (!user) return;
+    const r = ref(storage, `collector/${user.uid}/avatar-${Date.now()}-${file.name}`);
+    await uploadBytes(r, file);
+    const url = await getDownloadURL(r);
+    await updateAvatar(url);
+  };
+
+  // Export the user's data (projects + chats) as a downloadable JSON file.
+  const exportUserData = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      account: { uid: user?.uid, email: user?.email, displayName: user?.displayName },
+      projects: projects.map(p => ({ id: p.id, name: p.name, description: p.description, language: p.language, code: p.code, createdAt: p.createdAt, updatedAt: p.updatedAt })),
+      chats: chats.map(c => ({ id: c.id, title: c.title, messages: c.messages, createdAt: c.createdAt, updatedAt: c.updatedAt })),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `gando-data-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Real account deletion: purge the user's Firestore docs (projects + chats +
+  // profile), then delete the auth account. onAuthStateChanged then signs them out.
+  const runDeleteAccount = async () => {
+    if (!user) return;
+    const uid = user.uid;
+    // best-effort purge of owned data
+    try {
+      await Promise.all(projects.map(p => deleteDoc(doc(db, 'projects', p.id)).catch(() => {})));
+      await Promise.all(chats.map(c => deleteDoc(doc(db, 'chats', c.id)).catch(() => {})));
+      await deleteDoc(doc(db, 'users', uid)).catch(() => {});
+    } catch { /* non-blocking */ }
+    await deleteAccount(); // may throw auth/requires-recent-login → surfaced in modal
+  };
+
   // Chat mode — converse with the AI, no app generation. Thread saved per user (chats).
   const runChat = async (typedPrompt: string, extraContext?: string) => {
     if (!currentProject) setChatActive(true); // dashboard chat opens the full-screen session
@@ -1112,7 +1182,7 @@ export default function App() {
     <div className={cn('min-h-screen relative overflow-x-hidden', isAdlam && 'font-adlam')}
       style={{ background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
 
-      <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} />
+      <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} fr={selectedLang.code === "fr"} />
 
       {/* ambient blobs + grid */}
       <div className="pointer-events-none fixed inset-0 z-0">
@@ -1232,7 +1302,7 @@ export default function App() {
                         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
                         <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{selectedLang.code === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                       </div>
                     </div>
                   )}
@@ -1430,6 +1500,11 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {/* data/training disclosure (GDPR — opt-out lives in Settings → Privacy) */}
+              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-faint)', marginTop: 18, lineHeight: 1.5, textAlign: 'center' }}>
+                By continuing, your chats may be used to improve our AI models. You can turn this off anytime in Settings → Privacy.
+              </p>
             </motion.div>
           </motion.div>
         )}
@@ -1443,7 +1518,25 @@ export default function App() {
   return (
     <div className={cn('w-screen flex flex-col overflow-hidden', isAdlam && 'font-adlam')} style={{ background: 'var(--app-bg)', color: 'var(--text-primary)', height: '100dvh' }}>
 
-      <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} />
+      <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} fr={selectedLang.code === "fr"} />
+      <SettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        displayName={user.displayName || ''}
+        email={user.email || ''}
+        photoURL={user.photoURL}
+        prefs={userPrefs}
+        theme={resolvedTheme}
+        t={t}
+        fr={selectedLang.code === 'fr'}
+        onToggleTheme={toggleTheme}
+        onSaveName={updateDisplayName}
+        onChangeAvatar={changeAvatar}
+        onSavePrefs={saveUserPrefs}
+        onExport={exportUserData}
+        onLogout={() => { setSettingsOpen(false); logout(); }}
+        onDelete={runDeleteAccount}
+      />
 
       {/* ════ SEARCH (command palette) ════ */}
       {searchModalOpen && (() => {
@@ -1496,7 +1589,7 @@ export default function App() {
                 )}
                 {chatHits.length > 0 && (
                   <>
-                    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#71717a', padding: '8px 12px 4px', fontFamily: MANROPE }}>{selectedLang.code === 'fr' ? 'Discussions' : 'Chats'}</p>
+                    <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#71717a', padding: '8px 12px 4px', fontFamily: MANROPE }}>{t.chatsLabel}</p>
                     {chatHits.map(c => (
                       <button key={c.id} onClick={() => { openChat(c); setSearchModalOpen(false); }}
                         onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
@@ -1626,10 +1719,10 @@ export default function App() {
             {([
               { icon: LayoutDashboard, label: t.dashboardNav,       pg: 'dashboard' as NavPage },
               { icon: FolderKanban,   label: t.myProjectsLabel,     pg: 'projects'  as NavPage },
-              { icon: MessageSquare,  label: selectedLang.code === 'fr' ? 'Discussions' : 'Chats', pg: 'chats' as NavPage },
+              { icon: MessageSquare,  label: t.chatsLabel, pg: 'chats' as NavPage },
               { icon: Layers,         label: t.templatesNav,         pg: 'templates' as NavPage },
               { icon: Globe2,         label: t.languageAssetsLabel,  pg: 'assets'    as NavPage },
-              { icon: Camera,         label: selectedLang.code === 'fr' ? 'Collecteur' : 'Collector', pg: 'collector' as NavPage },
+              { icon: Camera,         label: t.collectorLabel, pg: 'collector' as NavPage },
               ...(isAdmin ? [{ icon: Users, label: 'Corpus Admin', pg: 'admin' as NavPage }] : []),
             ]).map(({ icon: Icon, label, pg }) => {
               const active = page === pg && !currentProject;
@@ -1647,7 +1740,7 @@ export default function App() {
           {/* recents */}
           {!sidebarCollapsed && projects.length > 0 && (
             <div className="mt-5 px-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 px-3 mb-1.5" style={{ fontFamily: MANROPE }}>Recents</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 px-3 mb-1.5" style={{ fontFamily: MANROPE }}>{t.recentsHeader}</p>
               <div className="space-y-0.5">
                 {projects.slice(0, 5).map(p => (
                   <button key={p.id} onClick={() => { openProject(p); setMobileNavOpen(false); }}
@@ -1690,6 +1783,12 @@ export default function App() {
             {userMenuOpen && (
               <div style={{ position: 'absolute', bottom: '100%', left: 12, right: 12, marginBottom: 6, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                 <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
+                <button onClick={e => { e.stopPropagation(); setSettingsOpen(true); setUserMenuOpen(false); }}
+                  onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  <Settings size={14} /> {selectedLang.code === 'fr' ? 'Paramètres' : 'Settings'}
+                </button>
                 <button onClick={e => { e.stopPropagation(); setPage('status'); setCurrentProject(null); setUserMenuOpen(false); setMobileNavOpen(false); }}
                   onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
@@ -1893,7 +1992,7 @@ export default function App() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h1 className={cn('text-4xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                    {selectedLang.code === 'fr' ? 'Discussions' : 'Chats'}
+                    {t.chatsLabel}
                   </h1>
                   <p className={cn('text-zinc-500 mt-1', isAdlam && 'font-adlam')}>
                     {selectedLang.code === 'fr' ? 'Vos conversations avec Gando' : 'Your conversations with Gando'}
@@ -2830,7 +2929,7 @@ export default function App() {
 
                   {/* personalized greeting */}
                   {(() => {
-                    const raw = user.displayName?.trim().split(/\s+/)[0] || user.email?.split('@')[0] || 'Builder';
+                    const raw = userPrefs.preferredName?.trim() || user.displayName?.trim().split(/\s+/)[0] || user.email?.split('@')[0] || 'Builder';
                     // ADLaM: write the name in ADLaM letters + render RTL (greeting
                     // on the right, name on the left). Else Latin, capitalized.
                     const firstName = isAdlam ? latinToAdlam(raw) : raw.charAt(0).toUpperCase() + raw.slice(1);
@@ -2976,7 +3075,7 @@ export default function App() {
                                     onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
                                     <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                                    <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                                    <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{selectedLang.code === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                                   </div>
                                 </div>
                               )}

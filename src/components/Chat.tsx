@@ -447,7 +447,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                               onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
                               <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                             </div>
                           </div>
                         )}
@@ -771,7 +771,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                         onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
                         <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Bring your own key</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                       </div>
                     </div>
                   )}
