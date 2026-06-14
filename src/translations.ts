@@ -126,6 +126,8 @@ export interface UIStrings {
   preciseLocationSubtitle: string;
   exportDataLabel: string;
   exportDataSubtitle: string;
+  signIn: string;
+  getStarted: string;
   twPhrases: string[];
   generating: string;
   copy: string;
@@ -193,7 +195,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     heroTitle: ".𞤘𞤢𞤲𞤣𞤮 𞤦𞤢𞤤𞥆𞤢𞤤 𞤫 𞤢𞤨𞥆𞤧 𞤃𞤢𞤸𞤵",
     heroSubtitle: ".𞤤𞤢𞥄𞤼𞤮𞥅 𞤲𞤮 𞤯𞤵𞤥 𞤢𞤲𞤣𞤢𞥄𞤪𞤢 𞤢 𞤲𞤺𞤢𞤥 𞤥𞤢𞤥 𞤥𞤢𞥄𞤯𞤢 𞤯𞤫𞤲𞤯𞤢𞤤 𞤫 𞤲𞤮𞤼𞥆𞤢𞥄 𞤳𞤮 𞤅𞤭𞤬𞤢𞥄 .𞤀𞤬𞤪𞤭𞤳𞤢 𞤲𞤺𞤢𞤥 𞤶𞤢𞤥𞤢𞥄𞤲𞤵 𞤢𞤨𞥆𞤧 𞤏𞤢𞤸𞤮𞥅𞤱𞤮",
     loginEyebrow: "𞤀𞤊𞤪𞤭𞤳𞤢 𞤐𞤘𞤢𞤃 · 𞤘𞤢𞤲𞤣𞤮",
-    loginLine1: "𞤢𞨨𞥆𞤧𞤶𞤭 𞤃𞤢𞤸𞤵𞤣𞤫",
+    loginLine1: "𞤢𞤨𞥆𞤧𞤶𞤭 𞤃𞤢𞤸𞤵𞤣𞤫",
     loginLine2: "𞤫𞤲𞤣𞤫𞤪 𞤫",
     loginLine3: ".𞤥𞤢𞤥 𞤥𞤢𞥄𞤯𞤢 𞤯𞤫𞤲𞤯𞤢𞤤",
     beta: "𞤒𞤫𥅼𞤮 𞤘𞤢𞤲𞤣𞤮",
@@ -208,7 +210,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     settingsNav: "𞤚𞤫𞤩𞥆𞤫",
     teamHubLabel: "𞤘𞤮𞤤𞥆𞤭𞤣𞤫 𞤔𞤵𞥅𞤯𞤫",
     newProject: "𞤳𞤫𞤧𞤮 𞤆𞤮𞤪𞤮𞤶𞤫",
-    documentationLabel: "𞤁𞤫𞤬𞤼𞤫𞪪𞤣𞤵",
+    documentationLabel: "𞤁𞤫𞤬𞤼𞤫𞤪𞤣𞤵",
     systemStatusLabel: "𞤅𞤭𞤧𞤼𞤫𞤥 𞤐𞤮𞤲𞥆𞤣𞤫",
     signOut: "𞤒𞤢𞤤𞤼𞤵𞤯𞤫",
     projectsCreatedLabel: "𞤃𞤢𞤸𞤢𞥄𞤯𞤭 𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭",
@@ -298,6 +300,8 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     preciseLocationSubtitle: ".𞤲𞤫𞤼𞤱𞤮𞤪𞤳 𞤲𞤣𞤫𞤪 𞤫 𞤥𞤢𞥄𞤯𞤢 𞤺𞤢𞤤𞥆𞤵𞥅𞤪𞤫 𞤶𞤮𞤺𞤭𞥅 𞤲𞤮 𞤃𞤭𞤲 .𞤱𞤫𞥅𞤤𞤭 𞤐𞤮",
     exportDataLabel: "𞤺𞤮𞤤𞥆𞤭𞤪𞤯𞤭 𞤟𞤢𞥄𞤪𞤵",
     exportDataSubtitle: "(𞤔𞤅𞤌𞤐) 𞤶𞤫𞤱𞤼𞤫𞤪𞤫𞥅𞤶𞤭 𞤫 𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤔𞤭𞤨𞥆𞤭𞤲𞤣𞤫",
+    signIn: "𞤐𞤢𞥄𞤼𞤵",
+    getStarted: "𞤊𞤵𞤯𞥆𞤮",
     twPhrases: [
       "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 𞤆𞤵𞤤𞤢𞥄𞤪 𞤫 𞤀𞤁𞤂𞤀𞤃…",
       "𞤃𞤢𞤸𞤵 𞤤𞤢 𞤥𞤼𞤢𞤲𞤣𞤢𞤱𞤭 𞤲𞤺𞤢𞤥 𞤀𞤬𞤪𞤭𞤳𞤢…",
@@ -317,7 +321,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     communityHubPrompt: "…𞤴𞤭𞤥𞤩𞤫 𞤶𞤮𞤳𞥆𞤵𞤣𞤫 𞤲𞤺𞤢𞤥 𞤨𞤤𞤢𞤼𞤬𞤮𞤪𞤥 𞤅𞤢𞤻𞤮𞤪𞤫",
     you: "𞤀𞤲𞥆𞤢",
     gandoAI: "𞤉𞤢 𞤘𞤢𞤲𞤣𞤮",
-    docsPageTitle: "𞤘𞤢𞤲𞤣𞤮 𞤁𞤫𞤬𞤼𞤫𞤪𞤣𞵵",
+    docsPageTitle: "𞤁𞤫𞤬𞤼𞤫𞤪𞤣𞤵 𞤘𞤢𞤲𞤣𞤮",
     docsPageSubtitle: "𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 𞤦𞤢𞤤𞥆𞤢𞤤 𞤫 𞤥𞤢𞤸𞤵𞤣𞤫 𞤲𞤺𞤢𞤥 𞤶𞤢𞤲𞤺𞤵 𞤢 𞤸𞤢𞤲𥥆𞤣𞤫 𞤑𞤮",
     docsSection1Title: "𞤳𞤫𞤧𞤮 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤃𞤮𞤷𞥆𞤭𞤲𞤣𞤫",
     docsSection1Body: "…𞤸𞤢𞤻𞤫𞥅𞤲𞤣𞤫 𞤀𞤬𞤪𞤭𞤳𞤢 𞤯𞤫𞤲𞤯𞤫 𞤫 ,𞤊𞤪𞤢𞤲𞤧𞤭 ,𞤆𞤵𞤤𞤢𞥄𞤪 𞤶𞤢𞤲𞤺𞤢 𞤲𞤮 𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 .𞤥𞤢𞥄𞤯𞤢 𞤯𞤫𞤲𞤯𞤢𞤤 𞤲𞤣𞤫𞤪 𞤫 𞤥𞤢𞥄𞤯𞤢 𞤢𞤨𞥆 𞤅𞤭𞤬𞤢𞥄",
@@ -335,7 +339,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     statusDown: "𞤓𞤲𞤢𞥄𞤯𞤭",
     statusChecking: "…𞤐𞤣𞤄𞥄𞤪𞤼𞤵𞤺𞤮𞤤",
     statusLastChecked: "𞤇𞤫𞤲𞥆𞤵𞤲𞤺𞤮𞤤 𞤐𞤣𞤄𞥄𞤪𞤼𞤵𞤺𞤮𞤤",
-    statusModel: "𞤐𞤭𞥅𞤧𞤢𞥄𞪪𞤫",
+    statusModel: "𞤐𞤭𞥅𞤧𞤢𞥄𞤪𞤫",
     settings: "𞤚𞤫𞤩𞥆𞤫",
     logout: "𞤒𞤢𞤤𞤼𞤵",
     share: "𞤅𞤫𞤲𞤣𞤵",
@@ -470,6 +474,8 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     preciseLocationSubtitle: "Optionnel. La localisation approximative est déjà déduite.",
     exportDataLabel: "Exporter les données",
     exportDataSubtitle: "Télécharger vos projets et discussions (JSON)",
+    signIn: "Se connecter",
+    getStarted: "Commencer",
     twPhrases: [
       "Créez une marketplace avec support ADLaM et français…",
       "Construisez un site e-commerce pour artisans d'Afrique…",
@@ -650,6 +656,8 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     preciseLocationSubtitle: "Optional. Coarse location (city) is already inferred from your connection.",
     exportDataLabel: "Export data",
     exportDataSubtitle: "Download your projects and chats (JSON)",
+    signIn: "Sign in",
+    getStarted: "Get started",
     twPhrases: [
       "Build a marketplace with ADLaM & French support…",
       "Create an e-commerce site for West African artisans…",
