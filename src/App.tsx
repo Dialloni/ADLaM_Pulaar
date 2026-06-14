@@ -1787,7 +1787,7 @@ export default function App() {
                   onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = 'transparent'}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
-                  <Settings size={14} /> {selectedLang.code === 'fr' ? 'Paramètres' : 'Settings'}
+                  <Settings size={14} /> {t.settingsNav}
                 </button>
                 <button onClick={e => { e.stopPropagation(); setPage('status'); setCurrentProject(null); setUserMenuOpen(false); setMobileNavOpen(false); }}
                   onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = 'var(--hover-bg)'}
