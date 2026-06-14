@@ -1202,11 +1202,6 @@ export default function App() {
           <span style={{ fontFamily: MANROPE, fontSize: 18, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
           <span className="hidden sm:inline" style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginLeft: 2 }}>BETA</span>
         </div>
-        <div className="hidden md:flex items-center gap-7">
-          {['Community', 'Pricing', 'Status'].map(lbl => (
-            <button key={lbl} className="text-sm font-medium text-zinc-500 hover:text-white transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>{lbl}</button>
-          ))}
-        </div>
         <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
           <button onClick={toggleTheme} title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             className="p-2 rounded-xl transition-colors"
@@ -1219,13 +1214,12 @@ export default function App() {
           <button onClick={() => { setAuthMode('login'); setAuthError(null); setAuthModalOpen(true); }}
             className="text-sm font-bold text-zinc-400 hover:text-white transition-colors px-2.5 md:px-4 py-2 rounded-xl hover:bg-white/5"
             style={{ fontFamily: MANROPE }}>
-            Sign in
+            {t.signIn}
           </button>
           <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
             className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl font-black text-black text-sm transition-all hover:scale-[1.03] active:scale-95"
             style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, whiteSpace: 'nowrap' }}>
-            <span className="hidden sm:inline">Get started →</span>
-            <span className="sm:hidden">Start →</span>
+            <span>{t.getStarted} →</span>
           </button>
         </div>
       </nav>
