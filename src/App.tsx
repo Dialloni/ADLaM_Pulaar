@@ -1585,31 +1585,31 @@ export default function App() {
           )}
           style={{ background: '#0a0a0a', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
 
-          {/* Gando logo at top of the rail (Gemini-style) — prominent when collapsed */}
-          {sidebarCollapsed && (
-            <div className="flex justify-center pt-4 pb-1">
-              <button onClick={() => { setCurrentProject(null); setPage('dashboard'); setChatActive(false); }}
-                className="transition-transform hover:scale-110" title={t.appName}>
-                <GandoLogo size={28} />
+          {sidebarCollapsed ? (
+            /* Collapsed: Gando logo that morphs into the "Open sidebar" toggle on hover (Gemini-style) */
+            <div className="flex justify-center pt-4 pb-2">
+              <button onClick={() => setSidebarCollapsed(false)}
+                className="group relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/5 transition-all"
+                title="Open sidebar">
+                <span className="block group-hover:hidden"><GandoLogo size={28} /></span>
+                <PanelLeft className="w-5 h-5 hidden group-hover:block" style={{ color: 'var(--text-primary)' }} />
               </button>
             </div>
-          )}
-
-          {/* search (left) + collapse slider (right edge), Claude-style */}
-          <div className="flex items-center px-3 pt-4 pb-2" style={{ justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
-            {!sidebarCollapsed && (
+          ) : (
+            /* Expanded: search (left) + collapse slider (right edge) */
+            <div className="flex items-center px-3 pt-4 pb-2 justify-between">
               <button onClick={() => { setSearchQuery(''); setSearchModalOpen(true); }}
                 className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
                 title="Search projects & chats">
                 <Search className="w-4 h-4" />
               </button>
-            )}
-            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
-              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-              <PanelLeft className="w-4 h-4" />
-            </button>
-          </div>
+              <button onClick={() => setSidebarCollapsed(true)}
+                className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
+                title="Collapse sidebar">
+                <PanelLeft className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* new project (Claude-style, top) */}
           <div className="px-3 mb-3">
