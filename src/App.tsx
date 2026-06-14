@@ -2828,10 +2828,6 @@ export default function App() {
               <div className="flex flex-col items-center px-6 pt-16 pb-10 relative z-10">
                 <div style={{ maxWidth: 760, width: '100%' }}>
 
-                  {/* eyebrow */}
-                  <p className={cn('text-center text-[11px] font-black uppercase tracking-widest mb-4', isAdlam && 'font-adlam')}
-                    style={{ color: P, fontFamily: isAdlam ? undefined : MANROPE }}>GANDO AI</p>
-
                   {/* personalized greeting */}
                   {(() => {
                     const raw = user.displayName?.trim().split(/\s+/)[0] || user.email?.split('@')[0] || 'Builder';
