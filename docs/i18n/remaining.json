@@ -1,0 +1,110 @@
+[
+  {
+    "key": "deleteProjectLabel",
+    "english": "Delete",
+    "french": "Supprimer",
+    "adlam": ""
+  },
+  {
+    "key": "openProjectLabel",
+    "english": "Open",
+    "french": "Ouvrir",
+    "adlam": ""
+  },
+  {
+    "key": "shareLabel",
+    "english": "Share",
+    "french": "Partager",
+    "adlam": ""
+  },
+  {
+    "key": "sharePendingLabel",
+    "english": "Pending review",
+    "french": "En attente",
+    "adlam": ""
+  },
+  {
+    "key": "shareLiveLabel",
+    "english": "In gallery",
+    "french": "Dans la galerie",
+    "adlam": ""
+  },
+  {
+    "key": "communityTitle",
+    "english": "From the community",
+    "french": "De la communauté",
+    "adlam": ""
+  },
+  {
+    "key": "remixLabel",
+    "english": "Remix",
+    "french": "Remixer",
+    "adlam": ""
+  },
+  {
+    "key": "preview",
+    "english": "Preview",
+    "french": "Aperçu",
+    "adlam": ""
+  },
+  {
+    "key": "code",
+    "english": "Code",
+    "french": "Code",
+    "adlam": ""
+  },
+  {
+    "key": "download",
+    "english": "Download",
+    "french": "Télécharger",
+    "adlam": ""
+  },
+  {
+    "key": "rename",
+    "english": "Rename",
+    "french": "Renommer",
+    "adlam": ""
+  },
+  {
+    "key": "revertLabel",
+    "english": "Revert",
+    "french": "Revenir",
+    "adlam": ""
+  },
+  {
+    "key": "chatWelcome",
+    "english": "What will you build today?",
+    "french": "Que vas-tu construire aujourd'hui ?",
+    "adlam": ""
+  },
+  {
+    "key": "aiDisclaimer",
+    "english": "Gando AI can make mistakes. Check important info.",
+    "french": "Gando AI peut faire des erreurs. Vérifiez les informations importantes.",
+    "adlam": ""
+  },
+  {
+    "key": "generating",
+    "english": "Gando is building...",
+    "french": "Gando construit...",
+    "adlam": ""
+  },
+  {
+    "key": "copy",
+    "english": "Copy",
+    "french": "Copier",
+    "adlam": ""
+  },
+  {
+    "key": "copied",
+    "english": "Copied",
+    "french": "Copié",
+    "adlam": ""
+  },
+  {
+    "key": "output",
+    "english": "Output",
+    "french": "Sortie",
+    "adlam": ""
+  }
+]
