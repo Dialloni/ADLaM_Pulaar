@@ -30,7 +30,7 @@ const groqKey = () => process.env.GROQ_API_KEY || '';
 
 const GROQ_MODEL_IDS: Record<string, string> = {
   'groq-llama': 'llama-3.3-70b-versatile',
-  'groq-qwen': 'qwen/qwen3-32b',
+  'groq-scout': 'meta-llama/llama-4-scout-17b-16e-instruct',
 };
 
 const BASE_RULES = `You are Gando AI, an African-language-first AI app builder.
@@ -103,7 +103,7 @@ export interface RunStreamOpts {
   preferredLanguage?: string;
   currentCode?: string;
   history?: { role: string; content: string }[];
-  provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-qwen';
+  provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
 }
 
 function buildUserContent(o: RunStreamOpts): string {
@@ -144,7 +144,7 @@ export async function runStream(
   onStatus?: (text: string) => void
 ): Promise<GenResult> {
   const provider = opts.provider || 'claude';
-  if (provider === 'groq-llama' || provider === 'groq-qwen') {
+  if (provider === 'groq-llama' || provider === 'groq-scout') {
     return runGroq(opts, GROQ_MODEL_IDS[provider], onCode, onStatus);
   }
   if (provider === 'claude' && anthropicKey()) {
@@ -356,7 +356,7 @@ export interface ChatOpts {
   history?: { role: string; content: string }[];
   currentCode?: string;
   preferredLanguage?: string;
-  provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-qwen';
+  provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
 }
 
 function buildChatContent(o: ChatOpts): string {
@@ -370,7 +370,7 @@ function buildChatContent(o: ChatOpts): string {
 /** Stream a chat answer token-by-token. Resolves with the full answer text. */
 export async function chatStream(opts: ChatOpts, onToken: (chunk: string) => void): Promise<string> {
   const provider = opts.provider || 'claude';
-  if (provider === 'groq-llama' || provider === 'groq-qwen') {
+  if (provider === 'groq-llama' || provider === 'groq-scout') {
     return chatGroq(opts, GROQ_MODEL_IDS[provider], onToken);
   }
   if (provider === 'claude' && anthropicKey()) {
