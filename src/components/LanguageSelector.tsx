@@ -30,9 +30,14 @@ export function LanguageSelector({
 
     const openUp = dropUp || spaceBelow < approxMenuH + 8;
 
+    // Clamp horizontally so the menu always fits the viewport (right-align to the
+    // button when it would otherwise overflow the right edge).
+    const menuW = Math.max(r.width, 192);
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - menuW - 8));
+
     setStyle(openUp
-      ? { bottom: window.innerHeight - r.top + 6, left: r.left, minWidth: Math.max(r.width, 192) }
-      : { top: r.bottom + 6, left: r.left, minWidth: Math.max(r.width, 192) });
+      ? { bottom: window.innerHeight - r.top + 6, left, minWidth: menuW }
+      : { top: r.bottom + 6, left, minWidth: menuW });
   };
 
   const toggle = () => {
@@ -65,8 +70,8 @@ export function LanguageSelector({
   const menu = isOpen ? createPortal(
     <div
       id="lang-portal"
-      style={{ position: 'fixed', zIndex: 99999, ...style }}
-      className="bg-[#111] border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.7)] overflow-hidden backdrop-blur-xl"
+      style={{ position: 'fixed', zIndex: 99999, background: 'var(--card-elevated)', border: '1px solid var(--border)', ...style }}
+      className="rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] overflow-hidden backdrop-blur-xl"
     >
       {languages.map(lang => (
         <button

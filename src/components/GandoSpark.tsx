@@ -1,6 +1,7 @@
 interface GandoSparkProps {
   size?: number;
   className?: string;
+  active?: boolean; // thinking/answering — intensifies glow + speeds up the embers
 }
 
 // Animated assistant avatar — the Gando 𞤘 mark alive with a rising ember/flame
@@ -35,14 +36,16 @@ function ensureStyle() {
   injected = true;
 }
 
-export function GandoSpark({ size = 32, className = '' }: GandoSparkProps) {
+export function GandoSpark({ size = 32, className = '', active = false }: GandoSparkProps) {
   ensureStyle();
   const br = Math.round(size * 0.3);
+  // Embers fly faster + more often while thinking; the count doubles for a "shooting" feel.
+  const emberDur = active ? '0.9s' : '1.6s';
   const ember = (left: string, delay: string, color: string) => (
     <span style={{
       position: 'absolute', bottom: size * 0.5, left, width: Math.max(2, size * 0.07), height: Math.max(2, size * 0.07),
       borderRadius: '50%', background: color, filter: 'blur(0.5px)',
-      animation: `gspark-ember 1.6s ease-out infinite`, animationDelay: delay, pointerEvents: 'none',
+      animation: `gspark-ember ${emberDur} ease-out infinite`, animationDelay: delay, pointerEvents: 'none',
     }} />
   );
 
@@ -53,15 +56,16 @@ export function GandoSpark({ size = 32, className = '' }: GandoSparkProps) {
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         width: size, height: size, flexShrink: 0, position: 'relative',
-        animation: 'gspark-float 3s ease-in-out infinite',
+        animation: `gspark-float ${active ? '1.4s' : '3s'} ease-in-out infinite`,
       }}
     >
-      {/* swirling ember→magenta→violet aura */}
+      {/* swirling ember→magenta→violet aura (brighter + faster while active) */}
       <span style={{
-        position: 'absolute', inset: -size * 0.08, borderRadius: br + 4,
+        position: 'absolute', inset: -size * (active ? 0.14 : 0.08), borderRadius: br + 4,
         background: 'conic-gradient(from 0deg, #fd8b00, #ff2d95 35%, #7c3aed 65%, #fd8b00 100%)',
-        filter: 'blur(3px)',
-        animation: 'gspark-aura 4s ease-in-out infinite',
+        filter: `blur(${active ? 5 : 3}px)`,
+        opacity: active ? 1 : 0.85,
+        animation: `gspark-aura ${active ? '2s' : '4s'} ease-in-out infinite`,
       }} />
 
       {/* dark core */}
@@ -70,10 +74,12 @@ export function GandoSpark({ size = 32, className = '' }: GandoSparkProps) {
         background: 'linear-gradient(145deg, #1a0a14, #0e0e0e)',
       }} />
 
-      {/* rising embers */}
+      {/* rising embers (more + faster while thinking) */}
       {ember('38%', '0s', '#fd8b00')}
       {ember('52%', '0.5s', '#ff2d95')}
       {ember('46%', '1s', '#a855f7')}
+      {active && ember('30%', '0.25s', '#ffb169')}
+      {active && ember('62%', '0.75s', '#c026d3')}
 
       {/* the character */}
       <span style={{

@@ -52,6 +52,8 @@ interface ChatProps {
   onProviderChange?: (p: Provider) => void;
   byokModels?: { id: Provider; label: string; sub: string }[];
   onManageKeys?: () => void;
+  userPhoto?: string | null;
+  userName?: string | null;
   mode?: 'build' | 'chat';
   onModeChange?: (m: 'build' | 'chat') => void;
   currentCode?: string;
@@ -228,6 +230,8 @@ const ChatImpl: React.FC<ChatProps> = ({
   onProviderChange,
   byokModels = [],
   onManageKeys,
+  userPhoto,
+  userName,
   mode = 'build',
   onModeChange,
   currentCode,
@@ -525,11 +529,16 @@ const ChatImpl: React.FC<ChatProps> = ({
                     )}>
                       {/* Avatar */}
                       {m.role === 'user' ? (
-                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xl border bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-400/30">
-                          <User className="w-5 h-5" />
-                        </div>
+                        userPhoto ? (
+                          <img src={userPhoto} alt={userName || 'You'} className="w-10 h-10 rounded-2xl object-cover flex-shrink-0 mt-0.5 shadow-xl border border-white/10" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xl border text-white border-white/10"
+                            style={{ background: `linear-gradient(135deg, #ff8b9b, #fd8b00)` }}>
+                            <span className="text-sm font-black">{(userName || 'U')[0].toUpperCase()}</span>
+                          </div>
+                        )
                       ) : (
-                        <GandoSpark size={40} className="mt-0.5" />
+                        <GandoSpark size={40} active={isGenerating && m.id === messages[messages.length - 1]?.id} className="mt-0.5" />
                       )}
 
                       {/* Message Content */}
@@ -596,7 +605,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="flex items-start gap-3"
                   >
-                    <GandoSpark size={32} className="mt-0.5" />
+                    <GandoSpark size={32} active className="mt-0.5" />
                     <div style={{ padding: '12px 16px', borderRadius: '14px 14px 14px 4px', background: 'var(--card-bg)', border: '1px solid rgba(255,139,155,0.2)', maxWidth: '90%' }}>
                       {generationSteps.length === 0 ? (
                         <div className="flex items-center gap-1.5">
