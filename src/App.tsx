@@ -2057,8 +2057,10 @@ export default function App() {
               </div>
 
               {/* Filter tabs */}
-              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--btn-bg)', border: '1px solid rgba(255,255,255,0.06)', width: 'fit-content' }}>
-                {(['all', 'live', 'building', 'draft'] as const).map(f => (
+              <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--btn-bg)', border: '1px solid var(--border)', width: 'fit-content' }}>
+                {(['all', 'live', 'building', 'draft'] as const).map(f => {
+                  const active = projectFilter === f;
+                  return (
                   <button
                     key={f}
                     onClick={() => setProjectFilter(f)}
@@ -2072,14 +2074,16 @@ export default function App() {
                       textTransform: 'uppercase',
                       letterSpacing: '0.06em',
                       transition: 'all 150ms',
-                      background: projectFilter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
-                      color: projectFilter === f ? '#fff' : '#adaaaa',
-                      fontWeight: projectFilter === f ? 700 : 500,
+                      background: active ? 'var(--card-bg)' : 'transparent',
+                      color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      boxShadow: active ? '0 1px 3px rgba(0,0,0,0.18)' : 'none',
+                      fontWeight: active ? 700 : 600,
                     }}
                   >
                     {f}
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               {filteredProjects.length === 0 ? (
