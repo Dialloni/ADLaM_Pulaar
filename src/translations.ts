@@ -238,7 +238,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     totalPromptsLabel: "𞤖𞤢𞤻𞤫𞥅𞤲𞤣𞤫 𞤖𞤢𞥄𞤤𞤵𞥅𞤶𞤭",
     noProjectsTitle: "𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤏𞤢𞤤𞤢𞥄 𞤼𞤢𞤱𞤮",
     noProjectsSubtitle: ".𞤃𞤢𞤸𞤵 𞤲𞤮𞤼𞥆𞤢 𞤢 𞤲𞤺𞤢𞤥 𞤣𞤮𞥅 𞤯𞤮𞥅 𞤥𞤢𞥄𞤯𞤢 𞤢𞤨𞥆 𞤅𞤭𞤬𞤢𞥄",
-    projectsPageTitle: "𞤢𞤥 𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭",
+    projectsPageTitle: "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤢𞤥",
     projectsPageSubtitle: "𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 𞤦𞤢𞤤𞥆𞤢𞤤 𞤫 𞤥𞤢𞤸𞤢𞥄𞤯𞤭 𞤥𞤢𞥄𞤯𞤢 𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤑𞤮",
     searchProjectsPlaceholder: "…𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤊𞤭𞤤𞥆𞤮",
     deleteProjectLabel: "𞤃𞤮𞤥𞤼𞤵",
