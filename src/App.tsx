@@ -2042,10 +2042,10 @@ export default function App() {
             <div className="flex-1 overflow-y-auto relative z-10 p-8 md:p-10 space-y-8">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h1 className={cn('text-4xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                  <h1 dir={isAdlam ? 'rtl' : undefined} className={cn('text-4xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
                     {t.projectsPageTitle}
                   </h1>
-                  <p className={cn('text-zinc-500 mt-1', isAdlam && 'font-adlam')}>{t.projectsPageSubtitle}</p>
+                  <p dir={isAdlam ? 'rtl' : undefined} className={cn('text-zinc-500 mt-1', isAdlam && 'font-adlam')}>{t.projectsPageSubtitle}</p>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-white/10" style={{ background: 'var(--card-bg)', minWidth: 260 }}>
                   <Search className="w-4 h-4 text-zinc-500 flex-shrink-0" />
