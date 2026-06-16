@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare } from 'lucide-react';
+import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare, Square } from 'lucide-react';
 import { GandoSpark } from './GandoSpark';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
@@ -58,6 +58,7 @@ interface ChatProps {
   onModeChange?: (m: 'build' | 'chat') => void;
   currentCode?: string;
   onRevert?: (snapshot: string) => void;
+  onStop?: () => void;
 }
 
 const MODELS: { id: Provider; label: string; sub: string }[] = [
@@ -236,6 +237,7 @@ const ChatImpl: React.FC<ChatProps> = ({
   onModeChange,
   currentCode,
   onRevert,
+  onStop,
 }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -468,18 +470,27 @@ const ChatImpl: React.FC<ChatProps> = ({
                       >
                         {isTranscribing ? <Loader2 className="w-5 h-5" /> : isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                       </button>
-                      <button
-                        onClick={() => void handleSendClick()}
-                        disabled={(!input.trim() && attachments.length === 0) || isGenerating || isSending}
-                        className={cn(
-                          "p-4 rounded-2xl transition-all shadow-2xl active:scale-95 group/btn relative overflow-hidden",
-                          (input.trim() || attachments.length > 0) && !isGenerating && !isSending
-                            ? "bg-white text-black hover:bg-zinc-200"
-                            : "bg-white/5 text-zinc-600 cursor-not-allowed"
-                        )}
-                      >
-                        <ArrowUp className={cn("w-5 h-5 transition-transform", input.trim() && "group-hover/btn:-translate-y-0.5")} />
-                      </button>
+                      {isGenerating && mode === 'build' ? (
+                        <button
+                          onClick={onStop}
+                          className="p-4 rounded-2xl transition-all shadow-2xl active:scale-95 bg-white/10 text-white border border-white/20 hover:bg-white/20"
+                        >
+                          <Square className="w-5 h-5 fill-current" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => void handleSendClick()}
+                          disabled={(!input.trim() && attachments.length === 0) || isSending}
+                          className={cn(
+                            "p-4 rounded-2xl transition-all shadow-2xl active:scale-95 group/btn relative overflow-hidden",
+                            (input.trim() || attachments.length > 0) && !isSending
+                              ? "bg-white text-black hover:bg-zinc-200"
+                              : "bg-white/5 text-zinc-600 cursor-not-allowed"
+                          )}
+                        >
+                          <ArrowUp className={cn("w-5 h-5 transition-transform", input.trim() && "group-hover/btn:-translate-y-0.5")} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -797,22 +808,41 @@ const ChatImpl: React.FC<ChatProps> = ({
                   {isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                 </button>
 
-                <motion.button
-                  whileHover={input.trim() && !isGenerating ? { scale: 1.05 } : {}}
-                  whileTap={input.trim() && !isGenerating ? { scale: 0.95 } : {}}
-                  onClick={() => void handleSendClick()}
-                  disabled={(!input.trim() && attachments.length === 0) || isGenerating || isSending}
-                  style={{
-                    width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                    background: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? 'linear-gradient(135deg, #3b82f6, #fd8b00)' : 'var(--hover-bg)',
-                    color: (input.trim() || attachments.length > 0) && !isGenerating && !isSending ? '#0a0a0a' : '#52525b',
-                    border: 'none', cursor: input.trim() && !isGenerating ? 'pointer' : 'not-allowed',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                  title={isGenerating ? "Generating..." : input.trim() ? "Send message" : "Type a message first"}
-                >
-                  {isGenerating || isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
-                </motion.button>
+                {isGenerating && mode === 'build' ? (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={onStop}
+                    title="Stop generation"
+                    style={{
+                      width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                      background: 'rgba(255,255,255,0.1)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Square className="w-4 h-4 fill-current" />
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileHover={input.trim() && !isSending ? { scale: 1.05 } : {}}
+                    whileTap={input.trim() && !isSending ? { scale: 0.95 } : {}}
+                    onClick={() => void handleSendClick()}
+                    disabled={(!input.trim() && attachments.length === 0) || isSending}
+                    style={{
+                      width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                      background: (input.trim() || attachments.length > 0) && !isSending ? 'linear-gradient(135deg, #3b82f6, #fd8b00)' : 'var(--hover-bg)',
+                      color: (input.trim() || attachments.length > 0) && !isSending ? '#0a0a0a' : '#52525b',
+                      border: 'none', cursor: input.trim() && !isSending ? 'pointer' : 'not-allowed',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                    title={isSending ? "Sending..." : input.trim() ? "Send message" : "Type a message first"}
+                  >
+                    {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                  </motion.button>
+                )}
               </div>
             </div>
           </div>

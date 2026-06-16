@@ -547,6 +547,7 @@ export default function App() {
   const [streamingCode, setStreamingCode] = useState<string | null>(null);  // live text (code editor)
   const [previewCode, setPreviewCode] = useState<string | null>(null);      // throttled (iframe preview)
   const lastPreviewAt = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
   // Code editor updates on every chunk (smooth text); preview re-renders at most ~1.5s
   // to avoid hammering the iframe. Double-buffering in <Preview> removes the flash.
   const handleStreamCode = (c: string) => {
@@ -881,10 +882,14 @@ export default function App() {
     } catch (err: any) { setAuthError(err.message || t.errorAuth); }
   };
 
-  const createNewProject = async (prompt: string) => {
-    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys));
+  const handleStop = () => { abortRef.current?.abort(); };
+
+  const createNewProject = async (prompt: string, signal: AbortSignal) => {
+    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal);
+    // If aborted before any code arrived, nothing to save.
+    if (!result.code) return;
     const data = {
-      userId: user!.uid, name: result.name, description: prompt,
+      userId: user!.uid, name: result.name || 'Untitled App', description: prompt,
       language: selectedLang.name, languageCode: selectedLang.code,
       code: result.code, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
     };
@@ -893,17 +898,24 @@ export default function App() {
       const np = { id: ref.id, ...data } as unknown as Project;
       setCurrentProject(np);
       await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
-      await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
+      if (!result.wasAborted) {
+        await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
+      }
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); }
   };
 
-  const updateExistingProject = async (prompt: string) => {
+  const updateExistingProject = async (prompt: string, signal: AbortSignal) => {
     if (!currentProject) return;
     try {
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
-      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys));
-      await updateDoc(doc(db, 'projects', currentProject.id), { code: result.code, updatedAt: serverTimestamp() });
-      await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
+      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal);
+      // Always save what was built — partial or complete.
+      const savedCode = result.code || currentProject.code;
+      await updateDoc(doc(db, 'projects', currentProject.id), { code: savedCode, updatedAt: serverTimestamp() });
+      setCurrentProject(p => p ? { ...p, code: savedCode } : null);
+      if (!result.wasAborted) {
+        await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'assistant', content: result.explanation, codeSnapshot: savedCode, timestamp: serverTimestamp() });
+      }
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${currentProject.id}`); }
   };
 
@@ -1044,6 +1056,8 @@ export default function App() {
     setPreviewCode(null);
     setGenerationSteps([]);
     lastPreviewAt.current = 0;
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
     const basePrompt = importMode === 'github'
       ? `Clone and recreate a web app inspired by this GitHub repository: ${input}`
       : importMode === 'figma'
@@ -1052,13 +1066,13 @@ export default function App() {
     const prompt = extraContext ? `${extraContext}\n\n${basePrompt}` : basePrompt;
     setInput('');
     try {
-      if (!currentProject) await createNewProject(prompt);
-      else await updateExistingProject(prompt);
+      if (!currentProject) await createNewProject(prompt, signal);
+      else await updateExistingProject(prompt, signal);
     } catch (err: any) {
       const m = err.message || '';
       setGlobalError(/429|quota|rate|RESOURCE_EXHAUSTED/i.test(m)
         ? "You've reached the AI limit. Please wait a minute." : m || 'Unexpected error.');
-    } finally { setIsGenerating(false); setStreamingCode(null); setPreviewCode(null); setGenerationSteps([]); }
+    } finally { setIsGenerating(false); setStreamingCode(null); setPreviewCode(null); setGenerationSteps([]); abortRef.current = null; }
   };
 
   const handleRevert = async (snapshot: string) => {
@@ -1919,7 +1933,8 @@ export default function App() {
                           byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                           userPhoto={user.photoURL} userName={user.displayName || user.email}
                           mode={mode} onModeChange={setMode}
-                          currentCode={currentProject?.code} onRevert={handleRevert} />
+                          currentCode={currentProject?.code} onRevert={handleRevert}
+                          onStop={handleStop} />
                       </div>
                     </motion.div>
                   </>
@@ -1940,7 +1955,8 @@ export default function App() {
                           byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                           userPhoto={user.photoURL} userName={user.displayName || user.email}
                           mode={mode} onModeChange={setMode}
-                          currentCode={currentProject?.code} onRevert={handleRevert} />
+                          currentCode={currentProject?.code} onRevert={handleRevert}
+                          onStop={handleStop} />
                       </div>
                     </motion.div>
                     <AnimatePresence mode="wait">
@@ -1976,7 +1992,7 @@ export default function App() {
                   provider={provider} onProviderChange={setProvider}
                   byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                           userPhoto={user.photoURL} userName={user.displayName || user.email}
-                  mode={mode} onModeChange={setMode} />
+                  mode={mode} onModeChange={setMode} onStop={handleStop} />
               </div>
             </div>
 
