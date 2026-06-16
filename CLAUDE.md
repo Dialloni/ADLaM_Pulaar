@@ -1,4 +1,6 @@
-# Ruflo — Claude Code Configuration
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Rules
 
@@ -8,169 +10,107 @@
 - NEVER save working files or tests to root — use `/src`, `/tests`, `/docs`, `/config`, `/scripts`
 - ALWAYS read a file before editing it
 - NEVER commit secrets, credentials, or .env files
-- NEVER add a `Co-Authored-By` trailer to user commits unless this project's `.claude/settings.json` has `attribution.commit` set (#2078). The Claude Code Bash tool may suggest one in its default commit-message template — ignore it. `Co-Authored-By` is semantic authorship attribution under git/GitHub convention; the tool is the facilitator, not a co-author.
+- NEVER add a `Co-Authored-By` trailer to commits
 - Keep files under 500 lines
 - Validate input at system boundaries
 
-## Agent Comms (SendMessage-First Coordination)
-
-Named agents coordinate via `SendMessage`, not polling or shared state.
-
-```
-Lead (you) ←→ architect ←→ developer ←→ tester ←→ reviewer
-              (named agents message each other directly)
-```
-
-### Spawning a Coordinated Team
-
-```javascript
-// ALL agents in ONE message, each knows WHO to message next
-Agent({ prompt: "Research the codebase. SendMessage findings to 'architect'.",
-  subagent_type: "researcher", name: "researcher", run_in_background: true })
-Agent({ prompt: "Wait for 'researcher'. Design solution. SendMessage to 'coder'.",
-  subagent_type: "system-architect", name: "architect", run_in_background: true })
-Agent({ prompt: "Wait for 'architect'. Implement it. SendMessage to 'tester'.",
-  subagent_type: "coder", name: "coder", run_in_background: true })
-Agent({ prompt: "Wait for 'coder'. Write tests. SendMessage results to 'reviewer'.",
-  subagent_type: "tester", name: "tester", run_in_background: true })
-Agent({ prompt: "Wait for 'tester'. Review code quality and security.",
-  subagent_type: "reviewer", name: "reviewer", run_in_background: true })
-
-// Kick off the pipeline
-SendMessage({ to: "researcher", summary: "Start", message: "[task context]" })
-```
-
-### Patterns
-
-| Pattern | Flow | Use When |
-|---------|------|----------|
-| **Pipeline** | A → B → C → D | Sequential dependencies (feature dev) |
-| **Fan-out** | Lead → A, B, C → Lead | Independent parallel work (research) |
-| **Supervisor** | Lead ↔ workers | Ongoing coordination (complex refactor) |
-
-### Rules
-
-- ALWAYS name agents — `name: "role"` makes them addressable
-- ALWAYS include comms instructions in prompts — who to message, what to send
-- Spawn ALL agents in ONE message with `run_in_background: true`
-- After spawning: STOP, tell user what's running, wait for results
-- NEVER poll status — agents message back or complete automatically
-
-## Swarm & Routing
-
-### Config
-- **Topology**: hierarchical-mesh (anti-drift)
-- **Max Agents**: 15
-- **Memory**: hybrid
-- **HNSW**: Enabled
-- **Neural**: Enabled
+## Commands
 
 ```bash
-npx @claude-flow/cli@latest swarm init --topology hierarchical --max-agents 8 --strategy specialized
+npm run dev        # dev server (Express + Vite via tsx server.ts)
+npm run build      # Vite production build → dist/
+npm run start      # production Express server
+npm run lint       # tsc --noEmit (type-check only, no test suite)
 ```
 
-### Agent Routing
-
-| Task | Agents | Topology |
-|------|--------|----------|
-| Bug Fix | researcher, coder, tester | hierarchical |
-| Feature | architect, coder, tester, reviewer | hierarchical |
-| Refactor | architect, coder, reviewer | hierarchical |
-| Performance | perf-engineer, coder | hierarchical |
-| Security | security-architect, auditor | hierarchical |
-
-### When to Swarm
-- **YES**: 3+ files, new features, cross-module refactoring, API changes, security, performance
-- **NO**: single file edits, 1-2 line fixes, docs updates, config changes, questions
-
-### 3-Tier Model Routing
-
-| Tier | Handler | Use Cases |
-|------|---------|-----------|
-| 1 | Agent Booster (WASM) | Simple transforms — skip LLM, use Edit directly |
-| 2 | Haiku | Simple tasks, low complexity |
-| 3 | Sonnet/Opus | Architecture, security, complex reasoning |
-
-## Memory & Learning
-
-### Before Any Task
+Individual scripts:
 ```bash
-npx @claude-flow/cli@latest memory search --query "[task keywords]" --namespace patterns
-npx @claude-flow/cli@latest hooks route --task "[task description]"
+npx tsx scripts/dump-i18n.ts          # export translation worklist
+npx tsx scripts/apply-adlam.ts <file> # apply ADLaM translations from JSON
+npx tsx scripts/remaining-i18n.ts     # show untranslated keys
 ```
 
-### After Success
-```bash
-npx @claude-flow/cli@latest memory store --namespace patterns --key "[name]" --value "[what worked]"
-npx @claude-flow/cli@latest hooks post-task --task-id "[id]" --success true --store-results true
+## Architecture
+
+**Gando AI** — African-language-first AI app builder. Users describe an app in natural language (especially Pulaar/ADLaM script) and the system generates a complete single-file HTML app, streamed live.
+
+### Server split
+
+| Context | File | Role |
+|---------|------|------|
+| Dev | `server.ts` | Express + Vite middleware (SSR dev proxy, auth proxy, API routes) |
+| Vercel | `api/*.ts` | Serverless functions (one per route) |
+| Railway | `server.ts` | Same Express server, production mode |
+
+`server.ts` and `api/*.ts` share logic from `lib/llm.ts` and `lib/firebaseAdmin.ts`.
+
+### LLM layer (`lib/llm.ts`)
+
+**Claude Sonnet 4.6 is the default** (won internal ADLaM eval 10/10). Gemini Flash is the fallback. Both providers normalize to this output protocol:
+
+```
+<!DOCTYPE html>...app HTML...
+<<<GANDO_META>>>
+{"language":"...","name":"...","explanation":"..."}
 ```
 
-### MCP Tools (use `ToolSearch("keyword")` to discover)
+Code streams first (live preview), metadata arrives at end. BYOK supported for: `openai`, `anthropic`, `gemini`, `deepseek`, `groq`.
 
-| Category | Key Tools |
-|----------|-----------|
-| **Memory** | `memory_store`, `memory_search`, `memory_search_unified` |
-| **Bridge** | `memory_import_claude`, `memory_bridge_status` |
-| **Swarm** | `swarm_init`, `swarm_status`, `swarm_health` |
-| **Agents** | `agent_spawn`, `agent_list`, `agent_status` |
-| **Hooks** | `hooks_route`, `hooks_post-task`, `hooks_worker-dispatch` |
-| **Security** | `aidefence_scan`, `aidefence_is_safe`, `aidefence_has_pii` |
-| **Hive-Mind** | `hive-mind_init`, `hive-mind_consensus`, `hive-mind_spawn` |
+### Frontend (`src/`)
 
-### Background Workers
+React 19 + Vite 6 + Tailwind 4. Single-page app — all routing is in `App.tsx` via `NavPage` union type. Key wiring:
 
-| Worker | When |
-|--------|------|
-| `audit` | After security changes |
-| `optimize` | After performance work |
-| `testgaps` | After adding features |
-| `map` | Every 5+ file changes |
-| `document` | After API changes |
+- `src/firebase.ts` — Firebase client init; first-party auth proxy for Safari/iOS (see comment block)
+- `src/contexts/AuthContext.tsx` — auth state
+- `src/services/geminiService.ts` — fetch wrapper for SSE streams from `/api/*`
+- `src/translations.ts` — i18n strings for `ff-adlm | en | fr`; `TRANSLATIONS` object is the single source of truth
 
-```bash
-npx @claude-flow/cli@latest hooks worker dispatch --trigger audit
-```
+### API routes
 
-## Agents
+| Route | Purpose |
+|-------|---------|
+| `POST /api/generate` | Generate new app from prompt |
+| `POST /api/edit` | Incremental edit of existing app |
+| `POST /api/chat` | Chat thread (non-generation) |
+| `POST /api/transcribe` | Whisper audio → text |
+| `POST /api/ocr` | PDF/image → text via Gemini |
+| `POST /api/translate` | Text translation |
+| `GET  /api/status` | Health check |
 
-**Core**: `coder`, `reviewer`, `tester`, `planner`, `researcher`
-**Architecture**: `system-architect`, `backend-dev`, `mobile-dev`
-**Security**: `security-architect`, `security-auditor`
-**Performance**: `performance-engineer`, `perf-analyzer`
-**Coordination**: `hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`
-**GitHub**: `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`
+All routes require `Authorization: Bearer <Firebase ID token>` (verified via `lib/firebaseAdmin.ts`).
 
-Any string works as a custom agent type.
+### i18n / ADLaM localization
 
-## Build & Test
+`src/translations.ts` exports `TRANSLATIONS` with keys `'ff-adlm' | 'en' | 'fr'`. The ADLaM locale uses Unicode block U+1E900–U+1E95F exclusively — **never** substitute Arabic, Extended Latin, or Mathematical lookalikes.
 
-- ALWAYS run tests after code changes
-- ALWAYS verify build succeeds before committing
+ADLaM text is RTL. Any UI element rendering ADLaM must set `dir="rtl"`. Use `Noto Sans Adlam` font.
 
-```bash
-npm run build && npm test
-```
+Translation workflow:
+1. `dump-i18n.ts` → generates `docs/i18n/english-source.json` + worklist CSV
+2. Human translates to ADLaM
+3. `apply-adlam.ts <updated.json>` → patches `src/translations.ts` in-place
 
-## CLI Quick Reference
+### Firebase
 
-```bash
-npx @claude-flow/cli@latest init --wizard           # Setup
-npx @claude-flow/cli@latest swarm init --v3-mode     # Start swarm
-npx @claude-flow/cli@latest memory search --query "" # Vector search
-npx @claude-flow/cli@latest hooks route --task ""    # Route to agent
-npx @claude-flow/cli@latest doctor --fix             # Diagnostics
-npx @claude-flow/cli@latest security scan            # Security scan
-npx @claude-flow/cli@latest performance benchmark    # Benchmarks
-```
+- Auth: Google OAuth via `signInWithPopup`
+- DB: Firestore — named database (`VITE_FIREBASE_FIRESTORE_DATABASE_ID` env var, not `(default)`)
+- Storage: Firebase Storage for file uploads (OCR, audio)
+- Admin SDK: `lib/firebaseAdmin.ts` for server-side token verification
 
-26 commands, 140+ subcommands. Use `--help` on any command for details.
+### Deployment
 
-## Setup
+| Host | Config |
+|------|--------|
+| Vercel | `vercel.json` — rewrites `/api/*` to serverless functions, proxies `/__/auth/*` for first-party auth |
+| Railway (web) | `railway.toml` — nixpacks, `npm run start` |
+| Railway (scraper) | `railway.scraper.toml` — separate service |
 
-```bash
-claude mcp add claude-flow -- npx -y @claude-flow/cli@latest
-npx @claude-flow/cli@latest daemon start
-npx @claude-flow/cli@latest doctor --fix
-```
+**Railway env var gotcha**: Railway stores values with surrounding quotes literally — `"value"` in the dashboard becomes `"value"` in the process. Strip quotes when setting vars.
 
-**Agent tool** handles execution (agents, files, code, git). **MCP tools** handle coordination (swarm, memory, hooks). **CLI** is the same via Bash.
+### Scraper (`scraper/`)
+
+Python (Telethon + Playwright) corpus collection pipeline. Separate Railway service. Scrapes Telegram groups and web for Pulaar/ADLaM text, uploads to Firestore.
+
+### Brand tokens
+
+Primary: `#3b82f6` (blue). Accent: `#fd8b00` (orange). Tertiary: `#bca2ff` (purple). Font: Manrope.

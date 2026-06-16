@@ -18,13 +18,21 @@ async function streamGeneration(
   url: string,
   body: unknown,
   onCode?: (codeSoFar: string) => void,
-  onStatus?: (text: string) => void
-): Promise<GenerationResponse> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify(body),
-  });
+  onStatus?: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<GenerationResponse & { wasAborted?: boolean }> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (err: any) {
+    if (err.name === 'AbortError') return { code: '', language: '', name: '', explanation: '', wasAborted: true };
+    throw err;
+  }
   if (!res.ok || !res.body) {
     const data = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(data.error || `Request failed: ${res.status}`);
@@ -50,18 +58,26 @@ async function streamGeneration(
     }
   };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let sep: number;
-    while ((sep = buffer.indexOf('\n\n')) !== -1) {
-      const frame = buffer.slice(0, sep);
-      buffer = buffer.slice(sep + 2);
-      const line = frame.split('\n').find((l) => l.startsWith('data:'));
-      if (!line) continue;
-      try { handle(JSON.parse(line.slice(5).trim())); } catch { /* skip malformed frame */ }
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sep: number;
+      while ((sep = buffer.indexOf('\n\n')) !== -1) {
+        const frame = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        const line = frame.split('\n').find((l) => l.startsWith('data:'));
+        if (!line) continue;
+        try { handle(JSON.parse(line.slice(5).trim())); } catch { /* skip malformed frame */ }
+      }
     }
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      // Stopped mid-stream — return whatever code was built so far.
+      return { code, language: '', name: '', explanation: '', wasAborted: true };
+    }
+    throw err;
   }
 
   if (streamError) throw new Error(streamError);
@@ -93,10 +109,11 @@ export async function generateProject(
   onStatus?: (status: string) => void,
   onCode?: (codeSoFar: string) => void,
   provider?: Provider,
-  byok?: Byok
-): Promise<GenerationResponse> {
+  byok?: Byok,
+  signal?: AbortSignal,
+): Promise<GenerationResponse & { wasAborted?: boolean }> {
   onStatus?.('Generating your app...');
-  return streamGeneration('/api/generate', { prompt, preferredLanguage, provider, byok }, onCode, onStatus);
+  return streamGeneration('/api/generate', { prompt, preferredLanguage, provider, byok }, onCode, onStatus, signal);
 }
 
 export async function editProject(
@@ -107,15 +124,17 @@ export async function editProject(
   onStatus?: (status: string) => void,
   onCode?: (codeSoFar: string) => void,
   provider?: Provider,
-  byok?: Byok
-): Promise<GenerationResponse> {
+  byok?: Byok,
+  signal?: AbortSignal,
+): Promise<GenerationResponse & { wasAborted?: boolean }> {
   onStatus?.('Applying your changes...');
   const trimmed = history.slice(-6).map((m) => ({ role: m.role, content: m.content }));
   return streamGeneration(
     '/api/edit',
     { prompt, currentCode, history: trimmed, preferredLanguage, provider, byok },
     onCode,
-    onStatus
+    onStatus,
+    signal,
   );
 }
 
