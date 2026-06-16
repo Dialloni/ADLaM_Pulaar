@@ -2485,14 +2485,14 @@ export default function App() {
                     return (
                       <div key={lang.code}
                         className="relative rounded-2xl border transition-all overflow-hidden"
-                        style={{ background: active ? `${P}0c` : '#131313', border: `1px solid ${active ? `${P}40` : 'var(--border)'}`, boxShadow: active ? `var(--glow-primary-sm)` : 'none' }}>
+                        style={{ background: active ? `${P}0c` : 'var(--card-bg)', border: `1px solid ${active ? `${P}40` : 'var(--border)'}`, boxShadow: active ? `var(--glow-primary-sm)` : 'none' }}>
                         {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />}
                         <div className="p-5">
                           {/* language name + active badge */}
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <p className={cn('font-black text-white text-sm mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
-                                style={{ fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{lang.name}</p>
+                              <p className={cn('font-black text-sm mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
+                                style={{ color: 'var(--text-primary)', fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{lang.name}</p>
                               <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.script}</p>
                             </div>
                             {active && (
@@ -2501,20 +2501,20 @@ export default function App() {
                           </div>
 
                           {/* sample text */}
-                          <div className="mb-4 p-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <p className={cn('text-white font-bold mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
-                              style={{ fontSize: lang.code === 'ff-adlm' ? 15 : 14, fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{m.sample}</p>
-                            <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>{m.sampleLabel}</p>
+                          <div className="mb-4 p-3 rounded-xl" style={{ background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
+                            <p className={cn('font-bold mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
+                              style={{ fontSize: lang.code === 'ff-adlm' ? 15 : 14, color: 'var(--text-primary)', fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{m.sample}</p>
+                            <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sampleLabel}</p>
                           </div>
 
                           {/* stats row */}
                           <div className="flex gap-4 mb-4">
                             <div>
-                              <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Speakers</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Speakers</p>
                               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', fontFamily: MANROPE }}>{m.speakers}</p>
                             </div>
                             <div>
-                              <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Region</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Region</p>
                               <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}>{m.region}</p>
                             </div>
                           </div>
@@ -2523,7 +2523,7 @@ export default function App() {
                             onClick={() => setSelectedLang(lang)}
                             disabled={active}
                             className="w-full py-2.5 rounded-xl font-black text-sm transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:scale-100 disabled:cursor-default"
-                            style={{ background: active ? 'rgba(255,255,255,0.06)' : 'var(--gradient-brand)', color: active ? '#fff' : '#000', fontFamily: MANROPE, boxShadow: active ? 'none' : 'var(--glow-primary-sm)' }}>
+                            style={{ background: active ? 'var(--btn-bg)' : 'var(--gradient-brand)', color: active ? 'var(--text-primary)' : '#000', fontFamily: MANROPE, boxShadow: active ? 'none' : 'var(--glow-primary-sm)' }}>
                             {active ? 'Currently Active' : `Switch to ${lang.code === 'ff-adlm' ? 'ADLaM' : lang.name}`}
                           </button>
                         </div>
