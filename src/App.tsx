@@ -1757,7 +1757,7 @@ export default function App() {
 
           {/* new project (Claude-style, top) */}
           <div className="px-3 mb-3">
-            <button onClick={() => { setCurrentProject(null); setInput(''); setPage('dashboard'); setImportMode('describe'); setMobileNavOpen(false); }}
+            <button onClick={() => { setCurrentProject(null); setChatActive(false); setInput(''); setPage('dashboard'); setImportMode('describe'); setMobileNavOpen(false); }}
               className={cn('w-full flex items-center rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2 px-3 py-2.5', isAdlam && 'font-adlam')}
               style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: isAdlam ? undefined : MANROPE, fontSize: 13 }}
               title={t.newProject}>
