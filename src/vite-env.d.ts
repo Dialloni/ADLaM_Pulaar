@@ -1,5 +1,11 @@
 /// <reference types="vite/client" />
 
+declare module 'headroom-ai' {
+  export function compress(
+    messages: { role: string; content: string }[]
+  ): Promise<{ role: string; content: string }[]>;
+}
+
 interface ImportMetaEnv {
   readonly VITE_FIREBASE_API_KEY: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN: string;
