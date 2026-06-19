@@ -39,9 +39,12 @@ async function compressContent(content: string): Promise<string> {
 // after this module is imported, so top-level reads would capture empty values.
 const claudeModel = () => process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
 const geminiModel = () => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-// Capped at 16k (user decision): ADLaM is token-heavy; test apps fit well under this,
-// and it roughly halves worst-case latency/cost vs 32k.
-const maxTokens = () => Number(process.env.GANDO_MAX_OUTPUT_TOKENS) || 16000;
+// Ceiling, not a fixed cost — you only pay for tokens actually generated, so a higher
+// cap is free for small apps and only kicks in for large ones. Edits re-emit the ENTIRE
+// HTML file; 16k truncated rich apps mid-file (broke buttons, empty metadata → blank
+// reply bubble). 32k fits a whole single-file app plus the trailing metadata JSON.
+// Sonnet 4.6 supports up to 64k output tokens.
+const maxTokens = () => Number(process.env.GANDO_MAX_OUTPUT_TOKENS) || 32000;
 const anthropicKey = () => process.env.ANTHROPIC_API_KEY || '';
 const geminiKey = () => process.env.GEMINI_API_KEY || '';
 const groqKey = () => process.env.GROQ_API_KEY || '';
