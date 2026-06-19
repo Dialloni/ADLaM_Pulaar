@@ -887,19 +887,37 @@ export default function App() {
   const handleStop = () => { abortRef.current?.abort(); };
 
   const createNewProject = async (prompt: string, signal: AbortSignal) => {
-    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal);
-    // If aborted before any code arrived, nothing to save.
-    if (!result.code) return;
-    const data = {
-      userId: user!.uid, name: result.name || 'Untitled App', description: prompt,
+    // Create a placeholder project FIRST so the split workspace (chat + live preview)
+    // renders while the app streams in — instead of staying on the dashboard.
+    const placeholder = {
+      userId: user!.uid, name: 'Building…', description: prompt,
       language: selectedLang.name, languageCode: selectedLang.code,
-      code: result.code, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+      code: '', createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
     };
+    let ref;
     try {
-      const ref = await addDoc(collection(db, 'projects'), data);
-      const np = { id: ref.id, ...data } as unknown as Project;
-      setCurrentProject(np);
+      ref = await addDoc(collection(db, 'projects'), placeholder);
+    } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); return; }
+
+    const np = { id: ref.id, ...placeholder } as unknown as Project;
+    setCurrentProject(np);
+    try {
       await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
+    } catch { /* non-fatal — user message is best-effort */ }
+
+    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal);
+
+    // Aborted before any code arrived — remove the empty placeholder, return to dashboard.
+    if (!result.code) {
+      try { await deleteDoc(doc(db, 'projects', ref.id)); } catch { /* ignore */ }
+      setCurrentProject(null);
+      return;
+    }
+
+    try {
+      const finalName = result.name || 'Untitled App';
+      await updateDoc(doc(db, 'projects', ref.id), { name: finalName, code: result.code, updatedAt: serverTimestamp() });
+      setCurrentProject(p => (p && p.id === ref!.id) ? { ...p, name: finalName, code: result.code } : p);
       if (!result.wasAborted) {
         await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
       }
@@ -1058,7 +1076,7 @@ export default function App() {
     setPreviewCode(null);
     setGenerationSteps([]);
     // Show code writing live during the build (preview is blank until <body> arrives).
-    if (currentProject) setActiveTab('code');
+    setActiveTab('code');
     lastPreviewAt.current = 0;
     abortRef.current = new AbortController();
     const signal = abortRef.current.signal;
