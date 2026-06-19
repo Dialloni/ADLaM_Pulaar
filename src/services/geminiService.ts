@@ -190,6 +190,26 @@ export async function chatStream(
   return answer;
 }
 
+export async function speakText(
+  text: string,
+  languageCode: string
+): Promise<{ audioUrl?: string; useBrowser?: boolean; text?: string }> {
+  const res = await fetch('/api/speak', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify({ text, languageCode }),
+  });
+  const contentType = res.headers.get('content-type') ?? '';
+  if (contentType.includes('audio')) {
+    const blob = await res.blob();
+    return { audioUrl: URL.createObjectURL(blob) };
+  }
+  const data = await res.json().catch(() => ({ error: res.statusText })) as { useBrowser?: boolean; text?: string; error?: string; retryAfter?: number };
+  if (!res.ok) throw new Error(data.error || `TTS failed: ${res.status}`);
+  if (data.useBrowser) return { useBrowser: true, text: data.text };
+  throw new Error(data.error || 'TTS failed');
+}
+
 export async function transcribeAudio(
   base64Audio: string,
   mimeType: string,
