@@ -28,6 +28,7 @@ import { ModeSwitch } from './components/ModeSwitch';
 import { useTheme } from './lib/useTheme';
 import { AdminPortal } from './components/AdminPortal';
 import { GandoCollector } from './components/GandoCollector';
+import { ScrollVelocity } from './components/ScrollVelocity';
 import { SettingsModal, type UserPrefs } from './components/SettingsModal';
 import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode } from './translations';
@@ -1244,14 +1245,40 @@ export default function App() {
           <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase', marginBottom: 20 }}>
             {t.loginEyebrow}
           </p>
-          <h1 className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(40px,7vw,82px)', lineHeight: 1.0, letterSpacing: isAdlam ? 0 : '-0.03em', color: 'var(--text-primary)', marginBottom: 22 }}>
-            {t.loginLine1}<br />
-            {t.loginLine2}<br />
+          <h2 className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(26px,4vw,48px)', lineHeight: 1.1, letterSpacing: isAdlam ? 0 : '-0.03em', color: 'var(--text-primary)', marginBottom: 14 }}>
+            {t.loginLine1} {t.loginLine2}{' '}
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
-          </h1>
-          <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : 'Inter, sans-serif', fontSize: 16, color: 'var(--text-muted)', lineHeight: 1.65, maxWidth: 520, margin: '0 auto 40px' }}>
-            {t.heroSubtitle}
-          </p>
+          </h2>
+
+          {/* ── SCROLL VELOCITY STRIP — replaces subtitle, landing only ── */}
+          <div style={{ position: 'relative', left: '50%', transform: 'translateX(-50%)', width: '100vw', overflow: 'hidden', margin: '0 0 32px' }}>
+            {/* ADLaM row — RTL script, orange, moves rightward */}
+            <ScrollVelocity
+              texts={['𞤃𞤢𞤸𞤭𞤪 𞤫 𞤳𞤢𞤤𞤢 𞤯𞤫𞤥𞤽𞤢𞤤. 𞤖𞤢𞤳𞥆𞤭𞤤𞤮 𞤳𞤵𞥄𞤩𞤢𞤤 𞤬𞤭𞥄 𞤀𞤬𞤪𞤭𞤳. 𞤳𞤮𞥄𞤣𞤭 𞤸𞤢𞥄𞤶𞤢𞤼𞤢𞥄. 𞤆𞤭𞤲𞤢𞤤 𞤥𞤢𞥄⹁ 𞤀𞤨𞥆 𞤥𞤢𞥄!']}
+              velocity={-80}
+              className="gando-scroll-adlam"
+              parallaxClassName="gando-scroll-parallax"
+              scrollerClassName="gando-scroll-scroller"
+              numCopies={8}
+              damping={50}
+              stiffness={400}
+            />
+            {/* Latin row — white, changes with language, moves leftward */}
+            <ScrollVelocity
+              texts={[
+                selectedLang.code === 'fr'
+                  ? "Créez dans votre langue. IA pour l'Afrique. Sans code. Votre culture, votre app!"
+                  : 'Build in any language. AI for Africa. No code needed. Your culture, your app!',
+              ]}
+              velocity={80}
+              className="gando-scroll-latin"
+              parallaxClassName="gando-scroll-parallax"
+              scrollerClassName="gando-scroll-scroller"
+              numCopies={8}
+              damping={50}
+              stiffness={400}
+            />
+          </div>
 
           {/* textarea card */}
           <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: '1px solid var(--border)', boxShadow: '0 32px 80px -12px rgba(0,0,0,0.7)', padding: '18px 18px 14px', textAlign: 'left' }}>
