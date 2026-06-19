@@ -1245,7 +1245,7 @@ export default function App() {
           <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase', marginBottom: 20 }}>
             {t.loginEyebrow}
           </p>
-          <h2 className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(26px,4vw,48px)', lineHeight: 1.1, letterSpacing: isAdlam ? 0 : '-0.03em', color: 'var(--text-primary)', marginBottom: 14 }}>
+          <h2 dir={isAdlam ? 'rtl' : undefined} className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(26px,4vw,48px)', lineHeight: 1.1, letterSpacing: isAdlam ? 0 : '-0.03em', color: 'var(--text-primary)', marginBottom: 14 }}>
             {t.loginLine1} {t.loginLine2}{' '}
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
           </h2>
