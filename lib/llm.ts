@@ -17,6 +17,24 @@ import { GoogleGenAI, Type } from '@google/genai';
 
 export const META_DELIM = '<<<GANDO_META>>>';
 
+// Compress message content via headroom-ai before sending to the LLM.
+// Dynamic import + full fallback: if headroom-ai is not installed or fails, original content used.
+async function compressContent(content: string): Promise<string> {
+  try {
+    const { compress } = await import('headroom-ai');
+    const input = [{ role: 'user', content }];
+    const result = await compress(input);
+    // Handle both return shapes: raw array or { messages: array }
+    const msgs: { role: string; content: unknown }[] = Array.isArray(result)
+      ? result
+      : (result as { messages: { role: string; content: unknown }[] }).messages ?? [];
+    const out = msgs[0];
+    return typeof out?.content === 'string' ? out.content : content;
+  } catch {
+    return content;
+  }
+}
+
 // Read env LAZILY (inside functions), never at module load. server.ts calls dotenv.config()
 // after this module is imported, so top-level reads would capture empty values.
 const claudeModel = () => process.env.CLAUDE_MODEL || 'claude-sonnet-4-6';
@@ -192,11 +210,12 @@ async function runClaude(
   model: string = claudeModel()
 ): Promise<GenResult> {
   const client = new Anthropic({ apiKey });
+  const userContent = await compressContent(buildUserContent(opts));
   const stream = client.messages.stream({
     model,
     max_tokens: maxTokens(),
     system: opts.kind === 'edit' ? EDIT_SYSTEM : GENERATE_SYSTEM,
-    messages: [{ role: 'user', content: buildUserContent(opts) }],
+    messages: [{ role: 'user', content: userContent }],
   });
 
   let buf = '';
@@ -438,11 +457,12 @@ async function chatClaude(
   model: string = claudeModel()
 ): Promise<string> {
   const client = new Anthropic({ apiKey });
+  const chatContent = await compressContent(buildChatContent(opts));
   const stream = client.messages.stream({
     model,
     max_tokens: 4096,
     system: CHAT_SYSTEM,
-    messages: [{ role: 'user', content: buildChatContent(opts) }],
+    messages: [{ role: 'user', content: chatContent }],
   });
   let full = '';
   for await (const ev of stream) {
