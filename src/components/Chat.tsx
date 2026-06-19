@@ -988,7 +988,9 @@ function chatPropsEqual(a: ChatProps, b: ChatProps) {
     a.languageCode === b.languageCode &&
     a.currentCode === b.currentCode &&
     a.languages === b.languages &&
-    a.t === b.t
+    a.t === b.t &&
+    a.mode === b.mode &&
+    a.provider === b.provider
   );
 }
 
