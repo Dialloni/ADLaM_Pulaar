@@ -886,6 +886,13 @@ export default function App() {
 
   const handleStop = () => { abortRef.current?.abort(); };
 
+  // Shown in the chat when the model returned no explanation text (e.g. metadata cut off).
+  // ADLaM uses a neutral checkmark — never fabricate ADLaM strings (correctness matters).
+  const doneFallback = () =>
+    selectedLang.code === 'fr' ? 'Terminé — votre application a été mise à jour.'
+    : selectedLang.code === 'ff-adlm' ? '✓'
+    : 'Done — your app has been updated.';
+
   // Returns true if a project was built/kept, false if stopped before any code (placeholder removed).
   const createNewProject = async (prompt: string, signal: AbortSignal): Promise<boolean> => {
     // Create a placeholder project FIRST so the split workspace (chat + live preview)
@@ -920,7 +927,7 @@ export default function App() {
       await updateDoc(doc(db, 'projects', ref.id), { name: finalName, code: result.code, updatedAt: serverTimestamp() });
       setCurrentProject(p => (p && p.id === ref!.id) ? { ...p, name: finalName, code: result.code } : p);
       if (!result.wasAborted) {
-        await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
+        await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'assistant', content: result.explanation || doneFallback(), codeSnapshot: result.code, timestamp: serverTimestamp() });
       }
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); }
     return true;
@@ -936,7 +943,7 @@ export default function App() {
       await updateDoc(doc(db, 'projects', currentProject.id), { code: savedCode, updatedAt: serverTimestamp() });
       setCurrentProject(p => p ? { ...p, code: savedCode } : null);
       if (!result.wasAborted) {
-        await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'assistant', content: result.explanation, codeSnapshot: savedCode, timestamp: serverTimestamp() });
+        await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'assistant', content: result.explanation || doneFallback(), codeSnapshot: savedCode, timestamp: serverTimestamp() });
       }
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${currentProject.id}`); }
   };
