@@ -378,20 +378,22 @@ Output ONLY the extracted text, nothing else.`;
   });
 
   app.post('/api/transcribe', requireAuth, async (req: Request, res: Response) => {
-    const { audio, mimeType, language } = req.body ?? {};
+    const { audio, mimeType, language, languageCode } = req.body ?? {};
     if (!audio || !mimeType) {
       return res.status(400).json({ error: 'audio and mimeType required' });
     }
     if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+    const isAdlam = languageCode === 'ff-adlm';
+    const prompt = isAdlam
+      ? `Transcribe this spoken Pulaar (Fulani/Fulfulde) audio. You MUST output the transcription exclusively in ADLaM script (Unicode block U+1E900–U+1E95F). Do NOT use Latin letters, romanized Pulaar, or any other script. ADLaM is written right-to-left. If a word is unclear, approximate it in ADLaM characters. Return only the ADLaM transcription, nothing else.`
+      : `Transcribe this audio exactly as spoken${language ? ` in ${language}` : ''}. Return only the transcribed text, no commentary.`;
     try {
       const response = await ai.models.generateContent({
         model: MODEL,
         contents: {
           parts: [
             { inlineData: { data: audio, mimeType } },
-            {
-              text: `Transcribe this audio exactly as spoken${language ? ` in ${language}` : ''}. Return only the transcribed text, no commentary.`,
-            },
+            { text: prompt },
           ],
         },
       });
