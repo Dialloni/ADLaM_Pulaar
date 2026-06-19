@@ -29,6 +29,7 @@ import { useTheme } from './lib/useTheme';
 import { AdminPortal } from './components/AdminPortal';
 import { GandoCollector } from './components/GandoCollector';
 import { ScrollVelocity } from './components/ScrollVelocity';
+import RotatingText from './components/RotatingText';
 import { SettingsModal, type UserPrefs } from './components/SettingsModal';
 import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode } from './translations';
@@ -1242,9 +1243,25 @@ export default function App() {
       {/* ── HERO ── */}
       <section className="relative z-10 pt-32 pb-20 px-5 flex flex-col items-center text-center">
         <div style={{ maxWidth: 820, width: '100%' }}>
-          <p className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase', marginBottom: 20 }}>
-            {t.loginEyebrow}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20, fontFamily: MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase' }}>
+            <span>{selectedLang.code === 'fr' ? 'CONÇU POUR' : 'BUILT FOR'}</span>
+            <RotatingText
+              texts={['Pulaar', 'Hausa', 'Yoruba', 'Igbo', 'Swahili']}
+              mainClassName="overflow-hidden rounded-md"
+              style={{ background: '#3b82f6', color: '#ffffff', padding: '2px 10px', letterSpacing: '0.08em' }}
+              staggerFrom="last"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '-120%' }}
+              staggerDuration={0.025}
+              splitLevelClassName="overflow-hidden"
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              rotationInterval={2000}
+              splitBy="characters"
+              auto
+              loop
+            />
+          </div>
           <h2 dir={isAdlam ? 'rtl' : undefined} className={cn(isAdlam && 'font-adlam-display')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 'clamp(26px,4vw,48px)', lineHeight: 1.1, letterSpacing: isAdlam ? 0 : '-0.03em', color: 'var(--text-primary)', marginBottom: 14 }}>
             {t.loginLine1} {t.loginLine2}{' '}
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
