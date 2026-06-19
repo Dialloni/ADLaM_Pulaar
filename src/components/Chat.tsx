@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare, Square } from 'lucide-react';
+import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare, Square, Volume2, VolumeX } from 'lucide-react';
 import { GandoSpark } from './GandoSpark';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { ModeSwitch } from './ModeSwitch';
-import { type Provider } from '../services/geminiService';
+import { type Provider, speakText } from '../services/geminiService';
 
 type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
 
@@ -145,10 +145,14 @@ interface MessageActionsProps {
   onRegenerate?: () => void;
   onRevert?: (snapshot: string) => void;
   isCurrentVersion?: boolean;
+  onSpeak?: () => void;
+  isSpeaking?: boolean;
+  isSpeakLoading?: boolean;
 }
 
-const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRegenerate, onRevert, isCurrentVersion }) => {
+const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRegenerate, onRevert, isCurrentVersion, onSpeak, isSpeaking, isSpeakLoading }) => {
   const [copied, setCopied] = useState(false);
+  const [liked, setLiked] = useState<'up' | 'down' | null>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -174,6 +178,21 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
           <Copy className="w-4 h-4" />
         )}
       </button>
+      {message.role === 'assistant' && onSpeak && (
+        <button
+          onClick={onSpeak}
+          disabled={isSpeakLoading}
+          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+          style={{ color: isSpeaking ? '#3b82f6' : '#a1a1aa' }}
+          title={isSpeaking ? 'Stop speaking' : 'Speak response'}
+        >
+          {isSpeakLoading
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : isSpeaking
+            ? <VolumeX className="w-4 h-4" />
+            : <Volume2 className="w-4 h-4" />}
+        </button>
+      )}
       {message.role === 'assistant' && onRegenerate && (
         <button
           onClick={onRegenerate}
@@ -203,10 +222,20 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
           </button>
         )
       )}
-      <button className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all">
+      <button
+        onClick={() => setLiked(liked === 'up' ? null : 'up')}
+        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+        style={{ color: liked === 'up' ? '#3b82f6' : '#a1a1aa' }}
+        title="Good response"
+      >
         <ThumbsUp className="w-4 h-4" />
       </button>
-      <button className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all">
+      <button
+        onClick={() => setLiked(liked === 'down' ? null : 'down')}
+        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
+        style={{ color: liked === 'down' ? '#fd8b00' : '#a1a1aa' }}
+        title="Bad response"
+      >
         <ThumbsDown className="w-4 h-4" />
       </button>
     </motion.div>
@@ -241,6 +270,8 @@ const ChatImpl: React.FC<ChatProps> = ({
 }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
+  const [speakError, setSpeakError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [modelOpen, setModelOpen] = useState(false);
@@ -333,6 +364,51 @@ const ChatImpl: React.FC<ChatProps> = ({
     el.style.height = next + 'px';
     el.style.overflowY = el.scrollHeight > 200 ? 'auto' : 'hidden';
   }, [input]);
+
+  const handleSpeak = (msg: Message) => {
+    // ADLaM codepoint → Latin letter (reverse of App.tsx ADLAM_MAP)
+    const ADLAM_SMALL: Record<number, string> = {
+      0x1e922:'a',0x1e926:'b',0x1e937:'c',0x1e923:'d',0x1e92b:'e',0x1e92c:'f',0x1e93a:'g',
+      0x1e938:'h',0x1e92d:'i',0x1e936:'j',0x1e933:'k',0x1e924:'l',0x1e925:'m',0x1e932:'n',
+      0x1e92e:'o',0x1e928:'p',0x1e939:'q',0x1e92a:'r',0x1e927:'s',0x1e93c:'t',0x1e935:'u',
+      0x1e93e:'v',0x1e931:'w',0x1e93f:'x',0x1e934:'y',0x1e941:'z',
+    };
+    // capitals sit 0x22 below their small counterpart
+    const toLatinChar = (cp: number) =>
+      ADLAM_SMALL[cp] ?? ADLAM_SMALL[cp + 0x22] ?? null;
+    const adlamToLatin = (text: string) =>
+      [...text].map(ch => {
+        const cp = ch.codePointAt(0) ?? 0;
+        const lat = toLatinChar(cp);
+        if (lat) return lat;
+        // keep punctuation/spaces, drop unrecognised ADLaM chars
+        if (cp >= 0x1e900 && cp <= 0x1e95f) return '';
+        return ch;
+      }).join('');
+    // Stop if already speaking this message
+    if (speakingId === msg.id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    setSpeakingId(null);
+
+    // Strip markdown, then convert ADLaM → Latin so browser can pronounce it
+    const stripped = msg.content
+      .replace(/#{1,6}\s/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+      .replace(/`{1,3}[^`]*`{1,3}/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/^\s*[-*+]\s/gm, '').trim();
+    const clean = (languageCode === 'ff-adlm' ? adlamToLatin(stripped) : stripped).slice(0, 600);
+
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = languageCode === 'fr' ? 'fr-FR' : 'en-US';
+    utter.rate = 0.95;
+    utter.onend = () => setSpeakingId(null);
+    utter.onerror = () => setSpeakingId(null);
+    setSpeakingId(msg.id);
+    window.speechSynthesis.speak(utter);
+  };
 
   const isEmpty = messages.length === 0 && !isGenerating;
   const charCount = input.length;
@@ -526,6 +602,18 @@ const ChatImpl: React.FC<ChatProps> = ({
                 )}
               </motion.div>
             ) : (
+              <>
+              {speakError && (
+                <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '8px 14px', fontSize: 12, color: '#f87171', marginBottom: 8 }}>
+                  TTS error: {speakError}
+                </div>
+              )}
+              {speakingId && languageCode === 'ff-adlm' && (
+                <div style={{ background: 'rgba(253,139,0,0.10)', border: '1px solid rgba(253,139,0,0.25)', borderRadius: 10, padding: '8px 14px', fontSize: 12, color: '#fd8b00', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Volume2 className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Placeholder voice — no Pulaar TTS model exists yet. Help us build one: contribute audio in the <strong>Collector</strong>.</span>
+                </div>
+              )}
               <div className="space-y-8">
                 {messages.map((m, i) => (
                   <motion.div 
@@ -558,7 +646,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                         m.role === 'user' && "items-end"
                       )}>
                         <div className={cn(
-                          "relative group/message transition-all",
+                          "relative group/message transition-all pb-10",
                           m.role === 'user' && "flex flex-col items-end"
                         )}>
                           <div className={cn("p-4 transition-all", languageCode === 'ff-adlm' && "font-adlam")}
@@ -590,13 +678,16 @@ const ChatImpl: React.FC<ChatProps> = ({
                           <motion.div
                             initial={{ opacity: 0, y: -5 }}
                             whileHover={{ opacity: 1, y: 0 }}
-                            className="absolute -bottom-8 right-0 opacity-0 group-hover/message:opacity-100 transition-opacity pointer-events-none group-hover/message:pointer-events-auto"
+                            className="absolute bottom-0 right-0 opacity-0 group-hover/message:opacity-100 transition-opacity pointer-events-none group-hover/message:pointer-events-auto"
                           >
                             <MessageActions
                               message={m}
                               onCopy={() => navigator.clipboard.writeText(m.content)}
                               onRevert={onRevert}
                               isCurrentVersion={!!m.codeSnapshot && m.codeSnapshot === currentCode}
+                              onSpeak={m.role === 'assistant' ? () => handleSpeak(m) : undefined}
+                              isSpeaking={speakingId === m.id}
+                              isSpeakLoading={false}
                             />
                           </motion.div>
                         </div>
@@ -652,6 +743,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   </motion.div>
                 )}
               </div>
+              </>
             )}
           </AnimatePresence>
           <div ref={chatEndRef} />
