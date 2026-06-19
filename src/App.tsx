@@ -1057,6 +1057,8 @@ export default function App() {
     setStreamingCode(null);
     setPreviewCode(null);
     setGenerationSteps([]);
+    // Show code writing live during the build (preview is blank until <body> arrives).
+    if (currentProject) setActiveTab('code');
     lastPreviewAt.current = 0;
     abortRef.current = new AbortController();
     const signal = abortRef.current.signal;
@@ -1074,7 +1076,11 @@ export default function App() {
       const m = err.message || '';
       setGlobalError(/429|quota|rate|RESOURCE_EXHAUSTED/i.test(m)
         ? "You've reached the AI limit. Please wait a minute." : m || 'Unexpected error.');
-    } finally { setIsGenerating(false); setStreamingCode(null); setPreviewCode(null); setGenerationSteps([]); abortRef.current = null; }
+    } finally {
+      setIsGenerating(false); setStreamingCode(null); setPreviewCode(null); setGenerationSteps([]); abortRef.current = null;
+      // Built — flip back to the live preview to show the finished app.
+      setActiveTab('preview');
+    }
   };
 
   const handleRevert = async (snapshot: string) => {
