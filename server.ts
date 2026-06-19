@@ -3,6 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
+import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { verifyIdToken } from './lib/firebaseAdmin';
 import { runStream, translateText, chatStream } from './lib/llm';
@@ -401,6 +402,65 @@ Output ONLY the extracted text, nothing else.`;
     } catch (err) {
       console.error('transcribe error:', err);
       sendGeminiError(res, err);
+    }
+  });
+
+  app.post('/api/speak', requireAuth, async (req: Request, res: Response) => {
+    const { text, languageCode } = req.body ?? {};
+    if (!text) return res.status(400).json({ error: 'text required' });
+
+    const stripMd = (s: string) => s
+      .replace(/#{1,6}\s/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+      .replace(/`{1,3}[^`]*`{1,3}/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/^\s*[-*+]\s/gm, '').trim();
+
+    if (languageCode !== 'ff-adlm') {
+      return res.json({ useBrowser: true, text: stripMd(text).slice(0, 800) });
+    }
+
+    const hfToken = process.env.HUGGINGFACE_API_KEY;
+    if (!hfToken) return res.status(500).json({ error: 'HUGGINGFACE_API_KEY not configured' });
+
+    try {
+      const clean = stripMd(text).slice(0, 500);
+      let romanized = clean;
+      const anthropicKey = process.env.ANTHROPIC_API_KEY;
+      if (anthropicKey) {
+        const ant = new Anthropic({ apiKey: anthropicKey });
+        const msg = await ant.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 512,
+          messages: [{ role: 'user', content: `Convert this ADLaM script text to romanized Pulaar (Latin letters only, phonetic). Return only the romanized text, nothing else.\n\n${clean}` }],
+        });
+        const block = msg.content[0];
+        if (block.type === 'text') romanized = block.text.trim();
+      }
+
+      const hfRes = await fetch(`https://api-inference.huggingface.co/models/facebook/mms-tts-fuv`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${hfToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: romanized }),
+      });
+
+      if (hfRes.status === 404 || hfRes.status === 400) {
+        return res.json({ useBrowser: true, text: romanized });
+      }
+      if (hfRes.status === 503) {
+        const data = await hfRes.json() as { estimated_time?: number };
+        return res.status(503).json({ error: 'Model loading', retryAfter: Math.ceil(data.estimated_time ?? 20) });
+      }
+      if (!hfRes.ok) {
+        return res.json({ useBrowser: true, text: romanized });
+      }
+
+      const buf = await hfRes.arrayBuffer();
+      const ct = hfRes.headers.get('content-type') || 'audio/flac';
+      res.setHeader('Content-Type', ct);
+      res.setHeader('Content-Length', buf.byteLength);
+      res.send(Buffer.from(buf));
+    } catch (err) {
+      console.error('speak error:', err);
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
     }
   });
 
