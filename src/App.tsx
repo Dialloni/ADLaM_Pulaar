@@ -886,7 +886,8 @@ export default function App() {
 
   const handleStop = () => { abortRef.current?.abort(); };
 
-  const createNewProject = async (prompt: string, signal: AbortSignal) => {
+  // Returns true if a project was built/kept, false if stopped before any code (placeholder removed).
+  const createNewProject = async (prompt: string, signal: AbortSignal): Promise<boolean> => {
     // Create a placeholder project FIRST so the split workspace (chat + live preview)
     // renders while the app streams in — instead of staying on the dashboard.
     const placeholder = {
@@ -897,7 +898,7 @@ export default function App() {
     let ref;
     try {
       ref = await addDoc(collection(db, 'projects'), placeholder);
-    } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); return; }
+    } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); return false; }
 
     const np = { id: ref.id, ...placeholder } as unknown as Project;
     setCurrentProject(np);
@@ -911,7 +912,7 @@ export default function App() {
     if (!result.code) {
       try { await deleteDoc(doc(db, 'projects', ref.id)); } catch { /* ignore */ }
       setCurrentProject(null);
-      return;
+      return false;
     }
 
     try {
@@ -922,6 +923,7 @@ export default function App() {
         await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'assistant', content: result.explanation, codeSnapshot: result.code, timestamp: serverTimestamp() });
       }
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, 'projects'); }
+    return true;
   };
 
   const updateExistingProject = async (prompt: string, signal: AbortSignal) => {
@@ -1086,10 +1088,13 @@ export default function App() {
       ? `Build a pixel-perfect web UI matching this Figma design: ${input}`
       : input;
     const prompt = extraContext ? `${extraContext}\n\n${basePrompt}` : basePrompt;
+    const originalInput = input; // restore on stop-before-any-code so the user can retry
     setInput('');
     try {
-      if (!currentProject) await createNewProject(prompt, signal);
-      else await updateExistingProject(prompt, signal);
+      if (!currentProject) {
+        const built = await createNewProject(prompt, signal);
+        if (!built) setInput(originalInput); // stopped before any code — put the prompt back
+      } else await updateExistingProject(prompt, signal);
     } catch (err: any) {
       const m = err.message || '';
       setGlobalError(/429|quota|rate|RESOURCE_EXHAUSTED/i.test(m)
