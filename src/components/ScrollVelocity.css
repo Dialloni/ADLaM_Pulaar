@@ -1,0 +1,41 @@
+.gando-scroll-parallax {
+  position: relative;
+  overflow: hidden;
+  padding: 5px 0;
+}
+
+.gando-scroll-scroller {
+  display: flex;
+  white-space: nowrap;
+}
+
+.gando-scroll-scroller span {
+  flex-shrink: 0;
+}
+
+/* ADLaM row — orange, Noto Sans Adlam, moves rightward */
+.gando-scroll-adlam {
+  font-family: 'Noto Sans Adlam', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fd8b00;
+  letter-spacing: 0.01em;
+}
+
+/* Latin row — theme-aware (white dark / black light), Manrope, moves leftward */
+.gando-scroll-latin {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 768px) {
+  .gando-scroll-adlam {
+    font-size: 1.625rem;
+  }
+  .gando-scroll-latin {
+    font-size: 1.5rem;
+  }
+}
