@@ -612,7 +612,7 @@ export default function App() {
   const buildDashContext = () => dashAttachments.map(a =>
     a.kind === 'image' ? `[Image: ${a.name}]` : `[File: ${a.name}]\n${a.content.slice(0, 4000)}`
   ).join('\n\n');
-  const dashVoice = useVoiceInput(input, setInput, selectedLang.name);
+  const dashVoice = useVoiceInput(input, setInput, selectedLang.name, selectedLang.code);
   // Build vs Chat mode. Build = generate/edit an app. Chat = just talk to the AI.
   const [mode, setModeState] = useState<'build' | 'chat'>(
     () => (typeof window !== 'undefined' && (localStorage.getItem('gando_mode') as 'build' | 'chat')) || 'build'

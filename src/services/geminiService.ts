@@ -193,12 +193,13 @@ export async function chatStream(
 export async function transcribeAudio(
   base64Audio: string,
   mimeType: string,
-  language: string
+  language: string,
+  languageCode?: string
 ): Promise<string> {
   const res = await fetch('/api/transcribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify({ audio: base64Audio, mimeType, language }),
+    body: JSON.stringify({ audio: base64Audio, mimeType, language, languageCode }),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: res.statusText }));

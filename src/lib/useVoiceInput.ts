@@ -9,7 +9,8 @@ import { transcribeAudio } from '../services/geminiService';
 export function useVoiceInput(
   input: string,
   setInput: (val: string) => void,
-  language: string
+  language: string,
+  languageCode?: string
 ) {
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -40,7 +41,7 @@ export function useVoiceInput(
           const base64Audio = (reader.result as string).split(',')[1];
           setIsTranscribing(true);
           try {
-            const transcript = await transcribeAudio(base64Audio, 'audio/webm', language);
+            const transcript = await transcribeAudio(base64Audio, 'audio/webm', language, languageCode);
             if (transcript) setInput(input ? `${input} ${transcript}` : transcript);
           } catch (error) {
             console.error('Transcription failed:', error);
