@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { ModeSwitch } from './ModeSwitch';
 import { type Provider, speakText } from '../services/geminiService';
+import { collection, addDoc, serverTimestamp, db, auth } from '../firebase';
 
 type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
 
@@ -148,11 +149,18 @@ interface MessageActionsProps {
   onSpeak?: () => void;
   isSpeaking?: boolean;
   isSpeakLoading?: boolean;
+  onRate?: (rating: 'up' | 'down') => void;
 }
 
-const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRegenerate, onRevert, isCurrentVersion, onSpeak, isSpeaking, isSpeakLoading }) => {
+const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRegenerate, onRevert, isCurrentVersion, onSpeak, isSpeaking, isSpeakLoading, onRate }) => {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<'up' | 'down' | null>(null);
+
+  const handleRate = (r: 'up' | 'down') => {
+    const next = liked === r ? null : r;
+    setLiked(next);
+    if (next) onRate?.(next);
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -223,7 +231,7 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
         )
       )}
       <button
-        onClick={() => setLiked(liked === 'up' ? null : 'up')}
+        onClick={() => handleRate('up')}
         className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
         style={{ color: liked === 'up' ? '#3b82f6' : '#a1a1aa' }}
         title="Good response"
@@ -231,7 +239,7 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
         <ThumbsUp className="w-4 h-4" />
       </button>
       <button
-        onClick={() => setLiked(liked === 'down' ? null : 'down')}
+        onClick={() => handleRate('down')}
         className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all"
         style={{ color: liked === 'down' ? '#fd8b00' : '#a1a1aa' }}
         title="Bad response"
@@ -364,6 +372,24 @@ const ChatImpl: React.FC<ChatProps> = ({
     el.style.height = next + 'px';
     el.style.overflowY = el.scrollHeight > 200 ? 'auto' : 'hidden';
   }, [input]);
+
+  const handleRate = async (msg: Message, rating: 'up' | 'down') => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    try {
+      await addDoc(collection(db, 'feedback'), {
+        userId: uid,
+        messageId: msg.id ?? null,
+        rating,
+        response: msg.content.slice(0, 2000),
+        provider: provider ?? null,
+        languageCode,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) {
+      console.error('feedback write failed:', e);
+    }
+  };
 
   const handleSpeak = (msg: Message) => {
     // ADLaM codepoint → Latin letter (reverse of App.tsx ADLAM_MAP)
@@ -688,6 +714,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                               onSpeak={m.role === 'assistant' ? () => handleSpeak(m) : undefined}
                               isSpeaking={speakingId === m.id}
                               isSpeakLoading={false}
+                              onRate={m.role === 'assistant' ? (r) => handleRate(m, r) : undefined}
                             />
                           </motion.div>
                         </div>
