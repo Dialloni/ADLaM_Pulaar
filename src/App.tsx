@@ -1781,7 +1781,7 @@ export default function App() {
               return (
                 <button key={pg} onClick={() => { setPage(pg); setCurrentProject(null); setChatActive(false); setMobileNavOpen(false); }}
                   className={cn('w-full flex items-center rounded-xl transition-all', sidebarCollapsed ? 'justify-center p-2.5' : 'gap-3 px-3 py-2', isAdlam && 'font-adlam')}
-                  style={{ background: active ? 'rgba(255,255,255,0.07)' : 'transparent', color: active ? '#fff' : '#71717a', border: 'none', fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 600, fontSize: 13 }}>
+                  style={{ background: active ? 'rgba(59,130,246,0.10)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', border: 'none', fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 600, fontSize: 13 }}>
                   <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? P : undefined }} />
                   {!sidebarCollapsed && <span>{label}</span>}
                 </button>
