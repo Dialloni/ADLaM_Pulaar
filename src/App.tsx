@@ -28,7 +28,6 @@ import { ModeSwitch } from './components/ModeSwitch';
 import { useTheme } from './lib/useTheme';
 import { AdminPortal } from './components/AdminPortal';
 import { GandoCollector } from './components/GandoCollector';
-import { ScrollVelocity } from './components/ScrollVelocity';
 import RotatingText from './components/RotatingText';
 import { SettingsModal, type UserPrefs } from './components/SettingsModal';
 import { cn } from './lib/utils';
@@ -1303,35 +1302,33 @@ export default function App() {
             <span style={{ background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.loginLine3}</span>
           </h2>
 
-          {/* ── SCROLL VELOCITY STRIP — replaces subtitle, landing only ── */}
-          <div style={{ position: 'relative', left: '50%', transform: 'translateX(-50%)', width: '100vw', overflow: 'hidden', margin: '0 0 32px' }}>
-            {/* ADLaM row — RTL script, orange, moves rightward */}
-            <ScrollVelocity
-              texts={['𞤃𞤢𞤸𞤭𞤪 𞤫 𞤳𞤢𞤤𞤢 𞤯𞤫𞤥𞤽𞤢𞤤. 𞤖𞤢𞤳𞥆𞤭𞤤𞤮 𞤳𞤵𞥄𞤩𞤢𞤤 𞤬𞤭𞥄 𞤀𞤬𞤪𞤭𞤳. 𞤳𞤮𞥄𞤣𞤭 𞤸𞤢𞥄𞤶𞤢𞤼𞤢𞥄. 𞤆𞤭𞤲𞤢𞤤 𞤥𞤢𞥄⹁ 𞤀𞤨𞥆 𞤥𞤢𞥄!']}
-              velocity={-80}
-              className="gando-scroll-adlam"
-              parallaxClassName="gando-scroll-parallax"
-              scrollerClassName="gando-scroll-scroller"
-              numCopies={8}
-              damping={50}
-              stiffness={400}
-            />
-            {/* Latin row — white, changes with language, moves leftward */}
-            <ScrollVelocity
-              texts={[
-                selectedLang.code === 'fr'
-                  ? "Créez dans votre langue. IA pour l'Afrique. Sans code. Votre culture, votre app!"
-                  : 'Build in any language. AI for Africa. No code needed. Your culture, your app!',
-              ]}
-              velocity={80}
-              className="gando-scroll-latin"
-              parallaxClassName="gando-scroll-parallax"
-              scrollerClassName="gando-scroll-scroller"
-              numCopies={8}
-              damping={50}
-              stiffness={400}
-            />
-          </div>
+          {/* ── MARQUEE — short verses, seamless loop, fades before the edge ── */}
+          {(() => {
+            const latin = selectedLang.code === 'fr'
+              ? ['Créez dans votre langue', "L'IA pour l'Afrique", 'Sans code']
+              : ['Build in any language', 'AI for Africa', 'No code needed'];
+            const adlam = ['𞤃𞤢𞤸𞤭𞤪 𞤫 𞤳𞤢𞤤𞤢 𞤯𞤫𞤥𞤽𞤢𞤤', '𞤖𞤢𞤳𞥆𞤭𞤤𞤮 𞤳𞤵𞥄𞤩𞤢𞤤 𞤬𞤭𞥄 𞤀𞤬𞤪𞤭𞤳', '𞤳𞤮𞥄𞤣𞤭 𞤸𞤢𞥄𞤶𞤢𞤼𞤢𞥄'];
+            // half = phrases repeated wide enough to fill any viewport; track holds two halves → translateX(-50%) loops seamlessly
+            const half = (arr: string[], isAdlam: boolean) =>
+              Array.from({ length: 4 }).flatMap((_, r) =>
+                arr.map((p, i) => (
+                  <span className="gando-marquee-item" key={`${r}-${i}`}>
+                    <span className={isAdlam ? 'font-adlam' : undefined} dir={isAdlam ? 'rtl' : undefined}>{p}</span>
+                    <span className="gando-marquee-sep" aria-hidden="true">✦</span>
+                  </span>
+                ))
+              );
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, margin: '0 0 32px' }}>
+                <div className="gando-marquee">
+                  <div className="gando-marquee-track gando-marquee-adlam">{half(adlam, true)}{half(adlam, true)}</div>
+                </div>
+                <div className="gando-marquee">
+                  <div className="gando-marquee-track is-reverse gando-marquee-latin">{half(latin, false)}{half(latin, false)}</div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* textarea card */}
           <div style={{ borderRadius: 20, background: 'var(--card-bg)', border: '1px solid var(--border)', boxShadow: '0 32px 80px -12px rgba(0,0,0,0.7)', padding: '18px 18px 14px', textAlign: 'left' }}>
