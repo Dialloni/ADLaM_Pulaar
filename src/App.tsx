@@ -1257,22 +1257,22 @@ export default function App() {
             onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'}>
             {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
+          <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} buttonClassName="!px-2.5 md:!px-4" />
           <button onClick={() => { setAuthMode('login'); setAuthError(null); setAuthModalOpen(true); }}
-            className="text-sm font-bold text-zinc-400 hover:text-white transition-colors px-2.5 md:px-4 py-2 rounded-xl hover:bg-white/5"
+            className="hidden sm:inline-flex text-sm font-bold text-zinc-400 hover:text-white transition-colors px-2.5 md:px-4 py-2 rounded-xl hover:bg-white/5"
             style={{ fontFamily: MANROPE }}>
             {t.signIn}
           </button>
           <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
-            className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl font-black text-black text-sm transition-all hover:scale-[1.03] active:scale-95"
+            className="flex items-center gap-1.5 px-2.5 md:px-4 py-2 rounded-xl font-black text-black text-[13px] md:text-sm transition-all hover:scale-[1.03] active:scale-95"
             style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, whiteSpace: 'nowrap' }}>
-            <span>{t.getStarted} →</span>
+            <span>{t.getStarted}</span>
           </button>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative z-10 pt-32 pb-20 px-5 flex flex-col items-center text-center">
+      <section className="relative z-10 pt-24 sm:pt-32 pb-20 px-5 flex flex-col items-center text-center">
         <div style={{ maxWidth: 820, width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20, fontFamily: MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.16em', color: P, textTransform: 'uppercase' }}>
             <span>{selectedLang.code === 'fr' ? 'CONÇU POUR' : 'BUILT FOR'}</span>
