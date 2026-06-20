@@ -1235,25 +1235,21 @@ export default function App() {
 
       <ByokModal open={byokModalOpen} keys={byokKeys} onSave={saveByokKeys} onClose={() => setByokModalOpen(false)} fr={selectedLang.code === "fr"} />
 
-      {/* ambient blobs + grid */}
+      {/* ambient wash — single soft glow behind hero, no grid mesh */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute w-[65%] h-[65%] rounded-full top-[-20%] left-[-10%]"
-          style={{ background: P, filter: 'blur(120px)', opacity: 0.07 }} />
-        <div className="absolute w-[65%] h-[65%] rounded-full bottom-[-20%] right-[-10%]"
-          style={{ background: S, filter: 'blur(120px)', opacity: 0.07 }} />
-        <div className="absolute inset-0"
-          style={{ backgroundImage: 'linear-gradient(to right,#80808006 1px,transparent 1px),linear-gradient(to bottom,#80808006 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
+        <div className="absolute w-[80%] h-[55%] rounded-full top-[-15%] left-1/2 -translate-x-1/2"
+          style={{ background: P, filter: 'blur(140px)', opacity: 0.05 }} />
       </div>
 
       {/* ── NAVBAR ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 md:px-10 h-16 border-b border-white/5"
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-2 px-3 md:px-10 h-16 border-b border-white/5"
         style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(20px)' }}>
-        <div className="flex items-center gap-2 md:gap-2.5 min-w-0 flex-shrink-0">
+        <div className="flex items-center gap-1.5 md:gap-2.5 min-w-0 flex-shrink-0">
           <GandoLogo size={22} />
           <span style={{ fontFamily: MANROPE, fontSize: 18, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
           <span className="hidden sm:inline" style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginLeft: 2 }}>BETA</span>
         </div>
-        <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
           <button onClick={toggleTheme} title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             className="p-2 rounded-xl transition-colors"
             style={{ color: 'var(--text-muted)', background: 'transparent' }}
