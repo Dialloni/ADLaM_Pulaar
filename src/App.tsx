@@ -1411,7 +1411,7 @@ export default function App() {
 
           {/* trust row */}
           <div className="flex items-center justify-center gap-4 flex-wrap mt-5" style={{ fontSize: 12, color: '#52525b' }}>
-            <span>🔒 SOC 2 Type II</span><span style={{ color: '#3f3f46' }}>·</span>
+            <span>🔒 Private by default</span><span style={{ color: '#3f3f46' }}>·</span>
             <span>Data stays in-region</span><span style={{ color: '#3f3f46' }}>·</span>
             <span>Free during Beta</span>
           </div>
