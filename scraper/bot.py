@@ -263,20 +263,23 @@ def _harvest_web(seen: set) -> list:
             if nxt.startswith("http") and domain(nxt) in seed_domains and nxt not in visited:
                 queue.append(nxt)
         time.sleep(1.0)
-    return records
+    return records, len(visited)
 
 async def _harvest_groups(seen: set) -> list:
     """Read new messages from HARVEST_GROUPS via a USER session (bot tokens can't). Optional."""
     records = []
+    info = {"session": "none", "groups": 0, "msgs": 0}
     if not TELEGRAM_USER_SESSION:
-        return records
+        return records, info
+    msgs_total = 0
     try:
         user = TelegramClient(StringSession(TELEGRAM_USER_SESSION), API_ID, API_HASH)
         await user.connect()
         if not await user.is_user_authorized():
             await user.disconnect()
             print("harvest: user session not authorized — skipping group harvest")
-            return records
+            info["session"] = "unauthorized"
+            return records, info
 
         # Targets: explicit HARVEST_GROUPS, else auto-scan every group/channel the
         # account is in (only ADLaM-script messages survive the ratio filter).
@@ -299,6 +302,7 @@ async def _harvest_groups(seen: set) -> list:
                 max_seen = last_id
                 async for msg in user.iter_messages(peer, min_id=last_id, limit=200):
                     max_seen = max(max_seen, msg.id)
+                    msgs_total += 1
                     body = (msg.text or "").strip()
                     if not body:
                         continue
@@ -315,9 +319,11 @@ async def _harvest_groups(seen: set) -> list:
             except Exception as e:
                 print(f"harvest: group {label} failed: {e}")
         await user.disconnect()
+        info.update({"session": "ok", "groups": len(targets), "msgs": msgs_total})
     except Exception as e:
         print(f"harvest: user client error: {e}")
-    return records
+        info["session"] = "error"
+    return records, info
 
 async def run_harvest(client, reason: str = "scheduled"):
     """Scrape sources → dedup → corpus (pending) → Obsidian note → Telegram summary."""
@@ -325,10 +331,10 @@ async def run_harvest(client, reason: str = "scheduled"):
         await client.send_message(CHAT_ID, "⚠️ Harvest skipped — Firebase not connected.")
         return
     await client.send_message(CHAT_ID, f"🔍 Harvest started ({reason})…")
-    seen    = await asyncio.to_thread(_load_seen_hashes)
-    web     = await asyncio.to_thread(_harvest_web, seen)
-    groups  = await _harvest_groups(seen)
-    records = web + groups
+    seen              = await asyncio.to_thread(_load_seen_hashes)
+    web, web_pages    = await asyncio.to_thread(_harvest_web, seen)
+    groups, ginfo     = await _harvest_groups(seen)
+    records           = web + groups
 
     added, per_source = 0, {}
     for r in records:
@@ -349,12 +355,25 @@ async def run_harvest(client, reason: str = "scheduled"):
         except Exception as e:
             print(f"harvest: firestore add failed: {e}")
 
+    sess_note = {
+        "ok": f"✅ read {ginfo['groups']} groups, {ginfo['msgs']} msgs",
+        "unauthorized": "⚠️ session INVALID — regenerate TELEGRAM_SESSION",
+        "none": "— no session set (web only)",
+        "error": "⚠️ session error (see logs)",
+    }.get(ginfo["session"], ginfo["session"])
+
     if added == 0:
-        await client.send_message(CHAT_ID, f"✅ Harvest done ({reason}). No new ADLaM text found.")
+        await client.send_message(
+            CHAT_ID,
+            f"✅ Harvest done ({reason}). No NEW text found.\n\n"
+            f"🌐 Web pages checked: {web_pages}\n"
+            f"💬 Telegram: {sess_note}\n\n"
+            f"(Anything found was already in the corpus, or below the ADLaM threshold.)",
+        )
         return
 
     lines = "\n".join(f"  • {k}: {v}" for k, v in sorted(per_source.items(), key=lambda x: -x[1]))
-    await client.send_message(CHAT_ID, f"✅ Harvest done ({reason}).\nAdded <b>{added}</b> new entries → pending review.\n\n<b>By source:</b>\n{lines}", parse_mode="html")
+    await client.send_message(CHAT_ID, f"✅ Harvest done ({reason}).\nAdded <b>{added}</b> new entries → pending review.\n\n<b>By source:</b>\n{lines}\n\n🌐 web pages: {web_pages} · 💬 {sess_note}", parse_mode="html")
 
     # Obsidian note
     now  = datetime.utcnow()
