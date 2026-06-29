@@ -553,7 +553,11 @@ export function AdminPortal({ user }: { user: User }) {
         let word_count = extracted.text.trim().split(/\s+/).filter(Boolean).length;
         let usedOcr = false;
 
-        if (ratio === 0 || word_count < 10) {
+        // Text-layer ADLaM almost always comes from broken pre-Unicode fonts →
+        // garbage (boxes + jumbled glyphs) even at a high ADLaM ratio. Trust the
+        // text layer only for clean Latin/French digital PDFs; for anything with
+        // meaningful ADLaM, render + OCR each page (reliable, page-by-page).
+        if (ratio === 0 || word_count < 10 || ratio >= 0.3) {
           // fallback: render pages client-side → Gemini vision OCR per page
           const setMsg = (msg: string) => setResults(prev => prev.map(r =>
             r.fileName === file.name ? { ...r, status: 'ready', error: msg } : r
