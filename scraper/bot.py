@@ -225,7 +225,7 @@ def _harvest_web(seen: set) -> list:
         from scrape_generic import parse_html, strip_emoji, fetch_static, fetch_rendered
     except Exception as e:
         print(f"harvest: scrape_generic import failed: {e}")
-        return []
+        return [], 0
 
     def domain(u: str) -> str:
         return urlparse(u).netloc.removeprefix("www.")
