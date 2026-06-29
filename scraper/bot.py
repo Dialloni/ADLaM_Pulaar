@@ -32,16 +32,27 @@ import urllib.request
 import urllib.error
 import urllib.parse
 
+GEMINI_API_KEY  = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL_ID = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 try:
-    import google.generativeai as genai
-    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-    if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-        gemini_model = genai.GenerativeModel("gemini-2.5-flash")
-    else:
-        gemini_model = None
+    from google import genai
+    from google.genai import types as genai_types
+    gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 except ImportError:
-    gemini_model = None
+    gemini_client, genai_types = None, None
+
+
+class _GeminiCompat:
+    """Shim: keep existing gemini_model.generate_content(text | [parts]) calls working
+    on the new google-genai SDK. response.text still works."""
+    def __init__(self, client, model):
+        self.client, self.model = client, model
+
+    def generate_content(self, contents):
+        return self.client.models.generate_content(model=self.model, contents=contents)
+
+
+gemini_model = _GeminiCompat(gemini_client, GEMINI_MODEL_ID) if gemini_client else None
 
 try:
     from telethon import TelegramClient, events
@@ -473,9 +484,8 @@ async def main():
         await event.respond("🎤 Transcribing voice message…")
         try:
             audio_bytes = await event.message.download_media(bytes)
-            audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
             response = gemini_model.generate_content([
-                {"mime_type": "audio/ogg", "data": audio_b64},
+                genai_types.Part.from_bytes(data=audio_bytes, mime_type="audio/ogg"),
                 "Transcribe this audio exactly as spoken. Return only the transcribed text, no commentary."
             ])
             transcribed = response.text.strip()
