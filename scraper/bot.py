@@ -23,7 +23,10 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
+import hashlib
+import time
+from zoneinfo import ZoneInfo
 
 import urllib.request
 import urllib.error
@@ -63,6 +66,19 @@ SCRAPER_DIR = os.path.dirname(os.path.abspath(__file__))
 
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO  = os.environ.get("GITHUB_REPO", "")  # e.g. "abubakardiallo/gando-brain"
+
+# ── HARVEST (scheduled auto-collection) ───────────────────────────────────────
+# Web sources to scrape; Telegram groups optional (need a USER session, not the bot token).
+HARVEST_URLS  = [u.strip() for u in os.environ.get(
+    "HARVEST_URLS", "https://tabalde.com,https://akweeyo.com").split(",") if u.strip()]
+HARVEST_HOURS = [int(h) for h in os.environ.get("HARVEST_HOURS", "14,17,20").split(",") if h.strip()]
+HARVEST_TZ        = os.environ.get("HARVEST_TZ", "America/New_York")
+HARVEST_MIN_RATIO = float(os.environ.get("HARVEST_MIN_RATIO", "0.45"))
+HARVEST_MAX_PAGES = int(os.environ.get("HARVEST_MAX_PAGES", "20"))
+# Telegram group harvest (phase 2): set HARVEST_GROUPS (comma list of @usernames/ids)
+# and TELEGRAM_USER_SESSION (a Telethon StringSession for your USER account).
+HARVEST_GROUPS        = [g.strip() for g in os.environ.get("HARVEST_GROUPS", "").split(",") if g.strip()]
+TELEGRAM_USER_SESSION = os.environ.get("TELEGRAM_USER_SESSION", "")
 
 if not all([BOT_TOKEN, CHAT_ID, API_ID, API_HASH]):
     sys.exit("Missing env vars: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_API_ID, TELEGRAM_API_HASH")
@@ -161,6 +177,201 @@ def run_sync():
         return False, "Sync timed out after 10 minutes."
     finally:
         sync_running = False
+
+# ── HARVESTER ─────────────────────────────────────────────────────────────────
+
+def _norm(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+def _text_hash(text: str) -> str:
+    return hashlib.sha1(_norm(text).encode("utf-8")).hexdigest()
+
+def _adlam_ratio(text: str) -> float:
+    chars = [c for c in text if not c.isspace()]
+    if not chars:
+        return 0.0
+    return sum(1 for c in chars if 0x1E900 <= ord(c) <= 0x1E95F) / len(chars)
+
+def _load_seen_hashes() -> set:
+    """Content hashes already in the corpus — used to skip duplicates."""
+    seen = set()
+    if not db:
+        return seen
+    for d in db.collection("corpus_submissions").stream():
+        doc = d.to_dict()
+        h = doc.get("content_hash")
+        if h:
+            seen.add(h)
+        elif doc.get("raw_text"):
+            seen.add(_text_hash(doc["raw_text"]))
+    return seen
+
+def _harvest_web(seen: set) -> list:
+    """Scrape HARVEST_URLS (+ same-domain links) for new ADLaM-rich pages. Blocking."""
+    from urllib.parse import urljoin, urlparse
+    try:
+        from scrape_generic import parse_html, strip_emoji, fetch_static, fetch_rendered
+    except Exception as e:
+        print(f"harvest: scrape_generic import failed: {e}")
+        return []
+
+    def domain(u: str) -> str:
+        return urlparse(u).netloc.removeprefix("www.")
+
+    records, visited = [], set()
+    queue = list(HARVEST_URLS)
+    seed_domains = {domain(u) for u in HARVEST_URLS}
+
+    while queue and len(visited) < HARVEST_MAX_PAGES:
+        url = queue.pop(0).split("#")[0]
+        if url in visited:
+            continue
+        visited.add(url)
+
+        html = fetch_static(url)
+        links = []
+        if html:
+            text, links = parse_html(html)
+            text = strip_emoji(text)
+            ratio = _adlam_ratio(text)
+            if ratio < HARVEST_MIN_RATIO:
+                rhtml = fetch_rendered(url)  # no-op if 'node' absent → returns None
+                if rhtml:
+                    text, links = parse_html(rhtml)
+                    text = strip_emoji(text)
+                    ratio = _adlam_ratio(text)
+            if text and ratio >= HARVEST_MIN_RATIO:
+                h = _text_hash(text)
+                if h not in seen:
+                    seen.add(h)
+                    records.append({"text": text, "source": domain(url), "url": url, "ratio": ratio, "hash": h})
+
+        for href in links:
+            nxt = urljoin(url, href).split("#")[0]
+            if nxt.startswith("http") and domain(nxt) in seed_domains and nxt not in visited:
+                queue.append(nxt)
+        time.sleep(1.0)
+    return records
+
+async def _harvest_groups(seen: set) -> list:
+    """Read new messages from HARVEST_GROUPS via a USER session (bot tokens can't). Optional."""
+    records = []
+    if not (TELEGRAM_USER_SESSION and HARVEST_GROUPS):
+        return records
+    try:
+        user = TelegramClient(StringSession(TELEGRAM_USER_SESSION), API_ID, API_HASH)
+        await user.connect()
+        if not await user.is_user_authorized():
+            await user.disconnect()
+            print("harvest: user session not authorized — skipping group harvest")
+            return records
+        for g in HARVEST_GROUPS:
+            try:
+                key = "harvest_lastid_" + re.sub(r"[^a-zA-Z0-9]", "_", g)
+                last_id = 0
+                if db:
+                    snap = db.collection("harvest_state").document(key).get()
+                    if snap.exists:
+                        last_id = snap.to_dict().get("last_id", 0)
+                max_seen = last_id
+                async for msg in user.iter_messages(g, min_id=last_id, limit=200):
+                    max_seen = max(max_seen, msg.id)
+                    body = (msg.text or "").strip()
+                    if not body:
+                        continue
+                    ratio = _adlam_ratio(body)
+                    if ratio < HARVEST_MIN_RATIO:
+                        continue
+                    h = _text_hash(body)
+                    if h in seen:
+                        continue
+                    seen.add(h)
+                    records.append({"text": body, "source": f"telegram:{g}", "url": None, "ratio": ratio, "hash": h})
+                if db and max_seen > last_id:
+                    db.collection("harvest_state").document(key).set({"last_id": max_seen})
+            except Exception as e:
+                print(f"harvest: group {g} failed: {e}")
+        await user.disconnect()
+    except Exception as e:
+        print(f"harvest: user client error: {e}")
+    return records
+
+async def run_harvest(client, reason: str = "scheduled"):
+    """Scrape sources → dedup → corpus (pending) → Obsidian note → Telegram summary."""
+    if not db:
+        await client.send_message(CHAT_ID, "⚠️ Harvest skipped — Firebase not connected.")
+        return
+    await client.send_message(CHAT_ID, f"🔍 Harvest started ({reason})…")
+    seen    = await asyncio.to_thread(_load_seen_hashes)
+    web     = await asyncio.to_thread(_harvest_web, seen)
+    groups  = await _harvest_groups(seen)
+    records = web + groups
+
+    added, per_source = 0, {}
+    for r in records:
+        try:
+            db.collection("corpus_submissions").add({
+                "raw_text": r["text"],
+                "source": r["source"],
+                "adlam_ratio": r["ratio"],
+                "word_count": len(r["text"].split()),
+                "status": "pending",
+                "submitted_at": firestore.SERVER_TIMESTAMP,
+                "content_hash": r["hash"],
+                "url": r.get("url"),
+                "harvested": True,
+            })
+            added += 1
+            per_source[r["source"]] = per_source.get(r["source"], 0) + 1
+        except Exception as e:
+            print(f"harvest: firestore add failed: {e}")
+
+    if added == 0:
+        await client.send_message(CHAT_ID, f"✅ Harvest done ({reason}). No new ADLaM text found.")
+        return
+
+    lines = "\n".join(f"  • {k}: {v}" for k, v in sorted(per_source.items(), key=lambda x: -x[1]))
+    await client.send_message(CHAT_ID, f"✅ Harvest done ({reason}).\nAdded <b>{added}</b> new entries → pending review.\n\n<b>By source:</b>\n{lines}", parse_mode="html")
+
+    # Obsidian note
+    now  = datetime.utcnow()
+    slug = now.strftime("%Y-%m-%d-%H%M%S")
+    md   = (f"---\ncreated: {now.strftime('%Y-%m-%d %H:%M UTC')}\nsource: auto_harvest\ntrigger: {reason}\n---\n\n"
+            f"# ADLaM Harvest {slug}\n\nAdded **{added}** new entries to the corpus (pending review).\n\n## By source\n"
+            + "\n".join(f"- {k}: {v}" for k, v in per_source.items()) + "\n\n## Samples\n")
+    for r in records[:5]:
+        src = f"<{r['url']}>" if r.get("url") else r["source"]
+        md += f"\n### {r['source']}\n{src}\n\n{r['text'][:400]}…\n"
+    push_to_github(f"01 - Inbox/{slug}-harvest.md", md, f"harvest: {added} new ADLaM entries")
+
+def _seconds_until_next_harvest() -> float:
+    tz  = ZoneInfo(HARVEST_TZ)
+    now = datetime.now(tz)
+    candidates = []
+    for day in (0, 1):
+        base = (now + timedelta(days=day)).replace(minute=0, second=0, microsecond=0)
+        for h in HARVEST_HOURS:
+            t = base.replace(hour=h)
+            if t > now:
+                candidates.append(t)
+    return (min(candidates) - now).total_seconds()
+
+async def harvest_scheduler(client):
+    while True:
+        try:
+            secs = _seconds_until_next_harvest()
+        except Exception as e:
+            print(f"harvest: scheduler error: {e}")
+            secs = 3600
+        await asyncio.sleep(secs)
+        try:
+            await run_harvest(client, reason="scheduled")
+        except Exception as e:
+            print(f"harvest: run error: {e}")
+            try:
+                await client.send_message(CHAT_ID, f"❌ Harvest error: {e}")
+            except Exception:
+                pass
 
 # ── BOT ───────────────────────────────────────────────────────────────────────
 
@@ -325,7 +536,9 @@ Return ONLY valid JSON. No markdown, no explanation."""
                 "/note &lt;text&gt; — quick capture → Obsidian inbox\n"
                 "/add-term &lt;adlam&gt; = &lt;english&gt; — add to ADLaM dictionary\n\n"
                 "<b>AI</b>\n"
-                "/ask &lt;question&gt; — ask Gemini anything",
+                "/ask &lt;question&gt; — ask Gemini anything\n\n"
+                "<b>Harvest</b>\n"
+                "/harvest — scrape ADLaM sources now → corpus (auto-runs daily)",
                 parse_mode="html"
             )
 
@@ -600,8 +813,15 @@ Return ONLY valid JSON. No markdown, no explanation."""
             except Exception as e:
                 await event.respond(f"❌ Firestore error: {e}")
 
+        elif text in ("/harvest", "harvest"):
+            await event.respond("🔍 Manual harvest triggered — scraping sources now…")
+            asyncio.create_task(run_harvest(client, reason="manual"))
+
         else:
             await event.respond("Unknown command. Send /help to see available commands.")
+
+    asyncio.create_task(harvest_scheduler(client))
+    print(f"✓ Harvest scheduler armed — hours {HARVEST_HOURS} {HARVEST_TZ}; web {HARVEST_URLS}; groups {HARVEST_GROUPS or 'none'}")
 
     await client.run_until_disconnected()
 
