@@ -281,6 +281,11 @@ async def _harvest_groups(seen: set) -> list:
             info["session"] = "unauthorized"
             return records, info
 
+        # Don't let a Telegram rate-limit (FloodWait) freeze the run: auto-wait only
+        # short throttles; longer ones raise and the per-group except skips that group.
+        user.flood_sleep_threshold = 30
+        budget_start = time.monotonic()
+
         # Targets: explicit HARVEST_GROUPS, else auto-scan every group/channel the
         # account is in (only ADLaM-script messages survive the ratio filter).
         targets = []  # (label, peer)
@@ -292,6 +297,9 @@ async def _harvest_groups(seen: set) -> list:
                     targets.append((dialog.name or str(dialog.id), dialog.id))
 
         for label, peer in targets:
+            if time.monotonic() - budget_start > 90:
+                print("harvest: 90s time budget reached — stopping group scan early")
+                break
             try:
                 key = "harvest_lastid_" + re.sub(r"[^a-zA-Z0-9]", "_", str(peer))
                 last_id = 0
@@ -300,7 +308,7 @@ async def _harvest_groups(seen: set) -> list:
                     if snap.exists:
                         last_id = snap.to_dict().get("last_id", 0)
                 max_seen = last_id
-                async for msg in user.iter_messages(peer, min_id=last_id, limit=200):
+                async for msg in user.iter_messages(peer, min_id=last_id, limit=120):
                     max_seen = max(max_seen, msg.id)
                     msgs_total += 1
                     body = (msg.text or "").strip()
