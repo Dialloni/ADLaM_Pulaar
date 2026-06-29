@@ -221,6 +221,9 @@ def _load_seen_hashes() -> set:
 def _harvest_web(seen: set) -> list:
     """Scrape HARVEST_URLS (+ same-domain links) for new ADLaM-rich pages. Blocking."""
     from urllib.parse import urljoin, urlparse
+    import sys as _sys
+    if SCRAPER_DIR not in _sys.path:
+        _sys.path.insert(0, SCRAPER_DIR)
     try:
         from scrape_generic import parse_html, strip_emoji, fetch_static, fetch_rendered
     except Exception as e:
