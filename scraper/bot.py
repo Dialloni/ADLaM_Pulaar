@@ -227,8 +227,8 @@ def _harvest_web(seen: set) -> list:
     try:
         from scrape_generic import parse_html, strip_emoji, fetch_static, fetch_rendered
     except Exception as e:
-        print(f"harvest: scrape_generic import failed: {e}")
-        return [], 0
+        print(f"harvest: scrape_generic import failed: {e}", flush=True)
+        return [], 0, f"import: {e}"
 
     def domain(u: str) -> str:
         return urlparse(u).netloc.removeprefix("www.")
@@ -266,12 +266,12 @@ def _harvest_web(seen: set) -> list:
             if nxt.startswith("http") and domain(nxt) in seed_domains and nxt not in visited:
                 queue.append(nxt)
         time.sleep(1.0)
-    return records, len(visited)
+    return records, len(visited), None
 
 async def _harvest_groups(seen: set) -> list:
     """Read new messages from HARVEST_GROUPS via a USER session (bot tokens can't). Optional."""
     records = []
-    info = {"session": "none", "groups": 0, "msgs": 0}
+    info = {"session": "none", "groups": 0, "msgs": 0, "err": None}
     if not TELEGRAM_USER_SESSION:
         return records, info
     msgs_total = 0
@@ -332,8 +332,9 @@ async def _harvest_groups(seen: set) -> list:
         await user.disconnect()
         info.update({"session": "ok", "groups": len(targets), "msgs": msgs_total})
     except Exception as e:
-        print(f"harvest: user client error: {e}")
+        print(f"harvest: user client error: {e}", flush=True)
         info["session"] = "error"
+        info["err"] = f"{type(e).__name__}: {e}"
     return records, info
 
 async def run_harvest(client, reason: str = "scheduled"):
@@ -342,10 +343,10 @@ async def run_harvest(client, reason: str = "scheduled"):
         await client.send_message(CHAT_ID, "⚠️ Harvest skipped — Firebase not connected.")
         return
     await client.send_message(CHAT_ID, f"🔍 Harvest started ({reason})…")
-    seen              = await asyncio.to_thread(_load_seen_hashes)
-    web, web_pages    = await asyncio.to_thread(_harvest_web, seen)
-    groups, ginfo     = await _harvest_groups(seen)
-    records           = web + groups
+    seen                     = await asyncio.to_thread(_load_seen_hashes)
+    web, web_pages, web_err  = await asyncio.to_thread(_harvest_web, seen)
+    groups, ginfo            = await _harvest_groups(seen)
+    records                  = web + groups
 
     added, per_source = 0, {}
     for r in records:
@@ -374,11 +375,16 @@ async def run_harvest(client, reason: str = "scheduled"):
     }.get(ginfo["session"], ginfo["session"])
 
     if added == 0:
+        detail = ""
+        if web_err:
+            detail += f"\n🌐 web error: {web_err}"
+        if ginfo.get("err"):
+            detail += f"\n💬 session error: {ginfo['err']}"
         await client.send_message(
             CHAT_ID,
             f"✅ Harvest done ({reason}). No NEW text found.\n\n"
             f"🌐 Web pages checked: {web_pages}\n"
-            f"💬 Telegram: {sess_note}\n\n"
+            f"💬 Telegram: {sess_note}{detail}\n\n"
             f"(Anything found was already in the corpus, or below the ADLaM threshold.)",
         )
         return
