@@ -1291,7 +1291,15 @@ export function AdminPortal({ user }: { user: User }) {
                           <textarea
                             value={editText}
                             onChange={e => setEditText(e.target.value)}
-                            rows={3}
+                            ref={el => {
+                              // auto-grow with content, capped to 60vh (Claude-style)
+                              if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.6) + 'px'; }
+                            }}
+                            onInput={e => {
+                              const el = e.currentTarget;
+                              el.style.height = 'auto';
+                              el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.6) + 'px';
+                            }}
                             placeholder="𞤢𞤣𞤤𞤢𞤥… write the ADLaM here"
                             className="w-full rounded-xl px-3 py-2 text-sm text-zinc-200 leading-relaxed resize-y"
                             dir="rtl"
@@ -1301,6 +1309,9 @@ export function AdminPortal({ user }: { user: User }) {
                               background: 'rgba(0,0,0,0.4)',
                               border: '1px solid rgba(59,130,246,0.3)',
                               outline: 'none',
+                              minHeight: '40vh',
+                              maxHeight: '60vh',
+                              overflowY: 'auto',
                             }}
                           />
                         </div>
