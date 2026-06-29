@@ -1,8 +1,12 @@
 # Telegram scraper bot. The SCRAPER Railway service must set its
 # "Railway Config File" path (Settings -> Config-as-code) to: railway.scraper.toml
-# Nixpacks detects Python via scraper/requirements.txt and runs the bot.
+# Build from scraper/Dockerfile (python:3.11-slim). Nixpacks misdetects the repo
+# as Node because of the root package.json and never installs Python, so we pin
+# an explicit Python image. Build context is the repo root (the Dockerfile COPYs
+# scraper/...), so leave the service's Root Directory EMPTY.
 [build]
-builder = "nixpacks"
+builder = "DOCKERFILE"
+dockerfilePath = "scraper/Dockerfile"
 
 [deploy]
 startCommand = "python scraper/bot.py"
