@@ -303,7 +303,7 @@ async function startServer() {
     if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: MODEL,
         contents: `You are a Unicode expert for the ADLaM script (Fulani/Pulaar language).
 
 The following text was typed or exported from a document using a pre-Unicode ADLaM font. In these fonts, ADLaM glyphs were mapped to Arabic Unicode codepoints (U+0600–U+06FF) or Arabic Presentation Forms (U+FB50–U+FEFF) instead of the official ADLaM Unicode block (U+1E900–U+1E95F).
@@ -360,7 +360,7 @@ Output ONLY the extracted text, nothing else.`;
     for (let attempt = 0; attempt <= 3; attempt++) {
       try {
         const response = await ai.models.generateContent({
-          model: 'gemini-2.0-flash',
+          model: MODEL,
           contents: { parts: [{ inlineData: { data: imageBase64, mimeType } }, { text: OCR_PROMPT }] },
         });
         return res.json({ text: response.text?.trim() || '' });
