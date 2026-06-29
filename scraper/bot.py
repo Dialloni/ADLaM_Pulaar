@@ -78,7 +78,8 @@ HARVEST_MAX_PAGES = int(os.environ.get("HARVEST_MAX_PAGES", "20"))
 # Telegram group harvest (phase 2): set HARVEST_GROUPS (comma list of @usernames/ids)
 # and TELEGRAM_USER_SESSION (a Telethon StringSession for your USER account).
 HARVEST_GROUPS        = [g.strip() for g in os.environ.get("HARVEST_GROUPS", "").split(",") if g.strip()]
-TELEGRAM_USER_SESSION = os.environ.get("TELEGRAM_USER_SESSION", "")
+# Accept either name — TELEGRAM_USER_SESSION (preferred) or the existing TELEGRAM_SESSION.
+TELEGRAM_USER_SESSION = os.environ.get("TELEGRAM_USER_SESSION") or os.environ.get("TELEGRAM_SESSION", "")
 
 if not all([BOT_TOKEN, CHAT_ID, API_ID, API_HASH]):
     sys.exit("Missing env vars: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_API_ID, TELEGRAM_API_HASH")
