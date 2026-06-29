@@ -357,6 +357,25 @@ def _seconds_until_next_harvest() -> float:
                 candidates.append(t)
     return (min(candidates) - now).total_seconds()
 
+async def list_user_groups():
+    """List every group/channel the USER session belongs to (name + @username/id)."""
+    if not TELEGRAM_USER_SESSION:
+        return "no_session"
+    user = TelegramClient(StringSession(TELEGRAM_USER_SESSION), API_ID, API_HASH)
+    try:
+        await user.connect()
+        if not await user.is_user_authorized():
+            return "unauth"
+        lines = []
+        async for dialog in user.iter_dialogs():
+            if dialog.is_group or dialog.is_channel:
+                uname = getattr(dialog.entity, "username", None)
+                ident = f"@{uname}" if uname else str(dialog.id)
+                lines.append(f"• {dialog.name} → {ident}")
+        return lines
+    finally:
+        await user.disconnect()
+
 async def harvest_scheduler(client):
     while True:
         try:
@@ -817,6 +836,26 @@ Return ONLY valid JSON. No markdown, no explanation."""
         elif text in ("/harvest", "harvest"):
             await event.respond("🔍 Manual harvest triggered — scraping sources now…")
             asyncio.create_task(run_harvest(client, reason="manual"))
+
+        elif text in ("/groups", "groups"):
+            await event.respond("📋 Listing the groups your account is in…")
+            result = await list_user_groups()
+            if result == "no_session":
+                await event.respond("No user session set. Add TELEGRAM_SESSION (or TELEGRAM_USER_SESSION) in Railway first.")
+            elif result == "unauth":
+                await event.respond("Session invalid/expired. Generate a fresh user session and update TELEGRAM_SESSION.")
+            elif not result:
+                await event.respond("No groups found for this account.")
+            else:
+                header = "Your groups (copy the ADLaM ones into HARVEST_GROUPS, comma-separated):\n\n"
+                chunk = header
+                for line in result:
+                    if len(chunk) + len(line) > 3500:
+                        await event.respond(chunk)
+                        chunk = ""
+                    chunk += line + "\n"
+                if chunk.strip():
+                    await event.respond(chunk)
 
         else:
             await event.respond("Unknown command. Send /help to see available commands.")
