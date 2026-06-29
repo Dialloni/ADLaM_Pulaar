@@ -193,6 +193,17 @@ def _adlam_ratio(text: str) -> float:
         return 0.0
     return sum(1 for c in chars if 0x1E900 <= ord(c) <= 0x1E95F) / len(chars)
 
+_ADLAM_KEYWORDS = ("adlam", "pular", "pulaar", "fulfulde", "fulbe", "fulani", "peul", "fula")
+
+def _is_adlam_name(name: str) -> bool:
+    """Heuristic: group name has ADLaM script or a Fulani keyword."""
+    if not name:
+        return False
+    if any(0x1E900 <= ord(c) <= 0x1E95F for c in name):
+        return True
+    n = name.lower()
+    return any(k in n for k in _ADLAM_KEYWORDS)
+
 def _load_seen_hashes() -> set:
     """Content hashes already in the corpus — used to skip duplicates."""
     seen = set()
@@ -257,7 +268,7 @@ def _harvest_web(seen: set) -> list:
 async def _harvest_groups(seen: set) -> list:
     """Read new messages from HARVEST_GROUPS via a USER session (bot tokens can't). Optional."""
     records = []
-    if not (TELEGRAM_USER_SESSION and HARVEST_GROUPS):
+    if not TELEGRAM_USER_SESSION:
         return records
     try:
         user = TelegramClient(StringSession(TELEGRAM_USER_SESSION), API_ID, API_HASH)
@@ -266,16 +277,27 @@ async def _harvest_groups(seen: set) -> list:
             await user.disconnect()
             print("harvest: user session not authorized — skipping group harvest")
             return records
-        for g in HARVEST_GROUPS:
+
+        # Targets: explicit HARVEST_GROUPS, else auto-scan every group/channel the
+        # account is in (only ADLaM-script messages survive the ratio filter).
+        targets = []  # (label, peer)
+        if HARVEST_GROUPS:
+            targets = [(g, g) for g in HARVEST_GROUPS]
+        else:
+            async for dialog in user.iter_dialogs():
+                if dialog.is_group or dialog.is_channel:
+                    targets.append((dialog.name or str(dialog.id), dialog.id))
+
+        for label, peer in targets:
             try:
-                key = "harvest_lastid_" + re.sub(r"[^a-zA-Z0-9]", "_", g)
+                key = "harvest_lastid_" + re.sub(r"[^a-zA-Z0-9]", "_", str(peer))
                 last_id = 0
                 if db:
                     snap = db.collection("harvest_state").document(key).get()
                     if snap.exists:
                         last_id = snap.to_dict().get("last_id", 0)
                 max_seen = last_id
-                async for msg in user.iter_messages(g, min_id=last_id, limit=200):
+                async for msg in user.iter_messages(peer, min_id=last_id, limit=200):
                     max_seen = max(max_seen, msg.id)
                     body = (msg.text or "").strip()
                     if not body:
@@ -287,11 +309,11 @@ async def _harvest_groups(seen: set) -> list:
                     if h in seen:
                         continue
                     seen.add(h)
-                    records.append({"text": body, "source": f"telegram:{g}", "url": None, "ratio": ratio, "hash": h})
+                    records.append({"text": body, "source": f"telegram:{label}", "url": None, "ratio": ratio, "hash": h})
                 if db and max_seen > last_id:
                     db.collection("harvest_state").document(key).set({"last_id": max_seen})
             except Exception as e:
-                print(f"harvest: group {g} failed: {e}")
+                print(f"harvest: group {label} failed: {e}")
         await user.disconnect()
     except Exception as e:
         print(f"harvest: user client error: {e}")
@@ -366,13 +388,16 @@ async def list_user_groups():
         await user.connect()
         if not await user.is_user_authorized():
             return "unauth"
-        lines = []
+        items = []
         async for dialog in user.iter_dialogs():
             if dialog.is_group or dialog.is_channel:
                 uname = getattr(dialog.entity, "username", None)
                 ident = f"@{uname}" if uname else str(dialog.id)
-                lines.append(f"• {dialog.name} → {ident}")
-        return lines
+                adlam = _is_adlam_name(dialog.name)
+                mark  = "⭐ " if adlam else "• "
+                items.append((adlam, f"{mark}{dialog.name} → {ident}"))
+        items.sort(key=lambda x: (not x[0]))  # ADLaM-likely (⭐) first
+        return [text for _, text in items]
     finally:
         await user.disconnect()
 
