@@ -634,7 +634,7 @@ export function AdminPortal({ user }: { user: User }) {
         </div>
         <button onClick={exportJSONL}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 flex-shrink-0"
-          style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+          style={{ background: 'var(--btn-bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
           <Download className="w-4 h-4" />
           Export JSONL ({stats.verified})
         </button>
@@ -676,8 +676,8 @@ export function AdminPortal({ user }: { user: User }) {
           <button key={t.id} onClick={() => setTab(t.id)}
             className="px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex-shrink-0"
             style={{
-              background: tab === t.id ? 'rgba(255,255,255,0.1)' : 'transparent',
-              color: tab === t.id ? '#fff' : '#71717a',
+              background: tab === t.id ? 'var(--hover-bg)' : 'transparent',
+              color: tab === t.id ? 'var(--text-primary)' : 'var(--text-muted)',
               border: 'none',
             }}>
             {t.label}
@@ -947,7 +947,7 @@ export function AdminPortal({ user }: { user: User }) {
               <button onClick={exportDictJSON}
                 disabled={dictTerms.filter(t => t.status === 'verified').length === 0}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40"
-                style={{ background: 'rgba(255,255,255,0.07)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+                style={{ background: 'var(--btn-bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
                 <Download className="w-4 h-4" />
                 Export JSON ({dictTerms.filter(t => t.status === 'verified').length})
               </button>
@@ -1038,8 +1038,8 @@ export function AdminPortal({ user }: { user: User }) {
               <button key={f} onClick={() => setDictFilter(f)}
                 className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
                 style={{
-                  background: dictFilter === f ? 'rgba(255,255,255,0.1)' : 'transparent',
-                  color: dictFilter === f ? '#fff' : '#71717a',
+                  background: dictFilter === f ? 'var(--hover-bg)' : 'transparent',
+                  color: dictFilter === f ? 'var(--text-primary)' : 'var(--text-muted)',
                   border: 'none',
                 }}>
                 {f}
@@ -1173,8 +1173,8 @@ export function AdminPortal({ user }: { user: User }) {
                   <button key={s} onClick={() => setStatusFilter(s)}
                     className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
                     style={{
-                      background: statusFilter === s ? 'rgba(255,255,255,0.1)' : 'transparent',
-                      color: statusFilter === s ? '#fff' : '#71717a',
+                      background: statusFilter === s ? 'var(--hover-bg)' : 'transparent',
+                      color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-muted)',
                       border: 'none',
                     }}>
                     {s}
@@ -1190,9 +1190,9 @@ export function AdminPortal({ user }: { user: User }) {
                   <button key={s} onClick={() => setSourceFilter(s)}
                     className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
                     style={{
-                      background: sourceFilter === s ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
-                      color: sourceFilter === s ? '#fff' : '#71717a',
-                      border: `1px solid ${sourceFilter === s ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+                      background: sourceFilter === s ? 'var(--hover-bg)' : 'var(--btn-bg)',
+                      color: sourceFilter === s ? 'var(--text-primary)' : 'var(--text-muted)',
+                      border: `1px solid ${sourceFilter === s ? 'var(--border)' : 'var(--border-subtle)'}`,
                     }}
                     title={s}>
                     {label}
