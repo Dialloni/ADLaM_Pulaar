@@ -2773,13 +2773,13 @@ export default function App() {
           ) : page === 'docs' ? (
             /* ══ DOCUMENTATION PAGE ══ */
             <div className="flex-1 overflow-y-auto relative z-10">
-              <div className="w-full p-8 md:p-10 space-y-8">
+              <div className="w-full p-4 sm:p-8 md:p-10 space-y-8">
 
                 {/* ── SEARCH HERO CARD ── */}
                 <div style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(253,139,0,0.06) 60%, rgba(19,19,19,1))', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 20, padding: 28, position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
                   <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.15em', color: P, textTransform: 'uppercase', marginBottom: 12, fontFamily: MANROPE }}>DOCUMENTATION</p>
-                  <h1 className={cn('font-black text-white tracking-tighter mb-2', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 32 }}>
+                  <h1 className={cn('font-black tracking-tighter mb-2', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 32, color: '#fff' }}>
                     {t.docsPageTitle}
                   </h1>
                   <p className={cn('text-zinc-500 mb-5', isAdlam && 'font-adlam')} style={{ fontSize: 14 }}>{t.docsPageSubtitle}</p>
@@ -2794,11 +2794,11 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* ── TWO-COLUMN: sidebar + content ── */}
-                <div className="flex gap-8 items-start">
+                {/* ── TWO-COLUMN: sidebar + content (stacks on mobile) ── */}
+                <div className="flex flex-col md:flex-row gap-8 items-start">
 
                   {/* SIDEBAR */}
-                  <div className="w-52 flex-shrink-0 space-y-6">
+                  <div className="w-full md:w-52 flex-shrink-0 space-y-6">
                     <div>
                       <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginBottom: 8, fontFamily: MANROPE }}>BROWSE</p>
                       <div className="space-y-1">
@@ -2857,7 +2857,7 @@ export default function App() {
                     </div>
 
                     {/* TOPIC CARDS 2×2 */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
                         { n: '01', label: 'Create your account' },
                         { n: '02', label: 'Sign in with Google' },
