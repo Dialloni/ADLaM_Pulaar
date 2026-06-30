@@ -252,16 +252,37 @@
   unicode-bidi: plaintext;
 }
 
-/* ── ADLaM long strings must wrap, not overflow (esp. mobile review cards) ── */
+/* ── ADLaM long strings must wrap, not overflow (esp. mobile review cards) ──
+   Catch BOTH .font-adlam containers AND any RTL text (corpus cards use
+   dir="rtl" with an inline Adlam font, no .font-adlam class). */
 .font-adlam,
-.font-adlam :where(p,span,div,li,h1,h2,h3,h4) {
+.font-adlam :where(p,span,div,li,h1,h2,h3,h4),
+[dir="rtl"] {
   overflow-wrap: anywhere;
   word-break: break-word;
+  min-width: 0;
 }
 
 /* ── Mobile: never let content force a horizontal scroll ── */
 @media (max-width: 640px) {
   html, body { max-width: 100%; overflow-x: hidden; }
+}
+
+/* ── Settings modal: stack + full-width fields on mobile ── */
+@media (max-width: 640px) {
+  .settings-modal { flex-direction: column !important; height: 92vh !important; max-height: 92vh !important; }
+  .settings-sidebar {
+    width: 100% !important; flex-direction: row !important;
+    border-right: none !important; border-bottom: 1px solid var(--border) !important;
+    overflow-x: auto !important; gap: 4px !important; padding: 8px !important;
+  }
+  .settings-sidebar button { flex-shrink: 0; white-space: nowrap; }
+  .settings-nav-label { display: none !important; }
+  .settings-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+  .settings-row-control { width: 100% !important; }
+  .settings-occ { width: 100% !important; }
+  .settings-input { width: 100% !important; max-width: 100% !important; text-align: left !important; box-sizing: border-box; }
+  .settings-dropdown { width: 100% !important; right: auto !important; left: 0 !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
