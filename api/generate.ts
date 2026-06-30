@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try { await verifyIdToken(token); } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
 
-  const { prompt, preferredLanguage, provider } = req.body ?? {};
+  const { prompt, preferredLanguage, provider, images } = req.body ?? {};
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt is required' });
   }
@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const result = await runStream(
-      { kind: 'generate', prompt, preferredLanguage, provider },
+      { kind: 'generate', prompt, preferredLanguage, provider, images },
       (chunk) => send({ type: 'code', chunk }),
       (text) => send({ type: 'status', text })
     );

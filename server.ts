@@ -224,7 +224,7 @@ async function startServer() {
   };
 
   app.post('/api/generate', requireAuth, async (req: Request, res: Response) => {
-    const { prompt, preferredLanguage, provider, byok } = req.body ?? {};
+    const { prompt, preferredLanguage, provider, byok, images } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
     }
@@ -232,7 +232,7 @@ async function startServer() {
     const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
     try {
       const result = await runStream(
-        { kind: 'generate', prompt, preferredLanguage, provider, byok },
+        { kind: 'generate', prompt, preferredLanguage, provider, byok, images },
         (chunk) => send({ type: 'code', chunk }),
         (text) => send({ type: 'status', text })
       );
@@ -248,7 +248,7 @@ async function startServer() {
   });
 
   app.post('/api/edit', requireAuth, async (req: Request, res: Response) => {
-    const { prompt, currentCode, history, preferredLanguage, provider, byok } = req.body ?? {};
+    const { prompt, currentCode, history, preferredLanguage, provider, byok, images } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
     }
@@ -259,7 +259,7 @@ async function startServer() {
     const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
     try {
       const result = await runStream(
-        { kind: 'edit', prompt, currentCode, history, preferredLanguage, provider, byok },
+        { kind: 'edit', prompt, currentCode, history, preferredLanguage, provider, byok, images },
         (chunk) => send({ type: 'code', chunk }),
         (text) => send({ type: 'status', text })
       );
@@ -275,7 +275,7 @@ async function startServer() {
   });
 
   app.post('/api/chat', requireAuth, async (req: Request, res: Response) => {
-    const { prompt, history, currentCode, preferredLanguage, provider, byok } = req.body ?? {};
+    const { prompt, history, currentCode, preferredLanguage, provider, byok, images } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
     }
@@ -283,7 +283,7 @@ async function startServer() {
     const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
     try {
       const text = await chatStream(
-        { prompt, history, currentCode, preferredLanguage, provider, byok },
+        { prompt, history, currentCode, preferredLanguage, provider, byok, images },
         (chunk) => send({ type: 'token', text: chunk })
       );
       send({ type: 'done', text });
