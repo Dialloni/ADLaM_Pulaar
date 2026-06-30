@@ -135,6 +135,34 @@ export interface GenResult {
   explanation: string;
 }
 
+// A user-attached image for vision. `data` is RAW base64 (no "data:...;base64," prefix).
+export interface ImageInput { data: string; mediaType: string }
+
+const CLAUDE_MEDIA = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+
+// Build a Claude `content` field: plain string when no images, else an array of
+// image blocks followed by the text block (Anthropic vision format).
+function claudeContent(text: string, images?: ImageInput[]) {
+  const ok = (images ?? []).filter(i => CLAUDE_MEDIA.has(i.mediaType));
+  if (!ok.length) return text;
+  return [
+    ...ok.map(img => ({
+      type: 'image' as const,
+      source: { type: 'base64' as const, media_type: img.mediaType as 'image/png' | 'image/jpeg' | 'image/gif' | 'image/webp', data: img.data },
+    })),
+    { type: 'text' as const, text },
+  ];
+}
+
+// Build Gemini `contents`: plain string when no images, else parts with inlineData.
+function geminiContents(text: string, images?: ImageInput[]) {
+  if (!images?.length) return text;
+  return [{ role: 'user' as const, parts: [
+    ...images.map(img => ({ inlineData: { mimeType: img.mediaType, data: img.data } })),
+    { text },
+  ] }];
+}
+
 export interface RunStreamOpts {
   kind: 'generate' | 'edit';
   prompt: string;
@@ -143,6 +171,7 @@ export interface RunStreamOpts {
   history?: { role: string; content: string }[];
   provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
   byok?: Byok;
+  images?: ImageInput[];
 }
 
 function buildUserContent(o: RunStreamOpts): string {
@@ -218,7 +247,7 @@ async function runClaude(
     model,
     max_tokens: maxTokens(),
     system: opts.kind === 'edit' ? EDIT_SYSTEM : GENERATE_SYSTEM,
-    messages: [{ role: 'user', content: userContent }],
+    messages: [{ role: 'user', content: claudeContent(userContent, opts.images) }],
   });
 
   let buf = '';
@@ -386,7 +415,7 @@ async function runGemini(
     'Return strict JSON with keys: language, name, code, explanation. No markdown fences.');
   const res = await ai.models.generateContent({
     model,
-    contents: buildUserContent(opts),
+    contents: geminiContents(buildUserContent(opts), opts.images),
     config: {
       systemInstruction: sys,
       responseMimeType: 'application/json',
@@ -419,6 +448,7 @@ export interface ChatOpts {
   preferredLanguage?: string;
   provider?: 'claude' | 'gemini' | 'groq-llama' | 'groq-scout';
   byok?: Byok;
+  images?: ImageInput[];
 }
 
 function buildChatContent(o: ChatOpts): string {
@@ -465,7 +495,7 @@ async function chatClaude(
     model,
     max_tokens: 4096,
     system: CHAT_SYSTEM,
-    messages: [{ role: 'user', content: chatContent }],
+    messages: [{ role: 'user', content: claudeContent(chatContent, opts.images) }],
   });
   let full = '';
   for await (const ev of stream) {
@@ -489,7 +519,7 @@ async function chatGeminiOnce(
   const ai = new GoogleGenAI({ apiKey });
   const res = await ai.models.generateContent({
     model,
-    contents: buildChatContent(opts),
+    contents: geminiContents(buildChatContent(opts), opts.images),
     config: { systemInstruction: CHAT_SYSTEM, maxOutputTokens: 4096, temperature: 0.7 },
   });
   const out = (res.text || '').trim();
