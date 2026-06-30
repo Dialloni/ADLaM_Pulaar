@@ -21,6 +21,7 @@ export interface Message {
   content: string;
   timestamp: any;
   codeSnapshot?: string;
+  images?: string[]; // data URLs of images the user attached (for display in the bubble)
 }
 
 export interface ChatThread {
