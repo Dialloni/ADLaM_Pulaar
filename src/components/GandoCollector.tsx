@@ -212,7 +212,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
         </div>
 
         {/* photo */}
-        <div className="rounded-2xl border border-white/8 p-5 space-y-3" style={{ background: '#131313' }}>
+        <div className="rounded-2xl border border-white/8 p-5 space-y-3" style={{ background: 'var(--card-bg)' }}>
           <p className={labelCls}>{t.photoLabel}</p>
           {imagePreview ? (
             <div className="relative inline-block">
@@ -250,7 +250,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
         />
 
         {/* word fields — fill any */}
-        <div className="rounded-2xl border border-white/8 p-5 space-y-4" style={{ background: '#131313' }}>
+        <div className="rounded-2xl border border-white/8 p-5 space-y-4" style={{ background: 'var(--card-bg)' }}>
           <p className={cn('text-xs text-zinc-600', isAdlam && 'font-adlam')}>{t.fieldsHint}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -293,7 +293,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
         </div>
 
         {/* domain */}
-        <div className="rounded-2xl border border-white/8 p-5 space-y-2" style={{ background: '#131313' }}>
+        <div className="rounded-2xl border border-white/8 p-5 space-y-2" style={{ background: 'var(--card-bg)' }}>
           <p className={labelCls}>{t.domainLabel}</p>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
