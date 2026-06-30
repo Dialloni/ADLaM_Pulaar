@@ -5,9 +5,12 @@ export type ResolvedTheme = 'dark' | 'light';
 
 const KEY = 'gando_theme';
 
-function systemTheme(): ResolvedTheme {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark' : 'light';
+// Auto mode follows the time of day: light during the day, dark at night.
+// Day window = 07:00–18:59 local time.
+function timeTheme(): ResolvedTheme {
+  if (typeof window === 'undefined') return 'dark';
+  const h = new Date().getHours();
+  return h >= 7 && h < 19 ? 'light' : 'dark';
 }
 
 export function useTheme() {
@@ -15,7 +18,15 @@ export function useTheme() {
     try { return (localStorage.getItem(KEY) as Theme) || 'system'; } catch { return 'system'; }
   });
 
-  const resolved: ResolvedTheme = theme === 'system' ? systemTheme() : theme;
+  // re-evaluate auto (time-based) theme periodically so it flips at the day/night boundary
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (theme !== 'system') return;
+    const id = setInterval(() => force(n => n + 1), 10 * 60 * 1000); // every 10 min
+    return () => clearInterval(id);
+  }, [theme]);
+
+  const resolved: ResolvedTheme = theme === 'system' ? timeTheme() : theme;
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
@@ -27,16 +38,6 @@ export function useTheme() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', resolved);
   }, [resolved]);
-
-  useEffect(() => {
-    if (theme !== 'system') return;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-      document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light');
-    };
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, [theme]);
 
   return { theme, setTheme, toggle, resolved };
 }
