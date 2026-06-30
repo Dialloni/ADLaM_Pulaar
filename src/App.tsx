@@ -1940,12 +1940,12 @@ export default function App() {
                   <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--btn-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <button onClick={() => setActiveTab('preview')}
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={activeTab === 'preview' ? { background: 'rgba(59,130,246,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
+                      style={activeTab === 'preview' ? { background: 'rgba(59,130,246,0.14)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}>
                       <Eye className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.preview}</span>
                     </button>
                     <button onClick={() => setActiveTab('code')}
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                      style={activeTab === 'code' ? { background: 'rgba(59,130,246,0.14)', color: '#fff' } : { color: 'var(--text-muted)' }}>
+                      style={activeTab === 'code' ? { background: 'rgba(59,130,246,0.14)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}>
                       <CodeIcon className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.code}</span>
                     </button>
                   </div>
@@ -2812,7 +2812,7 @@ export default function App() {
                         ].map(({ Icon, label, active }) => (
                           <div key={label} className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-default"
                             style={active
-                              ? { background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: '#fff', fontWeight: 700 }
+                              ? { background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--text-primary)', fontWeight: 700 }
                               : { background: 'transparent', border: '1px solid transparent', color: 'var(--text-muted)', fontWeight: 500 }}>
                             <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? '#3b82f6' : undefined }} />
                             <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
@@ -3052,7 +3052,7 @@ export default function App() {
                         className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all"
                         style={{
                           fontFamily: MANROPE,
-                          color: importMode === im ? '#fff' : '#71717a',
+                          color: importMode === im ? 'var(--text-primary)' : 'var(--text-muted)',
                           background: importMode === im ? 'var(--border)' : 'transparent',
                           border: importMode === im ? '1px solid var(--border)' : '1px solid transparent',
                         }}>
