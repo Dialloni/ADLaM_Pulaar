@@ -695,7 +695,16 @@ const ChatImpl: React.FC<ChatProps> = ({
                                 <ReactMarkdown>{m.content}</ReactMarkdown>
                               </div>
                             ) : (
-                              m.content
+                              <>
+                                {m.images?.length ? (
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: m.content ? 8 : 0, justifyContent: 'flex-end' }}>
+                                    {m.images.map((src, i) => (
+                                      <img key={i} src={src} alt="" style={{ maxWidth: 200, maxHeight: 200, borderRadius: 10, objectFit: 'cover' }} />
+                                    ))}
+                                  </div>
+                                ) : null}
+                                {m.content}
+                              </>
                             )}
                           </div>
 

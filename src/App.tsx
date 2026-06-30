@@ -1041,7 +1041,8 @@ export default function App() {
   const runChat = async (typedPrompt: string, extraContext?: string) => {
     if (!currentProject) setChatActive(true); // dashboard chat opens the full-screen session
     const fullPrompt = extraContext ? `${extraContext}\n\n${typedPrompt}` : typedPrompt;
-    const userMsg: Message = { id: `u-${Date.now()}`, projectId: '', role: 'user', content: typedPrompt, timestamp: Date.now() };
+    const userImages = pendingImagesRef.current?.map(i => `data:${i.mediaType};base64,${i.data}`);
+    const userMsg: Message = { id: `u-${Date.now()}`, projectId: '', role: 'user', content: typedPrompt, timestamp: Date.now(), images: userImages };
     const aiMsg: Message = { id: `a-${Date.now()}`, projectId: '', role: 'assistant', content: '', timestamp: Date.now() };
     const history = chatMessages;
     setChatMessages(prev => [...prev, userMsg, aiMsg]);
