@@ -181,6 +181,10 @@ export function AdminPortal({ user }: { user: User }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>('');
   const [editAudio, setEditAudio] = useState<Blob | null>(null);
+  // Cap how many review cards render at once — prevents thousands of DOM nodes
+  // (4k+ pending) from freezing the page, especially on mobile.
+  const [visibleCount, setVisibleCount] = useState(40);
+  useEffect(() => { setVisibleCount(40); }, [statusFilter, sourceFilter]);
 
   /* ── UPLOAD STATE ── */
   const [results, setResults] = useState<PdfResult[]>([]);
@@ -1207,9 +1211,9 @@ export function AdminPortal({ user }: { user: User }) {
             <div className="text-center py-20 text-zinc-600 text-sm">No submissions</div>
           ) : (
             <div className="space-y-3">
-              {filtered.map(s => (
+              {filtered.slice(0, visibleCount).map(s => (
                 <div key={s.id} className="rounded-2xl border border-white/8 overflow-hidden"
-                  style={{ background: '#131313' }}>
+                  style={{ background: 'var(--card-bg)' }}>
                   <div className="flex items-center gap-2 flex-wrap px-4 md:px-5 py-3 border-b border-white/6">
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                       style={{ background: `${SOURCE_COLORS[s.source] ?? '#71717a'}20`, color: SOURCE_COLORS[s.source] ?? '#71717a' }}>
@@ -1399,6 +1403,14 @@ export function AdminPortal({ user }: { user: User }) {
                   )}
                 </div>
               ))}
+              {filtered.length > visibleCount && (
+                <button
+                  onClick={() => setVisibleCount(c => c + 40)}
+                  className="w-full py-3 rounded-2xl border border-white/10 text-sm font-bold transition-colors"
+                  style={{ background: 'var(--btn-bg)', color: 'var(--text-secondary)' }}>
+                  Load more ({filtered.length - visibleCount} remaining)
+                </button>
+              )}
             </div>
           )}
         </>
