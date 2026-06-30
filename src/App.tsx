@@ -18,7 +18,7 @@ import {
   storage, ref, uploadBytes, getDownloadURL,
 } from './firebase';
 import { Project, Message, ChatThread } from './types';
-import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider } from './services/geminiService';
+import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider, type ImageInput } from './services/geminiService';
 import { Chat } from './components/Chat';
 import { Preview } from './components/Preview';
 import { CodeEditor } from './components/CodeEditor';
@@ -912,7 +912,7 @@ export default function App() {
       await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
     } catch { /* non-fatal — user message is best-effort */ }
 
-    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal);
+    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
 
     // Aborted before any code arrived — remove the empty placeholder, return to dashboard.
     if (!result.code) {
@@ -936,7 +936,7 @@ export default function App() {
     if (!currentProject) return;
     try {
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
-      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal);
+      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
       // Always save what was built — partial or complete.
       const savedCode = result.code || currentProject.code;
       await updateDoc(doc(db, 'projects', currentProject.id), { code: savedCode, updatedAt: serverTimestamp() });
@@ -1034,6 +1034,10 @@ export default function App() {
   };
 
   // Chat mode — converse with the AI, no app generation. Thread saved per user (chats).
+  // Images attached to the current send (vision). Read by the generate/edit/chat
+  // calls below, then cleared once the request is dispatched.
+  const pendingImagesRef = useRef<ImageInput[] | undefined>(undefined);
+
   const runChat = async (typedPrompt: string, extraContext?: string) => {
     if (!currentProject) setChatActive(true); // dashboard chat opens the full-screen session
     const fullPrompt = extraContext ? `${extraContext}\n\n${typedPrompt}` : typedPrompt;
@@ -1056,7 +1060,8 @@ export default function App() {
           return copy;
         }),
         provider,
-        resolveByok(provider, byokKeys)
+        resolveByok(provider, byokKeys),
+        pendingImagesRef.current,
       );
     } catch (err: any) {
       const m = err.message || 'Chat failed.';
@@ -1071,14 +1076,15 @@ export default function App() {
     if (!currentProject) await persistChat(typedPrompt, finalAnswer);
   };
 
-  const handleSend = async (extraContext?: string) => {
+  const handleSend = async (extraContext?: string, images?: ImageInput[]) => {
     if (!input.trim()) {
       setInputShake(true);
       setTimeout(() => setInputShake(false), 500);
       return;
     }
     if (!user) return;
-    if (mode === 'chat') { await runChat(input.trim(), extraContext); return; }
+    pendingImagesRef.current = images;
+    if (mode === 'chat') { await runChat(input.trim(), extraContext); pendingImagesRef.current = undefined; return; }
     setIsGenerating(true);
     setStreamingCode(null);
     setPreviewCode(null);
@@ -1107,6 +1113,7 @@ export default function App() {
         ? "You've reached the AI limit. Please wait a minute." : m || 'Unexpected error.');
     } finally {
       setIsGenerating(false); setStreamingCode(null); setPreviewCode(null); setGenerationSteps([]); abortRef.current = null;
+      pendingImagesRef.current = undefined;
       // Built — flip back to the live preview to show the finished app.
       setActiveTab('preview');
     }

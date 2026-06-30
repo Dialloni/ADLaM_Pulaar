@@ -39,7 +39,7 @@ interface ChatProps {
   messages: Message[];
   input: string;
   setInput: (val: string) => void;
-  onSend: (extraContext?: string) => void;
+  onSend: (extraContext?: string, images?: { data: string; mediaType: string }[]) => void;
   isGenerating: boolean;
   generationStatus: string;
   generationSteps?: string[];
@@ -309,22 +309,21 @@ const ChatImpl: React.FC<ChatProps> = ({
     if (attachments.length === 0) { onSend(); return; }
     setIsSending(true);
     try {
+      // Images are sent as real VISION input (the model sees them) — no OCR.
+      // Text files are still inlined as context.
       const parts: string[] = [];
+      const images: { data: string; mediaType: string }[] = [];
       for (const att of attachments) {
         if (att.kind === 'image') {
-          try {
-            const base64 = att.content.split(',')[1] ?? att.content;
-            const mime = att.content.startsWith('data:') ? att.content.split(';')[0].slice(5) : 'image/png';
-            const res = await fetch('/api/ocr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageBase64: base64, mimeType: mime }) });
-            const ocr = res.ok ? (await res.json() as { text: string }).text : '';
-            parts.push(`[Image: ${att.name}]${ocr ? `\n${ocr}` : ''}`);
-          } catch { parts.push(`[Image: ${att.name}]`); }
+          const base64 = att.content.split(',')[1] ?? att.content;
+          const mime = att.content.startsWith('data:') ? att.content.split(';')[0].slice(5) : 'image/png';
+          images.push({ data: base64, mediaType: mime });
         } else {
           parts.push(`[File: ${att.name}]\n${att.content.slice(0, 4000)}`);
         }
       }
       setAttachments([]);
-      onSend(parts.join('\n\n') || undefined);
+      onSend(parts.join('\n\n') || undefined, images.length ? images : undefined);
     } finally { setIsSending(false); }
   };
 

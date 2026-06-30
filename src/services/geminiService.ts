@@ -93,6 +93,9 @@ export type Provider = FreeProvider | `byok-${ByokProvider}`;
 
 export interface Byok { provider: ByokProvider; apiKey: string; }
 
+// A user-attached image for vision. `data` is RAW base64 (no data-URL prefix).
+export interface ImageInput { data: string; mediaType: string }
+
 // When the selected provider is a BYOK one, resolve {provider, apiKey} from the
 // saved keys so the request can carry the user's own key. Returns undefined for
 // free models (server uses its shared keys).
@@ -111,9 +114,10 @@ export async function generateProject(
   provider?: Provider,
   byok?: Byok,
   signal?: AbortSignal,
+  images?: ImageInput[],
 ): Promise<GenerationResponse & { wasAborted?: boolean }> {
   onStatus?.('Generating your app...');
-  return streamGeneration('/api/generate', { prompt, preferredLanguage, provider, byok }, onCode, onStatus, signal);
+  return streamGeneration('/api/generate', { prompt, preferredLanguage, provider, byok, images }, onCode, onStatus, signal);
 }
 
 export async function editProject(
@@ -126,12 +130,13 @@ export async function editProject(
   provider?: Provider,
   byok?: Byok,
   signal?: AbortSignal,
+  images?: ImageInput[],
 ): Promise<GenerationResponse & { wasAborted?: boolean }> {
   onStatus?.('Applying your changes...');
   const trimmed = history.slice(-6).map((m) => ({ role: m.role, content: m.content }));
   return streamGeneration(
     '/api/edit',
-    { prompt, currentCode, history: trimmed, preferredLanguage, provider, byok },
+    { prompt, currentCode, history: trimmed, preferredLanguage, provider, byok, images },
     onCode,
     onStatus,
     signal,
@@ -149,13 +154,14 @@ export async function chatStream(
   preferredLanguage: string,
   onToken: (chunk: string) => void,
   provider?: Provider,
-  byok?: Byok
+  byok?: Byok,
+  images?: ImageInput[],
 ): Promise<string> {
   const trimmed = history.slice(-8).map((m) => ({ role: m.role, content: m.content }));
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify({ prompt, history: trimmed, currentCode, preferredLanguage, provider, byok }),
+    body: JSON.stringify({ prompt, history: trimmed, currentCode, preferredLanguage, provider, byok, images }),
   });
   if (!res.ok || !res.body) {
     const data = await res.json().catch(() => ({ error: res.statusText }));
