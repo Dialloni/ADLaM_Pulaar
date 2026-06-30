@@ -53,12 +53,12 @@ const Toggle: React.FC<{ on: boolean; onChange: (v: boolean) => void }> = ({ on,
 );
 
 const Row: React.FC<{ label: string; desc?: string; children: React.ReactNode }> = ({ label, desc, children }) => (
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+  <div className="settings-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 0', borderBottom: '1px solid var(--border-subtle)' }}>
     <div style={{ minWidth: 0, flex: 1 }}>
       <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{label}</p>
       {desc && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>{desc}</p>}
     </div>
-    <div style={{ flexShrink: 0 }}>{children}</div>
+    <div className="settings-row-control" style={{ flexShrink: 0 }}>{children}</div>
   </div>
 );
 
@@ -131,10 +131,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, padding: 16, fontFamily: 'Inter, sans-serif' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 720, height: 560, maxHeight: '85vh', overflow: 'hidden', display: 'flex', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
+      <div onClick={e => e.stopPropagation()} className="settings-modal" style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 720, height: 560, maxHeight: '85vh', overflow: 'hidden', display: 'flex', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
         {/* sidebar tabs */}
-        <div style={{ width: 180, flexShrink: 0, borderRight: '1px solid var(--border)', padding: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', padding: '8px 10px 6px' }}>{t.settingsNav}</p>
+        <div className="settings-sidebar" style={{ width: 180, flexShrink: 0, borderRight: '1px solid var(--border)', padding: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <p className="settings-nav-label" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', padding: '8px 10px 6px' }}>{t.settingsNav}</p>
           {TABS.map(({ id, label, Icon }) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: 13, fontWeight: 600,
@@ -167,21 +167,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 </Row>
                 <Row label={t.fullNameLabel} desc={t.fullNameSubtitle}>
-                  <input value={fullName} onChange={e => setFullName(e.target.value)} onBlur={commitName}
+                  <input className="settings-input" value={fullName} onChange={e => setFullName(e.target.value)} onBlur={commitName}
                     onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} placeholder={t.fullNameLabel} maxLength={80} style={inputStyle} />
                 </Row>
                 <Row label={t.gandoNamingQuery} desc={t.gandoNamingSubtitle}>
-                  <input value={preferredName} onChange={e => setPreferredName(e.target.value)} onBlur={commitPreferred}
+                  <input className="settings-input" value={preferredName} onChange={e => setPreferredName(e.target.value)} onBlur={commitPreferred}
                     onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} placeholder={displayName.split(/\s+/)[0] || ''} maxLength={40} style={inputStyle} />
                 </Row>
                 <Row label={t.workDescriptionQuery}>
-                  <div style={{ position: 'relative' }}>
-                    <button onClick={() => setOccOpen(o => !o)} style={{ ...inputStyle, width: 200, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', textAlign: 'left' }}>
+                  <div className="settings-occ" style={{ position: 'relative' }}>
+                    <button className="settings-input" onClick={() => setOccOpen(o => !o)} style={{ ...inputStyle, width: 200, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', textAlign: 'left' }}>
                       <span style={{ color: occLabel ? 'var(--text-primary)' : 'var(--text-muted)' }}>{occLabel ? t[occLabel.key] : '—'}</span>
                       <ChevronDown className="w-3.5 h-3.5" style={{ opacity: 0.6 }} />
                     </button>
                     {occOpen && (
-                      <div style={{ position: 'absolute', top: 40, right: 0, width: 200, maxHeight: 220, overflowY: 'auto', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 10, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+                      <div className="settings-dropdown" style={{ position: 'absolute', top: 40, right: 0, width: 200, maxHeight: 220, overflowY: 'auto', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 10, zIndex: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
                         {OCCUPATIONS.map(o => (
                           <div key={o.value} onClick={() => { onSavePrefs({ occupation: o.value }); setOccOpen(false); }}
                             onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
