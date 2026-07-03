@@ -5,8 +5,7 @@ interface GandoSparkProps {
 }
 
 // Animated assistant avatar — the Gando 𞤘 mark alive with a rising ember/flame
-// aura, a gentle up-down float, and an ember→magenta→violet gradient (not flat
-// orange). Pure CSS; injected once. Replaces the generic robot icon in chat/build.
+// aura, a gentle up-down float, and an brand blue→orange gradient. Pure CSS; injected once. Replaces the generic robot icon in chat/build.
 const STYLE = `
 @keyframes gspark-float {
   0%, 100% { transform: translateY(0); }
@@ -17,8 +16,8 @@ const STYLE = `
   50%      { opacity: 1;    transform: scale(1.12) rotate(180deg); }
 }
 @keyframes gspark-char {
-  0%, 100% { filter: drop-shadow(0 0 2px rgba(255,45,149,0.5)); }
-  50%      { filter: drop-shadow(0 0 7px rgba(124,58,237,0.85)) drop-shadow(0 0 14px rgba(253,139,0,0.5)); }
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(59,130,246,0.5)); }
+  50%      { filter: drop-shadow(0 0 7px rgba(59,130,246,0.85)) drop-shadow(0 0 14px rgba(253,139,0,0.5)); }
 }
 @keyframes gspark-ember {
   0%   { transform: translateY(2px) scale(1);   opacity: 0; }
@@ -59,10 +58,10 @@ export function GandoSpark({ size = 32, className = '', active = false }: GandoS
         animation: `gspark-float ${active ? '1.4s' : '3s'} ease-in-out infinite`,
       }}
     >
-      {/* swirling ember→magenta→violet aura (brighter + faster while active) */}
+      {/* swirling blue→orange brand aura (brighter + faster while active) */}
       <span style={{
         position: 'absolute', inset: -size * (active ? 0.14 : 0.08), borderRadius: br + 4,
-        background: 'conic-gradient(from 0deg, #fd8b00, #ff2d95 35%, #7c3aed 65%, #fd8b00 100%)',
+        background: 'conic-gradient(from 0deg, #fd8b00, #3b82f6 35%, #2563eb 65%, #fd8b00 100%)',
         filter: `blur(${active ? 5 : 3}px)`,
         opacity: active ? 1 : 0.85,
         animation: `gspark-aura ${active ? '2s' : '4s'} ease-in-out infinite`,
@@ -71,22 +70,22 @@ export function GandoSpark({ size = 32, className = '', active = false }: GandoS
       {/* dark core */}
       <span style={{
         position: 'absolute', inset: size * 0.06, borderRadius: br,
-        background: 'linear-gradient(145deg, #1a0a14, #0e0e0e)',
+        background: 'linear-gradient(145deg, #0a1224, #0e0e0e)',
       }} />
 
       {/* rising embers (more + faster while thinking) */}
       {ember('38%', '0s', '#fd8b00')}
-      {ember('52%', '0.5s', '#ff2d95')}
-      {ember('46%', '1s', '#a855f7')}
+      {ember('52%', '0.5s', '#3b82f6')}
+      {ember('46%', '1s', '#60a5fa')}
       {active && ember('30%', '0.25s', '#ffb169')}
-      {active && ember('62%', '0.75s', '#c026d3')}
+      {active && ember('62%', '0.75s', '#2563eb')}
 
       {/* the character */}
       <span style={{
         position: 'relative',
         fontFamily: '"Noto Sans Adlam", sans-serif',
         fontSize: size * 0.56, lineHeight: 1,
-        background: 'linear-gradient(135deg, #ffb169, #ff2d95 50%, #a855f7)',
+        background: 'linear-gradient(135deg, #ffb169, #3b82f6 55%, #60a5fa)',
         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
         userSelect: 'none',
         animation: 'gspark-char 3s ease-in-out infinite',

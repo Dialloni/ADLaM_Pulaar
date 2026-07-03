@@ -39,6 +39,7 @@ interface ChatProps {
   currentCode?: string;
   onRevert?: (snapshot: string) => void;
   onStop?: () => void;
+  hideHeader?: boolean; // parent renders its own title bar (full-screen chat session)
 }
 
 
@@ -248,6 +249,7 @@ const ChatImpl: React.FC<ChatProps> = ({
   currentCode,
   onRevert,
   onStop,
+  hideHeader = false,
 }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -420,10 +422,12 @@ const ChatImpl: React.FC<ChatProps> = ({
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative" style={{ background: 'var(--app-bg)' }}>
-      {/* Header bar */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 10 }}>
-        <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>Chat with Gando</span>
-      </div>
+      {/* Header bar (skipped when the parent view provides its own) */}
+      {!hideHeader && (
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 10 }}>
+          <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>Chat with Gando</span>
+        </div>
+      )}
       {/* Background Glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#3b82f6]/5 blur-[120px] rounded-full" />
@@ -621,7 +625,9 @@ const ChatImpl: React.FC<ChatProps> = ({
                 </div>
               )}
               <div className="space-y-8">
-                {messages.map((m, i) => (
+                {/* empty assistant bubbles never render — while streaming, the typing
+                    indicator below is the placeholder; stale empties (old failed saves) vanish */}
+                {messages.filter(m => m.role !== 'assistant' || m.content.trim()).map((m, i) => (
                   <motion.div 
                     key={i}
                     initial={{ opacity: 0, y: 20 }}

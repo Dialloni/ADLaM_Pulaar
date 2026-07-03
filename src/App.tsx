@@ -702,8 +702,20 @@ export default function App() {
         return copy;
       });
     } finally { setIsGenerating(false); }
+    // Stream ended with nothing — fill the bubble so it never sits empty (and never persists empty).
+    if (!finalAnswer.trim()) {
+      finalAnswer = selectedLang.code === 'fr'
+        ? '⚠️ Pas de réponse du modèle — réessayez.'
+        : '⚠️ No response from the model — please try again.';
+      setChatMessages(prev => {
+        const copy = [...prev];
+        copy[copy.length - 1] = { ...aiMsg, content: finalAnswer };
+        return copy;
+      });
+    }
     // Save the exchange (dashboard chat threads only — project chats live with the project).
-    if (!currentProject) await persistChat(typedPrompt, finalAnswer);
+    // Failed exchanges (⚠️) are not worth keeping in the thread history.
+    if (!currentProject && !finalAnswer.startsWith('⚠️')) await persistChat(typedPrompt, finalAnswer);
   };
 
   const handleSend = async (extraContext?: string, images?: ImageInput[]) => {
@@ -1362,7 +1374,7 @@ export default function App() {
                   provider={provider} onProviderChange={setProvider}
                   byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                           userPhoto={user.photoURL} userName={user.displayName || user.email}
-                  mode={mode} onModeChange={setMode} onStop={handleStop} />
+                  mode={mode} onModeChange={setMode} onStop={handleStop} hideHeader />
               </div>
             </div>
 

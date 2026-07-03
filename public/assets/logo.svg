@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" role="img" aria-label="Gando">
   <defs>
     <linearGradient id="gando-grad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ff8b9b"></stop>
+      <stop offset="0%" stop-color="#3b82f6"></stop>
       <stop offset="100%" stop-color="#fd8b00"></stop>
     </linearGradient>
   </defs>

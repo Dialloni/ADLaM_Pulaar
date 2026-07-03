@@ -56,7 +56,7 @@ export function GandoLogo({ size = 32, mono = false, className = '' }: GandoLogo
       <span style={{
         position: 'absolute', inset: ring * 0.8,
         borderRadius: br,
-        background: 'linear-gradient(145deg, #1c0a0f, #0e0e0e)',
+        background: 'linear-gradient(145deg, #0a1224, #0e0e0e)',
       }} />
 
       {/* inner radial glow — breathes */}
@@ -65,7 +65,7 @@ export function GandoLogo({ size = 32, mono = false, className = '' }: GandoLogo
         borderRadius: br - 2,
         background: mono
           ? 'radial-gradient(circle, rgba(255,255,255,0.06), transparent 70%)'
-          : 'radial-gradient(circle, rgba(255,100,120,0.22), rgba(253,139,0,0.08) 55%, transparent 80%)',
+          : 'radial-gradient(circle, rgba(59,130,246,0.22), rgba(253,139,0,0.08) 55%, transparent 80%)',
         animation: 'gando-breathe 2.4s ease-in-out infinite',
       }} />
 
