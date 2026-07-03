@@ -565,9 +565,11 @@ export default function App() {
   const [greetSeed] = useState(() => Math.random());
   // greeting emoji (☀️/🌙/🎉) shows briefly, then fades — decoration, not furniture
   const [greetEmojiVisible, setGreetEmojiVisible] = useState(true);
+  const [greetEmojiGone, setGreetEmojiGone] = useState(false); // unmounted after fade — no phantom line box
   useEffect(() => {
-    const id = setTimeout(() => setGreetEmojiVisible(false), 12000);
-    return () => clearTimeout(id);
+    const fade = setTimeout(() => setGreetEmojiVisible(false), 12000);
+    const gone = setTimeout(() => setGreetEmojiGone(true), 13600);
+    return () => { clearTimeout(fade); clearTimeout(gone); };
   }, []);
   const [prevSeenMs, setPrevSeenMs] = useState<number | null>(null);
   useEffect(() => {
@@ -2429,7 +2431,7 @@ export default function App() {
                     const emoji = greetEmoji({ firstVisit, welcomeBack });
                     const [pre, post] = tpl.split('{name}');
                     const parts: React.ReactNode[] = post === undefined ? [pre] : [pre, name, post];
-                    if (emoji) parts.push(
+                    if (emoji && !greetEmojiGone) parts.push(
                       <span key="e" aria-hidden
                         style={{ display: 'inline-block', marginInlineStart: 10, opacity: greetEmojiVisible ? 1 : 0, transition: 'opacity 1.5s ease' }}>
                         {emoji}
@@ -2437,23 +2439,18 @@ export default function App() {
                     );
                     return (
                       <h1 dir={isAdlam ? 'rtl' : undefined}
-                        className={cn('text-center font-black text-white tracking-tight mb-2', isAdlam && 'font-adlam')}
+                        className={cn('text-center font-black text-white tracking-tight mb-8', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(22px, 2.6vw, 34px)', lineHeight: 1.2 }}>
                         {/* logo flows inline with the text — stays glued to the first word
                             even when a long phrase fills the row (was a flex row: logo got
                             orphaned at the container edge on long English greetings) */}
-                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginInlineEnd: 12, marginTop: -4 }}>
+                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginInlineEnd: 12, position: 'relative', top: -3 }}>
                           <GandoLogo size={30} />
                         </span>
                         {parts}
                       </h1>
                     );
                   })()}
-                  <p className={cn('text-center text-zinc-500 mb-7', isAdlam && 'font-adlam')} style={{ fontSize: 14 }}>
-                    {selectedLang.code === 'fr' ? 'Que construisons-nous aujourd’hui ?'
-                      : selectedLang.code === 'ff-adlm' ? t.gandoViewSubtitle
-                      : 'What will we build today?'}
-                  </p>
 
                   {/* import mode tabs — build mode only */}
                   {mode === 'build' && (

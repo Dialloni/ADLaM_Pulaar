@@ -268,10 +268,10 @@ export function LandingPage({
           </div>
 
           {/* trust row */}
-          <div className="flex items-center justify-center gap-4 flex-wrap mt-5" style={{ fontSize: 12, color: '#52525b' }}>
-            <span>🔒 Private by default</span><span style={{ color: '#3f3f46' }}>·</span>
-            <span>Data stays in-region</span><span style={{ color: '#3f3f46' }}>·</span>
-            <span>Free during Beta</span>
+          <div className="flex items-center justify-center gap-2 flex-wrap mt-5" style={{ fontSize: 12, color: '#52525b' }}>
+            <span>🎉 {selectedLang.code === 'fr' ? 'Gratuit pendant la bêta' : 'Free during beta'}</span>
+            <span style={{ color: '#3f3f46' }}>·</span>
+            <span>{selectedLang.code === 'fr' ? 'Sans carte bancaire' : 'No credit card needed'}</span>
           </div>
         </div>
       </section>
@@ -331,39 +331,51 @@ export function LandingPage({
       {/* ── FOOTER ── */}
       <footer className="relative z-10 border-t border-white/5" style={{ padding: '48px 40px 32px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-10 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <GandoLogo size={20} />
                 <span style={{ fontFamily: MANROPE, fontSize: 16, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
               </div>
               <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#52525b', lineHeight: 1.6 }}>
-                AI app builder for West Africa. Build in ADLaM, French, English, and more.
+                Build apps in your own language — ADLaM, French, English, and more African languages coming.
               </p>
             </div>
-            {[
-              { title: 'Resources', links: ['Documentation', 'API Reference', 'Templates', 'Changelog'] },
-              { title: 'Company',   links: ['About', 'Blog', 'Careers', 'Press'] },
-              { title: 'Community', links: ['Discord', 'Twitter / X', 'GitHub', 'Support'] },
-            ].map(col => (
+            {/* every entry navigates for real — in-app pages open sign-in first */}
+            {([
+              { title: selectedLang.code === 'fr' ? 'Produit' : 'Product', links: [
+                { label: 'Templates', action: 'auth' as const },
+                { label: selectedLang.code === 'fr' ? 'Langues' : 'Languages', action: 'auth' as const },
+                { label: 'Documentation', action: 'auth' as const },
+                { label: selectedLang.code === 'fr' ? 'Statut du système' : 'System Status', action: 'auth' as const },
+              ]},
+              { title: selectedLang.code === 'fr' ? 'Communauté' : 'Community', links: [
+                { label: 'GitHub', href: 'https://github.com/Dialloni/ADLaM_Pulaar' },
+                { label: 'Contact', href: 'mailto:gandoadlam25@gmail.com' },
+              ]},
+            ]).map(col => (
               <div key={col.title}>
                 <p style={{ fontFamily: MANROPE, fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', color: '#52525b', textTransform: 'uppercase', marginBottom: 14 }}>{col.title}</p>
                 <div className="space-y-2.5">
                   {col.links.map(lnk => (
-                    <p key={lnk}
-                      style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'var(--text-muted)', cursor: 'default', transition: 'color 0.15s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#fff'}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#767575'}>
-                      {lnk}
-                    </p>
+                    <a key={lnk.label}
+                      href={'href' in lnk ? lnk.href : '#'}
+                      target={'href' in lnk && lnk.href.startsWith('http') ? '_blank' : undefined}
+                      rel={'href' in lnk && lnk.href.startsWith('http') ? 'noreferrer' : undefined}
+                      onClick={e => { if (!('href' in lnk)) { e.preventDefault(); setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); } }}
+                      className="block"
+                      style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.15s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
+                      {lnk.label}
+                    </a>
                   ))}
                 </div>
               </div>
             ))}
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-6 border-t border-white/5">
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#3f3f46' }}>© 2025 Gando AI. All rights reserved.</p>
-            <p style={{ fontFamily: MANROPE, fontSize: 11, fontWeight: 700, color: '#52525b', letterSpacing: '0.08em' }}>BUILT FOR WEST AFRICA 🌍</p>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#3f3f46' }}>© 2026 Gando. All rights reserved.</p>
           </div>
         </div>
       </footer>
