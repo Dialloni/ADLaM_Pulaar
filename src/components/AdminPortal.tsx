@@ -629,15 +629,15 @@ export function AdminPortal({ user }: { user: User }) {
   const sources = ['all', ...Array.from(new Set(submissions.map(s => s.source)))];
 
   return (
-    // data-theme="dark": the admin portal is an internal tool styled dark-only —
+    //: the admin portal is an internal tool styled dark-only —
     // re-scoping the CSS vars here keeps it consistent when the app is in light mode.
-    <div data-theme="dark" className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-8 space-y-6" style={{ fontFamily: MANROPE, background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
+    <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-8 space-y-6" style={{ fontFamily: MANROPE, background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
 
       {/* header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">Corpus Admin</h1>
-          <p className="text-zinc-500 text-sm mt-1">Review and verify ADLaM text submissions</p>
+          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tighter">Corpus Admin</h1>
+          <p className="text-[var(--text-muted)] text-sm mt-1">Review and verify ADLaM text submissions</p>
         </div>
         <button onClick={exportJSONL}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 flex-shrink-0"
@@ -663,8 +663,8 @@ export function AdminPortal({ user }: { user: User }) {
           { label: 'Verified', value: stats.verified, color: '#4ade80' },
           { label: 'Rejected', value: stats.rejected, color: '#f87171' },
         ] as const).map(({ label, value, color }) => (
-          <div key={label} className="rounded-2xl p-5 border border-white/8" style={{ background: '#131313' }}>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">{label}</p>
+          <div key={label} className="rounded-2xl p-5 border border-[var(--border)]" style={{ background: 'var(--card-bg)' }}>
+            <p className="text-[var(--text-muted)] text-xs font-bold uppercase tracking-widest">{label}</p>
             <p className="text-3xl font-black mt-1" style={{ color }}>{value}</p>
           </div>
         ))}
@@ -672,7 +672,7 @@ export function AdminPortal({ user }: { user: User }) {
 
       {/* tabs */}
       <div className="flex items-center gap-1 p-1 rounded-xl w-full sm:w-fit overflow-x-auto"
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        style={{ background: 'var(--btn-bg)', border: '1px solid var(--border-subtle)' }}>
         {([
           { id: 'queue', label: 'Review Queue' },
           { id: 'community', label: `Community${communityProjects.length ? ` (${communityProjects.length})` : ''}` },
@@ -695,23 +695,23 @@ export function AdminPortal({ user }: { user: User }) {
       {/* ── COMMUNITY TAB ── */}
       {tab === 'community' && (
         <div className="space-y-4">
-          <p className="text-sm text-zinc-500">Projects users shared to the gallery. Approve to publish as a community template; reject to hide.</p>
+          <p className="text-sm text-[var(--text-muted)]">Projects users shared to the gallery. Approve to publish as a community template; reject to hide.</p>
           {communityLoading ? (
-            <div className="flex items-center gap-2 text-zinc-500 text-sm"><RefreshCw className="w-4 h-4 animate-spin" /> Loading…</div>
+            <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm"><RefreshCw className="w-4 h-4 animate-spin" /> Loading…</div>
           ) : communityProjects.length === 0 ? (
-            <div className="py-16 text-center text-zinc-600 text-sm">No projects awaiting review.</div>
+            <div className="py-16 text-center text-[var(--text-faint)] text-sm">No projects awaiting review.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {communityProjects.map(cp => (
-                <div key={cp.id} className="rounded-2xl border border-white/8 overflow-hidden" style={{ background: '#131313' }}>
-                  <div className="relative overflow-hidden" style={{ height: 200, background: '#0e0e0e' }}>
+                <div key={cp.id} className="rounded-2xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--card-bg)' }}>
+                  <div className="relative overflow-hidden" style={{ height: 200, background: 'var(--app-bg)' }}>
                     <iframe srcDoc={cp.code} title={cp.name} className="border-none pointer-events-none"
                       style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
                   </div>
                   <div className="p-4">
-                    <h3 className="font-black text-white text-sm mb-1 truncate">{cp.name}</h3>
-                    <p className="text-zinc-500 text-xs line-clamp-2 mb-1">{cp.description}</p>
-                    <p className="text-[10px] text-zinc-600 mb-3">{cp.language} · owner {cp.userId.slice(0, 8)}…</p>
+                    <h3 className="font-black text-[var(--text-primary)] text-sm mb-1 truncate">{cp.name}</h3>
+                    <p className="text-[var(--text-muted)] text-xs line-clamp-2 mb-1">{cp.description}</p>
+                    <p className="text-[10px] text-[var(--text-faint)] mb-3">{cp.language} · owner {cp.userId.slice(0, 8)}…</p>
                     <div className="flex items-center gap-2">
                       <button onClick={() => approveShare(cp.id)} disabled={communityActionId === cp.id}
                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all"
@@ -744,12 +744,12 @@ export function AdminPortal({ user }: { user: User }) {
             className="rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 cursor-pointer transition-all"
             style={{
               minHeight: 180,
-              borderColor: dragOver ? P : 'rgba(255,255,255,0.12)',
-              background: dragOver ? `${P}08` : '#131313',
+              borderColor: dragOver ? P : 'var(--border)',
+              background: dragOver ? `${P}08` : 'var(--card-bg)',
             }}>
             <Upload className="w-8 h-8" style={{ color: dragOver ? P : '#52525b' }} />
-            <p className="text-sm font-bold text-zinc-400">Drop PDFs here or click to browse</p>
-            <p className="text-xs text-zinc-600">Digital PDFs + scanned images — Gemini OCR auto-runs if no text found</p>
+            <p className="text-sm font-bold text-[var(--text-muted)]">Drop PDFs here or click to browse</p>
+            <p className="text-xs text-[var(--text-faint)]">Digital PDFs + scanned images — Gemini OCR auto-runs if no text found</p>
             <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden"
               onChange={e => processPdfs(Array.from(e.target.files ?? []))} />
           </div>
@@ -758,13 +758,13 @@ export function AdminPortal({ user }: { user: User }) {
           {results.length > 0 && (
             <div className="space-y-3">
               {results.map((r, i) => (
-                <div key={i} className="rounded-2xl border border-white/8 overflow-hidden"
-                  style={{ background: '#131313' }}>
+                <div key={i} className="rounded-2xl border border-[var(--border)] overflow-hidden"
+                  style={{ background: 'var(--card-bg)' }}>
                   <div className="flex items-center gap-3 px-5 py-3">
                     <FileText className="w-4 h-4 flex-shrink-0" style={{ color: '#fd8b00' }} />
-                    <span className="text-sm font-bold text-white truncate flex-1">{r.fileName}</span>
+                    <span className="text-sm font-bold text-[var(--text-primary)] truncate flex-1">{r.fileName}</span>
                     {r.status === 'ready' && (
-                      <RefreshCw className="w-4 h-4 text-zinc-500 animate-spin" />
+                      <RefreshCw className="w-4 h-4 text-[var(--text-muted)] animate-spin" />
                     )}
                     {r.status === 'done' && (
                       <span className="flex items-center gap-1.5 text-xs font-bold text-green-400">
@@ -777,7 +777,7 @@ export function AdminPortal({ user }: { user: User }) {
                       </span>
                     )}
                     <button onClick={() => setResults(prev => prev.filter((_, j) => j !== i))}>
-                      <X className="w-4 h-4 text-zinc-600 hover:text-white transition-colors" />
+                      <X className="w-4 h-4 text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors" />
                     </button>
                   </div>
 
@@ -791,12 +791,12 @@ export function AdminPortal({ user }: { user: User }) {
                             style={{ background: `${ratioColor(r.adlam_ratio)}20`, color: ratioColor(r.adlam_ratio) }}>
                             𞤀𞤁𞤂 {Math.round(r.adlam_ratio * 100)}%
                           </span>
-                          <span className="text-xs text-zinc-500">{r.word_count} words</span>
-                          <span className="text-xs text-zinc-500">{r.pages} pages</span>
+                          <span className="text-xs text-[var(--text-muted)]">{r.word_count} words</span>
+                          <span className="text-xs text-[var(--text-muted)]">{r.pages} pages</span>
                         </div>
                       )}
                       {r.text && r.adlam_ratio > 0 && (
-                        <p className="text-sm text-zinc-400 line-clamp-3 font-adlam" dir="rtl">
+                        <p className="text-sm text-[var(--text-muted)] line-clamp-3 font-adlam" dir="rtl">
                           {r.text.slice(0, 300)}
                         </p>
                       )}
@@ -813,21 +813,21 @@ export function AdminPortal({ user }: { user: User }) {
       {tab === 'paste' && (
         <div className="space-y-4 max-w-2xl">
           {/* textarea */}
-          <div className="rounded-2xl border border-white/8 overflow-hidden" style={{ background: '#131313' }}>
-            <div className="px-5 pt-4 pb-2 border-b border-white/6 flex items-center justify-between gap-3 flex-wrap">
-              <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">ADLaM Text</span>
+          <div className="rounded-2xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--card-bg)' }}>
+            <div className="px-5 pt-4 pb-2 border-b border-[var(--border-subtle)] flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">ADLaM Text</span>
               <div className="flex items-center gap-3 flex-wrap">
                 {pasteText.length > 0 && (
                   <>
                     <span className="text-xs font-mono px-2 py-0.5 rounded"
-                      style={{ background: 'rgba(255,255,255,0.06)', color: pasteRatio > 0.05 ? '#4ade80' : '#fd8b00' }}>
+                      style={{ background: 'var(--btn-bg)', color: pasteRatio > 0.05 ? '#4ade80' : '#fd8b00' }}>
                       {codeRangeLabel(pasteText)}
                     </span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                       style={{ background: `${ratioColor(pasteRatio)}20`, color: ratioColor(pasteRatio) }}>
                       𞤀𞤁𞤂 {Math.round(pasteRatio * 100)}%
                     </span>
-                    <span className="text-xs text-zinc-500">{pasteWords} words</span>
+                    <span className="text-xs text-[var(--text-muted)]">{pasteWords} words</span>
                   </>
                 )}
               </div>
@@ -836,7 +836,7 @@ export function AdminPortal({ user }: { user: User }) {
               value={pasteText}
               onChange={e => setPasteText(e.target.value)}
               placeholder="Paste ADLaM text here — from PDFs, WhatsApp, Telegram, books…"
-              className="w-full bg-transparent outline-none resize-none text-white placeholder-zinc-600 px-5 py-4"
+              className="w-full bg-transparent outline-none resize-none text-[var(--text-primary)] placeholder-[var(--text-faint)] px-5 py-4"
               style={{
                 minHeight: 220, fontSize: 15, lineHeight: 1.7,
                 direction: 'rtl',
@@ -847,8 +847,8 @@ export function AdminPortal({ user }: { user: User }) {
 
           {/* metadata row */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-white/8 p-4 space-y-2" style={{ background: '#131313' }}>
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Domain</p>
+            <div className="rounded-xl border border-[var(--border)] p-4 space-y-2" style={{ background: 'var(--card-bg)' }}>
+              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Domain</p>
               <div className="flex flex-wrap gap-1.5">
                 {DOMAINS.map(d => (
                   <button key={d} onClick={() => setPasteDomain(d)}
@@ -864,8 +864,8 @@ export function AdminPortal({ user }: { user: User }) {
               </div>
             </div>
 
-            <div className="rounded-xl border border-white/8 p-4 space-y-2" style={{ background: '#131313' }}>
-              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Source</p>
+            <div className="rounded-xl border border-[var(--border)] p-4 space-y-2" style={{ background: 'var(--card-bg)' }}>
+              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Source</p>
               <div className="flex flex-wrap gap-1.5">
                 {(['text_upload', 'telegram', 'pdf', 'collector'] as const).map(s => (
                   <button key={s} onClick={() => setPasteSource(s)}
@@ -923,7 +923,7 @@ export function AdminPortal({ user }: { user: User }) {
             )}
           </button>
           {pasteWords > 0 && pasteWords < 3 && (
-            <p className="text-xs text-zinc-600">Need at least 3 words</p>
+            <p className="text-xs text-[var(--text-faint)]">Need at least 3 words</p>
           )}
         </div>
       )}
@@ -970,15 +970,15 @@ export function AdminPortal({ user }: { user: User }) {
           )}
 
           {/* add term form */}
-          <div className="rounded-2xl border border-white/8 p-5 space-y-3" style={{ background: '#131313' }}>
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Add New Term</p>
+          <div className="rounded-2xl border border-[var(--border)] p-5 space-y-3" style={{ background: 'var(--card-bg)' }}>
+            <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Add New Term</p>
             <div className="space-y-1.5">
               <input
                 value={addAdlam}
                 onChange={e => setAddAdlam(e.target.value)}
                 dir="rtl"
                 placeholder="𞤢𞤣𞤤𞤢𞤥 — type ADLaM script here"
-                className="w-full rounded-xl px-4 py-3 text-white text-xl bg-black/40 outline-none transition-all"
+                className="w-full rounded-xl px-4 py-3 text-[var(--text-primary)] text-xl bg-[var(--input-bg)] outline-none transition-all"
                 style={{
                   fontFamily: '"Noto Sans Adlam", serif',
                   border: addAdlam.trim() === ''
@@ -1005,21 +1005,21 @@ export function AdminPortal({ user }: { user: User }) {
                 value={addLatin}
                 onChange={e => setAddLatin(e.target.value)}
                 placeholder="English / latin"
-                className="rounded-xl px-4 py-2.5 text-white text-sm bg-black/40 outline-none"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                className="rounded-xl px-4 py-2.5 text-[var(--text-primary)] text-sm bg-[var(--input-bg)] outline-none"
+                style={{ border: '1px solid var(--border)' }}
               />
               <input
                 value={addFr}
                 onChange={e => setAddFr(e.target.value)}
                 placeholder="Français"
-                className="rounded-xl px-4 py-2.5 text-white text-sm bg-black/40 outline-none"
-                style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                className="rounded-xl px-4 py-2.5 text-[var(--text-primary)] text-sm bg-[var(--input-bg)] outline-none"
+                style={{ border: '1px solid var(--border)' }}
               />
               <select
                 value={addDomain}
                 onChange={e => setAddDomain(e.target.value)}
-                className="rounded-xl px-4 py-2.5 text-white text-sm outline-none"
-                style={{ background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.1)' }}>
+                className="rounded-xl px-4 py-2.5 text-[var(--text-primary)] text-sm outline-none"
+                style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)' }}>
                 {['general','ui','ux','auth','data','infrastructure','design','layout','media','ecommerce','ai'].map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -1040,7 +1040,7 @@ export function AdminPortal({ user }: { user: User }) {
 
           {/* filter */}
           <div className="flex items-center gap-1 p-1 rounded-xl w-fit"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ background: 'var(--btn-bg)', border: '1px solid var(--border-subtle)' }}>
             {(['all', 'draft', 'verified'] as const).map(f => (
               <button key={f} onClick={() => setDictFilter(f)}
                 className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
@@ -1057,11 +1057,11 @@ export function AdminPortal({ user }: { user: User }) {
           {/* list */}
           {dictLoading ? (
             <div className="flex items-center justify-center py-20">
-              <RefreshCw className="w-6 h-6 text-zinc-600 animate-spin" />
+              <RefreshCw className="w-6 h-6 text-[var(--text-faint)] animate-spin" />
             </div>
           ) : dictTerms.length === 0 ? (
             <div className="text-center py-20 space-y-3">
-              <p className="text-zinc-600 text-sm">No terms yet.</p>
+              <p className="text-[var(--text-faint)] text-sm">No terms yet.</p>
               <button onClick={seedDictFromJson} disabled={dictSeeding}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40 mx-auto"
                 style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
@@ -1075,8 +1075,8 @@ export function AdminPortal({ user }: { user: User }) {
               {dictTerms
                 .filter(t => dictFilter === 'all' || t.status === dictFilter)
                 .map(t => (
-                  <div key={t.id} className="rounded-2xl border border-white/8 overflow-hidden"
-                    style={{ background: '#131313' }}>
+                  <div key={t.id} className="rounded-2xl border border-[var(--border)] overflow-hidden"
+                    style={{ background: 'var(--card-bg)' }}>
                     <div className="px-5 py-3 flex items-center gap-3 flex-wrap">
                       {dictEditingId === t.id ? (
                         <div className="flex-1 space-y-2">
@@ -1085,7 +1085,7 @@ export function AdminPortal({ user }: { user: User }) {
                             onChange={e => setDictEditAdlam(e.target.value)}
                             dir="rtl"
                             placeholder="ADLaM script…"
-                            className="w-full rounded-lg px-3 py-2 text-white text-xl bg-black/40 outline-none"
+                            className="w-full rounded-lg px-3 py-2 text-[var(--text-primary)] text-xl bg-[var(--input-bg)] outline-none"
                             style={{ fontFamily: '"Noto Sans Adlam", serif', border: '1px solid rgba(59,130,246,0.3)' }}
                           />
                           <div className="flex gap-2">
@@ -1093,15 +1093,15 @@ export function AdminPortal({ user }: { user: User }) {
                               value={dictEditFr}
                               onChange={e => setDictEditFr(e.target.value)}
                               placeholder="French translation"
-                              className="flex-1 rounded-lg px-3 py-2 text-white text-sm bg-black/40 outline-none"
-                              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                              className="flex-1 rounded-lg px-3 py-2 text-[var(--text-primary)] text-sm bg-[var(--input-bg)] outline-none"
+                              style={{ border: '1px solid var(--border)' }}
                             />
                             <input
                               value={dictEditDomain}
                               onChange={e => setDictEditDomain(e.target.value)}
                               placeholder="domain"
-                              className="w-28 rounded-lg px-3 py-2 text-white text-sm bg-black/40 outline-none"
-                              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+                              className="w-28 rounded-lg px-3 py-2 text-[var(--text-primary)] text-sm bg-[var(--input-bg)] outline-none"
+                              style={{ border: '1px solid var(--border)' }}
                             />
                           </div>
                           <div className="flex items-center gap-2">
@@ -1111,7 +1111,7 @@ export function AdminPortal({ user }: { user: User }) {
                               Save
                             </button>
                             <button onClick={() => setDictEditingId(null)}
-                              className="text-xs text-zinc-600 hover:text-white transition-colors px-2">
+                              className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors px-2">
                               Cancel
                             </button>
                           </div>
@@ -1119,15 +1119,15 @@ export function AdminPortal({ user }: { user: User }) {
                       ) : (
                         <>
                           <span className="text-xl min-w-0" dir="rtl"
-                            style={{ fontFamily: '"Noto Sans Adlam", serif', color: '#fff' }}>
+                            style={{ fontFamily: '"Noto Sans Adlam", serif', color: 'var(--text-primary)' }}>
                             {t.adlam}
                           </span>
-                          <span className="text-sm text-zinc-500">·</span>
-                          <span className="text-sm font-bold text-zinc-300">{t.latin}</span>
-                          <span className="text-xs text-zinc-600">→</span>
-                          <span className="text-sm text-zinc-400">{t.fr}</span>
+                          <span className="text-sm text-[var(--text-muted)]">·</span>
+                          <span className="text-sm font-bold text-[var(--text-secondary)]">{t.latin}</span>
+                          <span className="text-xs text-[var(--text-faint)]">→</span>
+                          <span className="text-sm text-[var(--text-muted)]">{t.fr}</span>
                           <span className="text-xs font-bold px-2 py-0.5 rounded-full ml-1"
-                            style={{ background: 'rgba(255,255,255,0.06)', color: '#71717a' }}>
+                            style={{ background: 'var(--btn-bg)', color: '#71717a' }}>
                             {t.domain}
                           </span>
                           <span className="text-xs font-bold px-2 py-0.5 rounded-full"
@@ -1141,7 +1141,7 @@ export function AdminPortal({ user }: { user: User }) {
                             <button
                               onClick={() => { setDictEditingId(t.id); setDictEditAdlam(t.adlam); setDictEditFr(t.fr); setDictEditDomain(t.domain); }}
                               className="px-2.5 py-1.5 rounded-lg text-xs transition-all hover:opacity-80"
-                              style={{ background: 'rgba(255,255,255,0.06)', color: '#71717a' }}>
+                              style={{ background: 'var(--btn-bg)', color: '#71717a' }}>
                               ✏️ Edit
                             </button>
                             {t.status === 'draft' ? (
@@ -1175,7 +1175,7 @@ export function AdminPortal({ user }: { user: User }) {
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1 p-1 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                style={{ background: 'var(--btn-bg)', border: '1px solid var(--border-subtle)' }}>
                 {(['all', 'needs_adlam', 'pending', 'verified', 'rejected'] as const).map(s => (
                   <button key={s} onClick={() => setStatusFilter(s)}
                     className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-all"
@@ -1188,7 +1188,7 @@ export function AdminPortal({ user }: { user: User }) {
                   </button>
                 ))}
               </div>
-              <span className="text-zinc-600 text-xs ml-auto">{filtered.length} results</span>
+              <span className="text-[var(--text-faint)] text-xs ml-auto">{filtered.length} results</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {sources.map(s => {
@@ -1212,16 +1212,16 @@ export function AdminPortal({ user }: { user: User }) {
           {/* list */}
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <RefreshCw className="w-6 h-6 text-zinc-600 animate-spin" />
+              <RefreshCw className="w-6 h-6 text-[var(--text-faint)] animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-20 text-zinc-600 text-sm">No submissions</div>
+            <div className="text-center py-20 text-[var(--text-faint)] text-sm">No submissions</div>
           ) : (
             <div className="space-y-3">
               {filtered.slice(0, visibleCount).map(s => (
-                <div key={s.id} className="rounded-2xl border border-white/8 overflow-hidden"
+                <div key={s.id} className="rounded-2xl border border-[var(--border)] overflow-hidden"
                   style={{ background: 'var(--card-bg)' }}>
-                  <div className="flex items-center gap-2 flex-wrap px-4 md:px-5 py-3 border-b border-white/6">
+                  <div className="flex items-center gap-2 flex-wrap px-4 md:px-5 py-3 border-b border-[var(--border-subtle)]">
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                       style={{ background: `${SOURCE_COLORS[s.source] ?? '#71717a'}20`, color: SOURCE_COLORS[s.source] ?? '#71717a' }}>
                       {s.source}
@@ -1230,7 +1230,7 @@ export function AdminPortal({ user }: { user: User }) {
                       style={{ background: `${ratioColor(s.adlam_ratio)}20`, color: ratioColor(s.adlam_ratio) }}>
                       𞤀𞤁𞤂 {Math.round(s.adlam_ratio * 100)}%
                     </span>
-                    <span className="text-xs text-zinc-600">{s.word_count ?? s.raw_text?.trim().split(/\s+/).filter(Boolean).length ?? 0} words</span>
+                    <span className="text-xs text-[var(--text-faint)]">{s.word_count ?? s.raw_text?.trim().split(/\s+/).filter(Boolean).length ?? 0} words</span>
                     {s.domain && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                         style={{ background: `${DOMAIN_COLORS[s.domain]}20`, color: DOMAIN_COLORS[s.domain] }}>
@@ -1253,7 +1253,7 @@ export function AdminPortal({ user }: { user: User }) {
                           src={s.file_url}
                           alt="contributor submission"
                           loading="lazy"
-                          className="max-h-72 rounded-xl border border-white/10 object-contain hover:opacity-90 transition-opacity"
+                          className="max-h-72 rounded-xl border border-[var(--border)] object-contain hover:opacity-90 transition-opacity"
                         />
                       </a>
                     )}
@@ -1262,12 +1262,12 @@ export function AdminPortal({ user }: { user: User }) {
                     {(s.gloss_en || s.gloss_fr || s.pulaar_latin) && (
                       <div className="flex flex-wrap gap-2 text-xs">
                         {s.gloss_en && (
-                          <span className="px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', color: '#a1a1aa' }}>
+                          <span className="px-2.5 py-1 rounded-lg" style={{ background: 'var(--btn-bg)', color: '#a1a1aa' }}>
                             🇬🇧 {s.gloss_en}
                           </span>
                         )}
                         {s.gloss_fr && (
-                          <span className="px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', color: '#a1a1aa' }}>
+                          <span className="px-2.5 py-1 rounded-lg" style={{ background: 'var(--btn-bg)', color: '#a1a1aa' }}>
                             🇫🇷 {s.gloss_fr}
                           </span>
                         )}
@@ -1282,7 +1282,7 @@ export function AdminPortal({ user }: { user: User }) {
                     {/* audio: contributor + verified Pulaar */}
                     {s.audio_url && (
                       <div className="space-y-1">
-                        <p className="text-xs text-zinc-600 uppercase tracking-widest font-bold">Contributor audio</p>
+                        <p className="text-xs text-[var(--text-faint)] uppercase tracking-widest font-bold">Contributor audio</p>
                         <audio src={s.audio_url} controls className="w-full" />
                       </div>
                     )}
@@ -1312,7 +1312,7 @@ export function AdminPortal({ user }: { user: User }) {
                               el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.6) + 'px';
                             }}
                             placeholder="𞤢𞤣𞤤𞤢𞤥… write the ADLaM here"
-                            className="w-full rounded-xl px-3 py-2 text-sm text-zinc-200 leading-relaxed resize-y"
+                            className="w-full rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] leading-relaxed resize-y"
                             dir="rtl"
                             style={{
                               fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif',
@@ -1337,7 +1337,7 @@ export function AdminPortal({ user }: { user: User }) {
                       </div>
                     ) : (
                       s.raw_text && (
-                        <p className="text-sm text-zinc-300 leading-relaxed line-clamp-4" dir="rtl"
+                        <p className="text-sm text-[var(--text-secondary)] leading-relaxed line-clamp-4" dir="rtl"
                           style={{ fontSize: 15, fontFamily: '"Noto Sans Adlam", "ADLaM Display", serif' }}>
                           {s.raw_text}
                         </p>
@@ -1356,7 +1356,7 @@ export function AdminPortal({ user }: { user: User }) {
                             {s.status === 'needs_adlam' ? 'Save ADLaM → queue' : 'Save Edit'}
                           </button>
                           <button onClick={() => { setEditingId(null); setEditText(''); setEditAudio(null); }}
-                            className="text-xs text-zinc-600 hover:text-white transition-colors">
+                            className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
                             Cancel
                           </button>
                         </>
@@ -1364,7 +1364,7 @@ export function AdminPortal({ user }: { user: User }) {
                         <>
                           <select value={selectedDomain} onChange={e => setSelectedDomain(e.target.value as SubmissionDomain)}
                             className="text-xs rounded-lg px-3 py-2 font-bold"
-                            style={{ background: '#1e1e1e', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
+                            style={{ background: 'var(--card-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
                             {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
                           </select>
                           <button onClick={() => approve(s.id)} disabled={actionLoading === s.id}
@@ -1373,7 +1373,7 @@ export function AdminPortal({ user }: { user: User }) {
                             <CheckCircle2 className="w-3.5 h-3.5" /> Confirm
                           </button>
                           <button onClick={() => setApprovingId(null)}
-                            className="text-xs text-zinc-600 hover:text-white transition-colors">
+                            className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
                             Cancel
                           </button>
                         </>
@@ -1413,7 +1413,7 @@ export function AdminPortal({ user }: { user: User }) {
               {filtered.length > visibleCount && (
                 <button
                   onClick={() => setVisibleCount(c => c + 40)}
-                  className="w-full py-3 rounded-2xl border border-white/10 text-sm font-bold transition-colors"
+                  className="w-full py-3 rounded-2xl border border-[var(--border)] text-sm font-bold transition-colors"
                   style={{ background: 'var(--btn-bg)', color: 'var(--text-secondary)' }}>
                   Load more ({filtered.length - visibleCount} remaining)
                 </button>

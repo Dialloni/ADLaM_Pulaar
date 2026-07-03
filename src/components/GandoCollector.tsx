@@ -196,31 +196,30 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
     }
   }
 
-  const labelCls = cn('text-xs font-bold text-zinc-500 uppercase tracking-widest', isAdlam && 'font-adlam');
-  const inputCls = 'w-full rounded-xl px-4 py-3 text-white bg-black/40 outline-none transition-all placeholder-zinc-600';
+  const labelCls = cn('text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest', isAdlam && 'font-adlam');
+  const inputCls = 'w-full rounded-xl px-4 py-3 text-[var(--text-primary)] bg-[var(--input-bg)] outline-none transition-all placeholder-[var(--text-faint)]';
 
   return (
-    // dark-only internal tool — see AdminPortal for the data-theme re-scoping trick
-    <div data-theme="dark" className="flex-1 overflow-y-auto p-8" style={{ fontFamily: MANROPE, background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
+    <div className="flex-1 overflow-y-auto p-8" style={{ fontFamily: MANROPE, background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
       <div className="max-w-2xl mx-auto space-y-6">
 
         {/* header */}
         <div>
-          <h1 className={cn('text-3xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')}>
+          <h1 className={cn('text-3xl font-black text-[var(--text-primary)] tracking-tighter', isAdlam && 'font-adlam')}>
             {t.title}
           </h1>
-          <p className={cn('text-zinc-500 text-sm mt-1', isAdlam && 'font-adlam')}>{t.subtitle}</p>
+          <p className={cn('text-[var(--text-muted)] text-sm mt-1', isAdlam && 'font-adlam')}>{t.subtitle}</p>
         </div>
 
         {/* photo */}
-        <div className="rounded-2xl border border-white/8 p-5 space-y-3" style={{ background: 'var(--card-bg)' }}>
+        <div className="rounded-2xl border border-[var(--border)] p-5 space-y-3" style={{ background: 'var(--card-bg)' }}>
           <p className={labelCls}>{t.photoLabel}</p>
           {imagePreview ? (
             <div className="relative inline-block">
-              <img src={imagePreview} alt="preview" className="max-h-64 rounded-xl border border-white/10" />
+              <img src={imagePreview} alt="preview" className="max-h-64 rounded-xl border border-[var(--border)]" />
               <button onClick={clearImage}
                 className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center"
-                style={{ background: '#f87171', color: '#fff' }} title={t.remove}>
+                style={{ background: '#f87171', color: 'var(--text-primary)' }} title={t.remove}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -230,10 +229,10 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
               onDrop={e => { e.preventDefault(); pickImage(e.dataTransfer.files[0]); }}
               onClick={() => fileInputRef.current?.click()}
               className="rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all"
-              style={{ minHeight: 140, borderColor: 'rgba(255,255,255,0.12)', background: '#0d0d0d' }}>
+              style={{ minHeight: 140, borderColor: 'var(--border)', background: 'var(--card-bg)' }}>
               <ImagePlus className="w-7 h-7" style={{ color: '#52525b' }} />
-              <p className="text-sm font-bold text-zinc-400">{t.photoLabel}</p>
-              <p className="text-xs text-zinc-600">{t.photoHint}</p>
+              <p className="text-sm font-bold text-[var(--text-muted)]">{t.photoLabel}</p>
+              <p className="text-xs text-[var(--text-faint)]">{t.photoHint}</p>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
                 onChange={e => pickImage(e.target.files?.[0])} />
             </div>
@@ -251,21 +250,21 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
         />
 
         {/* word fields — fill any */}
-        <div className="rounded-2xl border border-white/8 p-5 space-y-4" style={{ background: 'var(--card-bg)' }}>
-          <p className={cn('text-xs text-zinc-600', isAdlam && 'font-adlam')}>{t.fieldsHint}</p>
+        <div className="rounded-2xl border border-[var(--border)] p-5 space-y-4" style={{ background: 'var(--card-bg)' }}>
+          <p className={cn('text-xs text-[var(--text-faint)]', isAdlam && 'font-adlam')}>{t.fieldsHint}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <p className={labelCls}>{t.enLabel}</p>
               <input value={en} onChange={e => setEn(e.target.value)}
                 placeholder="e.g. blackboard"
-                className={inputCls} style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+                className={inputCls} style={{ border: '1px solid var(--border)' }} />
             </div>
             <div className="space-y-1.5">
               <p className={labelCls}>{t.frLabel}</p>
               <input value={fr} onChange={e => setFr(e.target.value)}
                 placeholder="ex. tableau"
-                className={inputCls} style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+                className={inputCls} style={{ border: '1px solid var(--border)' }} />
             </div>
           </div>
 
@@ -273,7 +272,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
             <p className={labelCls}>{t.latinLabel}</p>
             <input value={latin} onChange={e => setLatin(e.target.value)}
               placeholder="Pulaar in Latin letters…"
-              className={inputCls} style={{ border: '1px solid rgba(255,255,255,0.1)' }} />
+              className={inputCls} style={{ border: '1px solid var(--border)' }} />
           </div>
 
           <div className="space-y-1.5">
@@ -294,7 +293,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
         </div>
 
         {/* domain */}
-        <div className="rounded-2xl border border-white/8 p-5 space-y-2" style={{ background: 'var(--card-bg)' }}>
+        <div className="rounded-2xl border border-[var(--border)] p-5 space-y-2" style={{ background: 'var(--card-bg)' }}>
           <p className={labelCls}>{t.domainLabel}</p>
           <div className="flex flex-wrap gap-1.5">
             {DOMAINS.map(d => (
@@ -334,7 +333,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
           )}
         </button>
         {!canSubmit && !submitting && (hasText || hasAudio ? null : (
-          <p className={cn('text-xs text-zinc-600 text-center', isAdlam && 'font-adlam')}>{t.needAnything}</p>
+          <p className={cn('text-xs text-[var(--text-faint)] text-center', isAdlam && 'font-adlam')}>{t.needAnything}</p>
         ))}
       </div>
     </div>
