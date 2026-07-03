@@ -1,80 +1,153 @@
-# 𞤘𞤢𞤲𞤣𞤮 AI — Gando AI
+# 𞤘𞤢𞤲𞤣𞤮 — Gando
 
 > 🚀 **[Try it live → gando-ai.up.railway.app](https://gando-ai.up.railway.app)**
 
-## African-Language-First App Builder
+## African-Language-First AI App Builder
 
 **Build web apps by describing them in your African language.**
-Powered by Google Gemini 2.5 · Built with React + TypeScript + Firebase
+Claude Sonnet 4.6 · Gemini · Llama — React 19 + TypeScript + Firebase
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org)
 [![Firebase](https://img.shields.io/badge/Firebase-12-orange.svg)](https://firebase.google.com)
 
 ---
 
-## What is Gando AI?
+## What is Gando?
 
-Gando AI is a **Bolt/Lovable/v0-style app builder** where the entire experience — landing page, prompts, explanations, and UI chrome — happens in **African languages first**.
+Gando is a **Bolt/Lovable/v0-style app builder** where the entire experience — landing page, prompts, explanations, and UI chrome — happens in **African languages first**.
 
 Most AI coding tools are English-only, creating a barrier for people who think and create in languages like Fulani, Swahili, Yoruba, or Hausa. Gando removes that barrier:
 
-- **Input** → describe your app in your language (Fulani ADLaM script, French, English, and more)
-- **Output** → a working single-file web app with explanations in your language
-- **Iterate** → keep chatting to refine, with full version history and one-click revert
+- **Input** → describe your app in your language (Fulani ADLaM script 𞤀𞤁𞤂𞤀𞤃, French, English, and more)
+- **Output** → a working single-file web app, **streamed live** as it's written, with explanations in your language
+- **Iterate** → keep chatting to refine; every response saves a snapshot with one-click revert
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph Client["🖥 React SPA (Vite + Tailwind v4)"]
+        Landing["Landing page<br/>(typewriter, marquee, templates)"]
+        Dash["Dashboard<br/>(time-aware greeting, project thumbnails)"]
+        Workspace["Workspace<br/>chat ⟷ live preview<br/>(resizable split pane)"]
+        AdminUI["Corpus Admin + Collector<br/>(EN/FR, admin-only)"]
+    end
+
+    subgraph API["⚙️ API routes (Express on Railway / serverless on Vercel)"]
+        Gen["POST /api/generate"]
+        Edit["POST /api/edit"]
+        ChatR["POST /api/chat"]
+        Voice["POST /api/transcribe · /api/speak"]
+        OCR["POST /api/ocr · /api/translate"]
+        Rate["🛡 per-user daily rate limits<br/>(BYOK exempt)"]
+    end
+
+    subgraph LLM["🧠 LLM layer (lib/llm.ts)"]
+        Claude["Claude Sonnet 4.6<br/>(default — best ADLaM)"]
+        Gemini["Gemini 2.5 Flash<br/>(fallback + OCR/vision)"]
+        Groq["Llama 3.3 / Llama 4 Scout<br/>(free via Groq)"]
+        BYOK["BYOK: OpenAI · Anthropic ·<br/>Gemini · DeepSeek · Groq"]
+    end
+
+    subgraph Firebase["🔥 Firebase"]
+        Auth["Auth (Google + email,<br/>first-party proxy for Safari)"]
+        FS["Firestore<br/>projects · chats · users ·<br/>corpus · dictionary · usage"]
+        Store["Storage<br/>(images, audio)"]
+    end
+
+    User(("👤 User<br/>any language")) --> Client
+    Client -->|"Bearer ID token"| API
+    API --> Rate --> LLM
+    LLM -->|"SSE stream:<br/>code chunks → live preview"| Client
+    Client <--> Firebase
+    API -->|verify token,<br/>usage counters| Firebase
+```
+
+### Corpus pipeline (the road to Gando's own model)
+
+```mermaid
+flowchart LR
+    subgraph Sources
+        Coll["📷🎙 Gando Collector<br/>(photos, Pulaar audio,<br/>multi-script text)"]
+        TG["🤖 Telegram harvester bot<br/>(scheduled, dedup)"]
+        PDF["📄 PDF OCR<br/>(Gemini page-by-page)"]
+        Paste["📋 Paste text<br/>(+ pre-Unicode decoder)"]
+        Shares["🌍 Community shares"]
+    end
+
+    Queue["Review queue<br/>(Firestore)"]
+    Admin["👩🏾‍🏫 Instructor review<br/>approve · complete ADLaM ·<br/>record pronunciation"]
+    Dict["📖 Verified dictionary"]
+    JSONL["JSONL export"]
+    Future["🎯 Fine-tune dataset<br/>(tokenizer + LoRA, summer 2026)"]
+
+    Coll --> Queue
+    TG --> Queue
+    PDF --> Queue
+    Paste --> Queue
+    Shares -->|approve| Templates["Community templates"]
+    Queue --> Admin
+    Admin --> Dict
+    Admin --> JSONL
+    Dict --> Future
+    JSONL --> Future
+```
 
 ---
 
 ## Features
 
-### Core
+### Build experience
 
-- 🌍 African-language generation — describe your app in Fulani (ADLaM), English, French, and more
-- ⚡ Single-call AI pipeline — one Gemini request detects language + generates app + writes explanation
-- 👁 Live preview — generated HTML/CSS/JS renders in a sandboxed browser frame
-- 💬 Iterative chat — refine your app through conversation; AI makes incremental edits
-- 🔄 Version history + revert — every AI response saves a code snapshot; one click to go back
-- 🔀 Build / Chat mode switch — toggle between app generation and pure conversation
+- 🌍 **African-language generation** — describe your app in Fulani (ADLaM), French, English, and more
+- ⚡ **Live streaming builds** — code streams into the editor as the model writes it; preview double-buffers with zero flicker
+- 🖥 **Resizable split workspace** — VS Code-style drag divider between chat and preview; snap-collapse either side, width remembered
+- 💬 **Iterative chat edits** — refine through conversation; incremental edits with version history + one-click revert
+- 🖼 **Vision input** — attach an image (sketch, screenshot, photo) and the model *sees* it — sketch-to-app
+- 🎙 **Voice in, voice out** — record your prompt (Whisper transcription, ADLaM-aware) and hear replies (TTS with ADLaM→Latin transliteration)
+- ⏹ **Stop mid-build** — cancel keeps partial work; stopped-before-code restores your prompt
+- 🔀 **Build / Chat modes** — app generation or pure conversation
+- 👍👎 **RLHF feedback** — thumbs ratings saved to Firestore for future fine-tuning
+
+### Models
+
+- 🥇 **Claude Sonnet 4.6 default** — won the internal ADLaM eval 10/10; Gemini 2.5 Flash fallback
+- 🆓 **Free tier models** — Llama 3.3 70B and Llama 4 Scout via Groq
+- 🔑 **BYOK** — bring your own key for OpenAI, Anthropic, Gemini, DeepSeek, or Groq; keys live in your browser only and skip Gando's rate limits
 
 ### UI / UX
 
-- 🏠 Bolt-style marketing landing page — navbar, animated typewriter hero, templates grid, 3-column footer
-- 𞤆𞤓𞤂𞤀𞥄𞤈 Full ADLaM script support — nav, buttons, landing page headline all switch to Fulani script
-- 🔤 ADLaM Display font — Microsoft's OFL display typeface rendered in the hero heading
-- 🔍 Live project search — header search with instant results dropdown
-- 🎨 Nexus Builder design — dark obsidian theme, pink/orange neon gradients, Manrope font
-- ✍️ Typewriter placeholder — animated cycling phrases on landing page and dashboard textarea
-- 🌙 Light / dark mode — system preference auto-detection + manual toggle
-- 𞤘 Animated Gando logo — spinning ring, inner glow, ADLaM character pulse
-- 🤖 Model picker — switch between Gemini models in the chat bar
+- 𞤀𞤁𞤂𞤀𞤃 **Full ADLaM script UI** — 160/160 strings translated in all three languages; RTL rendering; ADLaM Display font; correct 𞥟 𞥞 punctuation
+- 👋 **Time-aware greeting** — good morning / working late 🌙 / welcome back, in EN, FR, and verified ADLaM, with rotating native variants
+- 🧭 **Claude-style shell** — no top bar; brand, search, and language selector live in the sidebar; theme toggle in the avatar menu
+- 🔗 **Real URLs** — hash router: back button works, refresh restores your view, `#/project/id` links are shareable
+- 🖼 **Live project thumbnails** — dashboard cards render each app's actual HTML, scaled down
+- 🌙 **Light / dark themes** — time-of-day auto with manual override, resolved before first paint (no flash)
+- 📱 **Dynamic tab title + real 𞤘 favicon** — the browser tab shows what you're working on; favicon is the actual ADLaM capital Ga extracted from the font
+- 💬 **WhatsApp-ready link cards** — OG/Twitter meta tags with a branded preview image
 
 ### Platform
 
-- 🔐 Firebase Auth — Google sign-in + email/password
-- 💾 Firestore persistence — projects and chat history saved automatically
-- 📎 File attach + OCR — attach images or PDFs in chat; Gemini extracts text automatically
-- 🎙 Voice input — record audio directly in chat; transcribed and used as your prompt
-- 📖 Documentation page — in-app translated docs (EN / FR / ADLaM)
-- 🟢 System status page — real backend health check (server uptime, Gemini latency, Firebase)
-- 🌐 Languages page — active language switcher, coming-soon languages, full ADLaM alphabet reference (28 core letters + 6 loan, with IPA)
+- 🔐 Firebase Auth (Google + email/password) with a **first-party auth proxy** fixing Safari/iOS sign-in
+- 🛡 **Per-user daily rate limits** on generate/edit/chat (Firestore-backed, fail-open, BYOK exempt)
+- 💾 Firestore persistence — projects, chats, prefs; landing prompt survives sign-in redirects
+- ⚡ **Code-split bundle** — admin tools, code editor, and pdf.js load on demand; stable vendor chunks
+- 🟢 System status page — live server / AI / DB health
 
-### ADLaM Corpus Pipeline (Admin)
+### ADLaM Corpus Pipeline (Admin — English & French UI)
 
-- 📄 PDF OCR — upload PDF books/documents; Gemini 2.0 Flash extracts ADLaM text as proper Unicode
-- 📋 Paste Text — paste ADLaM text directly; auto-detects encoding, flags pre-Unicode Arabic-mapped text
-- 🔍 Encoding inspector — shows Unicode range of pasted text (ADLaM block, Arabic block, or unknown)
-- 🤖 AI decode — re-encodes pre-Unicode font text (Arabic codepoints) → correct ADLaM Unicode block
-- ✅ Review queue — admin verification workflow; approve / reject / export as JSONL
-- 📤 JSONL export — one-click download of verified corpus entries for fine-tuning
-
-### Gando Collector (Admin)
-
-- 📷 Image upload — snap or upload real-world ADLaM photos (signs, books, handwriting)
-- 🎙 Pulaar audio recording — record spoken Pulaar phrases with domain tagging (casual, tech, religion, news, literature, UI vocab)
-- 🌐 Multi-script text collection — capture Pulaar in ADLaM script, Latin, Arabic, French, and English in one form
-- 🗂 Domain tagging — label every entry by subject matter for structured fine-tuning datasets
+- 📄 **PDF OCR** — page-by-page Gemini OCR outputs proper ADLaM Unicode (handles broken text-layer fonts)
+- 📋 **Paste text** — encoding inspector flags pre-Unicode Arabic-mapped fonts; **AI decoder** converts them to real ADLaM
+- ✅ **Review queue** — approve / reject / complete-the-ADLaM workflow with domain tagging and instructor audio recording
+- 📖 **Dictionary** — verified term registry (ADLaM · Latin · French) with draft→verified flow and JSON export
+- 🌍 **Community moderation** — approve user-shared projects into the public template gallery
+- 📤 **JSONL export** — one-click download of the verified corpus for fine-tuning
+- 🤖 **Telegram harvester** — scheduled bot scrapes ADLaM text from groups and the web, dedups, and feeds the queue (separate Railway service)
 
 ---
 
@@ -82,12 +155,13 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite 6, Tailwind CSS v4 |
-| UI | Manrope + Noto Sans Adlam + ADLaM Display, Lucide icons |
-| Backend | Express + tsx (Node.js) |
-| AI | Google Gemini 2.5 Flash + 2.0 Flash via `@google/genai` |
-| Auth & DB | Firebase Authentication + Firestore + Storage |
-| Deploy | Railway (full-stack Node server) |
+| Frontend | React 19, TypeScript, Vite 6, Tailwind CSS v4, motion |
+| Fonts | Manrope · Noto Sans Adlam · ADLaM Display (OFL) |
+| Backend | Express + tsx (Railway) / serverless functions (Vercel) — shared `lib/` |
+| AI | Claude Sonnet 4.6 (`@anthropic-ai/sdk`) · Gemini 2.5 Flash (`@google/genai`) · Groq · BYOK ×5 |
+| Auth & Data | Firebase Auth + Firestore (named DB) + Storage |
+| Corpus | Python (Telethon + Playwright) scraper — separate Railway service |
+| Deploy | Railway (web + scraper) · Vercel (serverless mirror) |
 
 ---
 
@@ -95,53 +169,46 @@ Most AI coding tools are English-only, creating a barrier for people who think a
 
 ```text
 ADLaM_Pulaar/
-├── server.ts                     # Express entry — mounts /api/* routes, serves Vite in dev
-├── bot.py                        # Railway scraper entry point — delegates to scraper/bot.py
-├── api/
-│   ├── generate.ts               # POST /api/generate   — Gemini app generation
-│   ├── edit.ts                   # POST /api/edit       — Gemini iterative edits
-│   ├── ocr.ts                    # POST /api/ocr        — Gemini multimodal PDF/image OCR
-│   ├── transcribe.ts             # POST /api/transcribe — voice-to-text
-│   └── status.ts                 # GET  /api/status     — health check
+├── server.ts                     # Express entry — API routes + Vite middleware (dev) / static (prod)
+├── api/                          # Vercel serverless mirror of the same routes
+│   ├── generate.ts · edit.ts · chat.ts     # SSE streaming generation/edits/chat
+│   ├── transcribe.ts · speak.ts            # voice in / voice out
+│   ├── ocr.ts · translate.ts · status.ts
 ├── lib/
-│   └── firebaseAdmin.ts          # Firebase Admin SDK init (server-side)
-├── scraper/                      # Telegram ADLaM corpus scraper (separate Railway service)
-├── scripts/                      # Eval harness and utility scripts
+│   ├── llm.ts                    # Provider layer — Claude default, Gemini fallback, Groq, BYOK
+│   ├── rateLimit.ts              # Per-user daily quotas (Firestore, fail-open)
+│   └── firebaseAdmin.ts          # Server-side token verification
+├── scraper/                      # Telegram/web ADLaM harvester (Python, own Railway service)
+├── scripts/                      # i18n dump/apply tooling, eval harness
 ├── public/
-│   └── fonts/
-│       └── ADLaMDisplay-Regular.woff2  # Microsoft ADLaM Display font (OFL-1.1)
+│   ├── assets/og.png             # Social share card (1200×630)
+│   ├── favicon.svg               # Real ADLaM 𞤘 glyph, brand gradient
+│   └── fonts/ADLaMDisplay-Regular.woff2
 ├── src/
-│   ├── main.tsx                  # React entry point
-│   ├── App.tsx                   # Root — landing page, auth modal, all app pages
-│   ├── index.css                 # Design tokens (CSS vars), Tailwind v4, global styles
-│   ├── translations.ts           # UI strings in English, Français, Fulani ADLaM + twPhrases[]
-│   ├── types.ts                  # TypeScript types (Project, Message, GenerationResult)
-│   ├── firebase.ts               # Firebase client SDK init + Firestore helpers
+│   ├── App.tsx                   # Shell: router, workspace, dashboard, pages
+│   ├── translations.ts           # 160 UI strings × (ADLaM · EN · FR)
 │   ├── components/
-│   │   ├── AdminPortal.tsx       # Corpus admin — PDF OCR, paste text, review queue, JSONL export
-│   │   ├── GandoCollector.tsx    # Multimodal data collector — images, audio, multi-script text
-│   │   ├── AudioRecorder.tsx     # In-browser audio recording with waveform UI
-│   │   ├── GandoLogo.tsx         # Animated SVG logo — spinning ring, inner glow, 𞤘 pulse
-│   │   ├── ModeSwitch.tsx        # Build / Chat mode dropdown
-│   │   ├── Chat.tsx              # Chat panel (messages, input, voice, file attach, revert)
-│   │   ├── Preview.tsx           # Sandboxed iframe browser preview
-│   │   ├── CodeEditor.tsx        # Syntax-highlighted code editor
-│   │   ├── LanguageSelector.tsx  # Portal-based language dropdown
-│   │   └── ErrorBoundary.tsx
-│   ├── services/
-│   │   └── geminiService.ts      # Fetch client → /api/generate, /api/edit, /api/transcribe
-│   ├── contexts/
-│   │   └── AuthContext.tsx       # Firebase auth state (Google + email/password)
-│   └── lib/
-│       └── utils.ts              # cn() Tailwind class helper
-├── railway.toml                  # Railway config — web app service
-├── railway.scraper.toml          # Railway config — scraper service
-├── Procfile                      # Process definition for Railway
-├── .env.example                  # Required env vars template
-├── .firebaserc                   # Firebase project alias
-├── firebase.json                 # Firebase config (Firestore rules path)
-├── firestore.rules               # Firestore security rules
-└── vite.config.ts                # Vite + Tailwind v4 plugin config
+│   │   ├── LandingPage.tsx       # Marketing page + auth modal
+│   │   ├── Chat.tsx              # Messages, streaming, voice, attachments, ratings
+│   │   ├── Preview.tsx           # Double-buffered sandboxed iframe (mobile-safe scrolling)
+│   │   ├── CodeEditor.tsx        # Prism editor (lazy)
+│   │   ├── AdminPortal.tsx       # Corpus admin — queue, dictionary, OCR, community (EN/FR)
+│   │   ├── GandoCollector.tsx    # Field data collector (lazy)
+│   │   ├── ProjectThumb.tsx      # Live mini-preview for project cards
+│   │   ├── ByokModal.tsx · SettingsModal.tsx · LanguageSelector.tsx · …
+│   ├── data/
+│   │   ├── templates.ts          # Starter-template catalog (3 languages)
+│   │   └── uiMaps.ts             # Iframe UI translation maps
+│   ├── lib/
+│   │   ├── greeting.ts           # Time-aware greetings (verified ADLaM phrases)
+│   │   ├── providers.ts          # Model/provider registry (single source of truth)
+│   │   ├── adlam.ts              # Latin→ADLaM name transliteration
+│   │   └── brand.ts · langs.ts · useTheme.ts · useIsMobile.ts · useVoiceInput.ts
+│   ├── services/geminiService.ts # SSE client for /api/*
+│   └── contexts/AuthContext.tsx  # Auth state (popup + Safari redirect flow)
+├── vercel.json                   # Rewrites + first-party auth proxy
+├── railway.toml · railway.scraper.toml
+└── firestore.rules
 ```
 
 ---
@@ -150,115 +217,95 @@ ADLaM_Pulaar/
 
 ### Prerequisites
 
-- Node.js 18+
-- A [Google AI Studio](https://aistudio.google.com) account (free Gemini API key)
-- A Firebase project with **Authentication** and **Firestore** enabled
+- Node.js 20+
+- An [Anthropic API key](https://console.anthropic.com) (default model) and/or a [Google AI Studio](https://aistudio.google.com) key (fallback + OCR)
+- A Firebase project with **Authentication**, **Firestore**, and **Storage** enabled
 
-### 1. Clone the repo
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/Dialloni/ADLaM_Pulaar.git
 cd ADLaM_Pulaar
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Set up environment variables
-
-Copy `.env.example` to `.env` and fill in your keys:
+### 2. Environment variables
 
 ```bash
 cp .env.example .env
 ```
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
+# AI providers
+ANTHROPIC_API_KEY=sk-ant-...          # default (Claude Sonnet 4.6)
+GEMINI_API_KEY=AIza...                # fallback + OCR/vision
+GROQ_API_KEY=gsk_...                  # optional free-tier models
+
+# Firebase client
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_FIRESTORE_DATABASE_ID=...   # named Firestore DB (not "(default)")
+
+# Firebase server (token verification, rate limits)
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account",...}
 ```
 
 > ⚠️ Never commit `.env` — it is already in `.gitignore`.
+> ⚠️ Railway stores env values **with quotes literally** — paste values without surrounding quotes.
 
-### 4. Configure Firebase
+### 3. Firebase setup
 
-Add your Firebase client credentials to `.env`:
-
-```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-```
-
-For server-side Firebase Admin (Firestore writes), also add:
-
-```env
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
-```
-
-Enable **Google sign-in** in Firebase Console → Authentication → Sign-in method.
-
-**Railway deployment:** add `https://gando-ai.up.railway.app` to:
+Enable **Google sign-in** (Authentication → Sign-in method), then for production add your domain to:
 
 1. Firebase Console → Authentication → Authorized Domains
-2. Google Cloud Console → APIs & Services → Credentials → OAuth Web Client → Authorized JavaScript Origins + Redirect URIs (`/__/auth/handler`)
+2. Google Cloud Console → Credentials → OAuth Web Client → Authorized JavaScript Origins + Redirect URIs (`/__/auth/handler`)
 
-### 5. Run locally
+The app proxies `/__/auth/*` through its own domain so sign-in cookies are first-party (fixes Safari/iOS).
+
+### 4. Run
 
 ```bash
-npm run dev
+npm run dev      # Express + Vite HMR → http://localhost:3000
 ```
-
-Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## How It Works
 
-### AI Pipeline — one Gemini call
+### Generation — streamed end to end
 
-```text
-User prompt (any language)
-        ↓
-POST /api/generate  (server.ts)
-        ↓
-Gemini 2.5 Flash
-  · Detects input language (Fulani, Swahili, English …)
-  · Generates full HTML / Tailwind / JS app
-  · Writes explanation in detected language
-  · Returns JSON: { language, name, code, explanation }
-        ↓
-Preview rendered in sandboxed iframe
-Explanation shown in chat
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant C as React app
+    participant A as /api/generate
+    participant L as Claude / Gemini / BYOK
+
+    U->>C: "𞤄𞤫𞤴𞤲𞤭 𞤐𞤢𞥄𞤺𞤢..." (prompt in any language)
+    C->>A: POST + Firebase ID token
+    A->>A: verify token · check daily quota
+    A->>L: system prompt + template hints
+    loop SSE stream
+        L-->>A: code chunk
+        A-->>C: data: {type:"code", chunk}
+        C-->>U: code editor updates live,<br/>preview refreshes (throttled, double-buffered)
+    end
+    L-->>A: <<<GANDO_META>>> {language, name, explanation}
+    A-->>C: data: {type:"done", result}
+    C-->>U: preview flips in · explanation in user's language
 ```
 
-No separate translation round-trips. Language detection, generation, and explanation happen in one structured JSON response.
+The model streams raw HTML first (live preview from the first seconds), then a metadata trailer. Edits reuse the same protocol with the current code + history. Prompts matching known categories (e-commerce, restaurant, booking…) get structural hints for complete, realistic apps.
 
-### Corpus OCR Pipeline
+### ADLaM correctness rules
 
-```text
-PDF upload (browser)
-        ↓
-Encode entire PDF → base64
-        ↓
-POST /api/ocr
-        ↓
-Gemini 2.0 Flash (multimodal)
-  · Reads all pages in one call
-  · Outputs ADLaM Unicode text (U+1E900–U+1E95F)
-        ↓
-Saved to Firestore corpus collection
-Admin review → approve → JSONL export
-```
-
-### Template Intelligence
-
-When a prompt mentions a known category (e-commerce, restaurant, portfolio, booking, blog, dashboard), the server injects a structural hint so the AI generates a complete, realistic app instead of a skeleton.
+- Output uses the ADLaM Unicode block **U+1E900–U+1E95F** exclusively — Arabic/Latin lookalikes are rejected by prompt contract
+- ADLaM UI text renders **RTL** with `Noto Sans Adlam`; punctuation (𞥟 question, 𞥞 exclamation) sits at the sentence end — leftmost visually
+- The app never fabricates ADLaM: UI phrases ship only after native-speaker verification
 
 ---
 
@@ -266,68 +313,59 @@ When a prompt mentions a known category (e-commerce, restaurant, portfolio, book
 
 | Language                | Generation | UI                   |
 | ----------------------- | ---------- | -------------------- |
-| Fulani / Pulaar (ADLaM) | Yes        | Yes — full ADLaM UI  |
-| English                 | Yes        | Yes                  |
-| Français                | Yes        | Yes                  |
-| Swahili                 | Yes        | Generation only      |
-| Yoruba                  | Yes        | Generation only      |
-| Hausa                   | Yes        | Generation only      |
-| Wolof                   | Yes        | Generation only      |
-| Amharic                 | Yes        | Generation only      |
-
----
-
-## Environment Variables
-
-| Variable                   | Required | Default            | Description                        |
-| -------------------------- | -------- | ------------------ | ---------------------------------- |
-| `GEMINI_API_KEY`           | Yes      | —                  | Google AI Studio API key           |
-| `GEMINI_MODEL`             | No       | `gemini-2.5-flash` | Gemini model for app generation    |
-| `GEMINI_MAX_OUTPUT_TOKENS` | No       | `32768`            | Max tokens per generation          |
-| `PORT`                     | No       | `3000`             | Server port                        |
+| Fulani / Pulaar (ADLaM) | ✅         | ✅ full ADLaM UI     |
+| English                 | ✅         | ✅                   |
+| Français                | ✅         | ✅ (incl. admin)     |
+| Swahili · Yoruba · Hausa · Wolof · Amharic · Igbo · Bambara | ✅         | coming soon          |
 
 ---
 
 ## Scripts
 
 ```bash
-npm run dev      # Start development server (Express + Vite HMR)
-npm run build    # Build for production
-npm run preview  # Preview production build
-npm run lint     # TypeScript type check
+npm run dev        # dev server (Express + Vite)
+npm run build      # production build → dist/
+npm run start      # production server
+npm run lint       # TypeScript type-check
+
+npx tsx scripts/dump-i18n.ts           # export translation worklist
+npx tsx scripts/apply-adlam.ts <file>  # apply verified ADLaM translations
 ```
 
 ---
 
 ## Roadmap
 
-- [ ] Streaming generation (show output as Gemini types)
-- [ ] Public share URLs (deploy generated apps to a subdomain)
-- [ ] Anonymous first-use (generate before login)
-- [ ] More African language UI translations (Swahili, Yoruba, Hausa)
-- [ ] Telethon scraper — pull ADLaM messages from Telegram groups for corpus
-- [ ] RAG pipeline — inject verified ADLaM corpus into Gemini system prompt (Pinecone / pgvector)
-- [ ] Custom ADLaM tokenizer extension (summer 2026)
-- [ ] LoRA fine-tune on Qwen/Llama/Gemma with verified ADLaM corpus (summer 2026)
-- [ ] Mobile-responsive layout
-- [ ] Export to GitHub Gist
-- [ ] Cross-dialect grouping for Gando Collector entries
-- [x] Build / Chat mode switch
-- [x] File attach + OCR in chat
-- [x] Voice input (audio recording + transcription)
-- [x] Light / dark mode (system preference + manual toggle)
-- [x] Animated Gando logo with ADLaM character 𞤘
-- [x] Model picker (Gemini model selector in chat bar)
-- [x] Landing page matching logged-in dashboard UI
-- [x] Gando Collector — multimodal labeled data collection (image, audio, multi-script)
-- [x] Admin Pulaar audio recording with domain tagging
-- [x] Template gallery (landing page + dashboard)
-- [x] Language switcher UI (ADLaM / FR / EN) with live landing page translation
-- [x] ADLaM Display font (Microsoft OFL) in hero heading
-- [x] PDF OCR via Gemini 2.0 Flash multimodal
-- [x] Admin corpus portal — review queue, paste text, JSONL export
-- [x] Pre-Unicode ADLaM font decoder (Arabic-mapped → Unicode ADLaM)
-- [x] Railway production deployment with Firebase Auth
+### Next up
+
+- [ ] Dialect tagging in the Collector (Guinea Pular vs Senegal/Mauritania Pulaar) — training-data prerequisite
+- [ ] ADLaM eval set (30–50 scored prompts)
+- [ ] Glossary + few-shot injection from the verified dictionary (Guinea-dialect steering)
+- [ ] Diff-based edits (search/replace blocks — sub-minute edits)
+- [ ] Plan-first generation UI (step checkmarks while building)
+- [ ] Flagship template rebuild — Gando-built apps replace placeholder templates via the community pipeline
+- [ ] Whisper/MMS fine-tune for Pulaar speech (1k–3k clips)
+- [ ] Custom ADLaM tokenizer extension + LoRA fine-tune (summer 2026) → **Gando 2.0**
+
+### Shipped
+
+- [x] Claude Sonnet 4.6 default (internal ADLaM eval winner) with Gemini fallback + Groq free tier
+- [x] Live streaming generation with split-screen build view
+- [x] Resizable chat/preview split pane with snap-collapse
+- [x] BYOK (OpenAI · Anthropic · Gemini · DeepSeek · Groq)
+- [x] Vision input (sketch/screenshot → app) + image-in-bubble chat
+- [x] Voice input (ADLaM-aware transcription) + TTS replies
+- [x] Hash router — back button, refresh-safe, shareable project links
+- [x] Per-user daily rate limits (BYOK exempt)
+- [x] Time-aware greetings in EN/FR + verified ADLaM (correct 𞥟 𞥞 punctuation)
+- [x] Claude-style shell (no top bar), dynamic tab titles, real 𞤘 favicon
+- [x] Live project thumbnails on dashboard cards
+- [x] OG/Twitter link cards (WhatsApp-ready)
+- [x] Corpus Admin in French; dictionary draft→verified flow
+- [x] Telegram/web ADLaM harvester (scheduled, deduped)
+- [x] PDF OCR (page-by-page) + pre-Unicode ADLaM decoder
+- [x] RLHF thumbs feedback, stop-mid-build, light/dark by time of day
+- [x] Code-split bundle (‑28% first load), Safari first-party auth proxy
 
 ---
 
