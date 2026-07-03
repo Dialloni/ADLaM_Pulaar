@@ -30,12 +30,16 @@
           if (!t || t === 'system') { var h = new Date().getHours(); t = h >= 7 && h < 19 ? 'light' : 'dark'; }
           document.documentElement.setAttribute('data-theme', t);
         } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+        try {
+          if (localStorage.getItem('gando_adlam_style') !== 'joined')
+            document.documentElement.setAttribute('data-adlam', 'unjoined');
+        } catch (e) { document.documentElement.setAttribute('data-adlam', 'unjoined'); }
       })();
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Adlam:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Adlam:wght@400;500;600;700&family=Noto+Sans+Adlam+Unjoined:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>

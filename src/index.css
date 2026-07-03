@@ -110,9 +110,12 @@
   --space-20: 80px;
 
   /* ── FONTS ── */
-  --font-sans:     "Inter", "Noto Sans Adlam", ui-sans-serif, system-ui, sans-serif;
-  --font-display:  "Manrope", "Noto Sans Adlam", sans-serif;
-  --font-headline: "Manrope", "Noto Sans Adlam", sans-serif;
+  /* --adlam-ui: which ADLaM face renders inside Latin UI stacks (menus, settings,
+     inputs). Follows the joined/unjoined reading-mode toggle. */
+  --adlam-ui: "Noto Sans Adlam";
+  --font-sans:     "Inter", var(--adlam-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-display:  "Manrope", var(--adlam-ui), sans-serif;
+  --font-headline: "Manrope", var(--adlam-ui), sans-serif;
   --font-mono:     "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --font-adlam:         "Noto Sans Adlam", sans-serif;        /* body / UI ADLaM text */
   --font-adlam-display: "ADLaM Display", "Noto Sans Adlam", sans-serif; /* display headings */
@@ -250,6 +253,17 @@
 .font-adlam :where(h1,h2,h3,h4,h5,h6,p,span,a,button,label,li,textarea,input),
 .font-adlam {
   unicode-bidi: plaintext;
+}
+
+/* ── ADLaM reading mode ────────────────────────────────────────────
+   joined (default) = authentic cursive forms, what fluent readers expect.
+   unjoined = standalone letter shapes — easier for new readers (how ADLaM
+   literacy is taught). Toggled via data-adlam="unjoined" on <html>;
+   every rule that uses var(--font-adlam) follows automatically. */
+[data-adlam="unjoined"] {
+  --adlam-ui: "Noto Sans Adlam Unjoined";
+  --font-adlam: "Noto Sans Adlam Unjoined", "Noto Sans Adlam", sans-serif;
+  --font-adlam-display: "Noto Sans Adlam Unjoined", "ADLaM Display", "Noto Sans Adlam", sans-serif;
 }
 
 /* ── ADLaM long strings must wrap, not overflow (esp. mobile review cards) ──
