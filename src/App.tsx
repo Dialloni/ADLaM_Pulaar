@@ -1079,7 +1079,7 @@ export default function App() {
             'transition-transform duration-200 md:transition-none',
             mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
           )}
-          style={{ background: 'var(--sidebar-bg)', width: sidebarCollapsed ? 60 : 256, overflowX: 'hidden', overflowY: 'auto' }}>
+          style={{ background: 'var(--sidebar-bg)', width: sidebarCollapsed ? 60 : 224, overflowX: 'hidden', overflowY: 'auto' }}>
 
           {sidebarCollapsed ? (
             /* Collapsed: Gando logo that morphs into the "Open sidebar" toggle on hover (Gemini-style) */
@@ -2365,7 +2365,7 @@ export default function App() {
               <div className="pointer-events-none fixed inset-0 z-0" style={{ background: `radial-gradient(ellipse 50% 40% at 70% 60%, ${S}09 0%, transparent 65%)` }} />
 
               {/* ── HERO SECTION ── */}
-              <div className="flex flex-col items-center justify-center px-6 pb-10 relative z-10" style={{ minHeight: '78vh', paddingTop: 48 }}>
+              <div className="flex flex-col items-center px-6 relative z-10" style={{ paddingTop: '16vh', paddingBottom: 48 }}>
                 <div style={{ maxWidth: 760, width: '100%' }}>
 
                   {/* personalized greeting — time-aware (en/fr); ADLaM keeps the verified phrase */}
