@@ -185,6 +185,35 @@ export default function App() {
   const [selectedTemplate, setSelectedTemplate] = useState<typeof TEMPLATES_META[0] | null>(null);
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [chatHidden, setChatHidden] = useState(typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  /* Workspace split-pane (VS Code-style): drag the divider to resize the chat;
+     push far left → chat snap-collapses (top bar stays), far right → chat takes
+     the full width. Width persists per browser. */
+  const [chatWidth, setChatWidth] = useState<number>(() => {
+    try { return Math.max(320, Number(localStorage.getItem('gando_chat_width')) || 480); } catch { return 480; }
+  });
+  const [dividerDragging, setDividerDragging] = useState(false);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const dividerDragRef = useRef<{ startX: number; startW: number } | null>(null);
+  const onDividerDown = (e: React.PointerEvent) => {
+    dividerDragRef.current = { startX: e.clientX, startW: chatHidden ? 0 : chatWidth };
+    setDividerDragging(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onDividerMove = (e: React.PointerEvent) => {
+    const d = dividerDragRef.current;
+    if (!d) return;
+    const total = workspaceRef.current?.clientWidth ?? window.innerWidth;
+    const w = d.startW + (e.clientX - d.startX);
+    if (w < 240) { setChatHidden(true); return; }            // snap: collapse chat
+    setChatHidden(false);
+    if (w > total - 200) { setChatWidth(total - 24); return; } // snap: chat takes over
+    setChatWidth(Math.max(320, Math.min(w, total - 240)));
+  };
+  const onDividerUp = () => {
+    dividerDragRef.current = null;
+    setDividerDragging(false);
+    setChatWidth(cw => { try { localStorage.setItem('gando_chat_width', String(cw)); } catch { /* ignore */ } return cw; });
+  };
   const [communityTemplates, setCommunityTemplates] = useState<Project[]>([]);
   const [selectedCommunity, setSelectedCommunity] = useState<Project | null>(null);
   const [promptTr, setPromptTr] = useState<{ text: string; loading: boolean }>({ text: '', loading: false });
@@ -1329,7 +1358,7 @@ export default function App() {
               </div>
 
               {/* chat + preview */}
-              <div className="flex flex-1 pt-14 overflow-hidden relative">
+              <div ref={workspaceRef} className="flex flex-1 pt-14 overflow-hidden relative">
                 {isMobile ? (
                   <>
                     {/* MOBILE: preview fills screen; chat is a bottom sheet toggled by chatHidden */}
@@ -1369,12 +1398,12 @@ export default function App() {
                   </>
                 ) : (
                   <>
-                    {/* DESKTOP: chat panel — collapsible side-by-side */}
+                    {/* DESKTOP: chat panel — resizable + collapsible side-by-side */}
                     <motion.div className="flex-shrink-0 flex flex-col"
-                      animate={{ width: chatHidden ? 0 : 480, opacity: chatHidden ? 0 : 1, marginRight: chatHidden ? 0 : 12 }}
-                      transition={{ type: 'spring', damping: 30, stiffness: 200 }}
+                      animate={{ width: chatHidden ? 0 : chatWidth, opacity: chatHidden ? 0 : 1 }}
+                      transition={dividerDragging ? { duration: 0 } : { type: 'spring', damping: 30, stiffness: 200 }}
                       style={{ background: 'var(--app-bg)', border: chatHidden ? 'none' : '1px solid var(--border-subtle)', borderRadius: 16, overflow: 'hidden' }}>
-                      <div className="flex flex-col h-full" style={{ width: 480, minWidth: 480 }}>
+                      <div className="flex flex-col h-full" style={{ width: chatHidden ? chatWidth : '100%', minWidth: 320 }}>
                         <Chat messages={mode === 'chat' ? chatMessages : messages} input={input} setInput={setInput} onSend={handleSend}
                           isGenerating={isGenerating} generationStatus={generationStatus} generationSteps={mode === 'chat' ? [] : generationSteps}
                           selectedLanguage={selectedLang.name} currentLanguage={selectedLang}
@@ -1388,6 +1417,23 @@ export default function App() {
                           onStop={handleStop} />
                       </div>
                     </motion.div>
+                    {/* drag divider — the resize handle between chat and preview */}
+                    <div
+                      role="separator"
+                      aria-orientation="vertical"
+                      title={chatHidden ? 'Drag to open chat' : 'Drag to resize'}
+                      onPointerDown={onDividerDown}
+                      onPointerMove={onDividerMove}
+                      onPointerUp={onDividerUp}
+                      onDoubleClick={() => setChatHidden(h => !h)}
+                      className="flex-shrink-0 group flex items-center justify-center"
+                      style={{ width: 12, cursor: 'col-resize', touchAction: 'none' }}>
+                      <div className="rounded-full transition-all"
+                        style={{
+                          width: 3, height: 44,
+                          background: dividerDragging ? P : 'var(--border)',
+                        }} />
+                    </div>
                     <AnimatePresence mode="wait">
                       <motion.div key="panel" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                         transition={{ type: 'spring', damping: 30, stiffness: 200 }} className="flex-1 overflow-hidden">
