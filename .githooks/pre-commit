@@ -1,0 +1,19 @@
+#!/bin/sh
+# Secret guard: block any commit containing API keys, tokens, or private keys.
+# Requires gitleaks (brew install gitleaks). One-time setup after cloning:
+#   git config core.hooksPath .githooks
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠️  gitleaks not installed — secret scan SKIPPED. Install: brew install gitleaks" >&2
+  exit 0
+fi
+
+gitleaks protect --staged --redact -v
+status=$?
+if [ $status -ne 0 ]; then
+  echo "" >&2
+  echo "🚫 Commit blocked: possible secret detected in staged changes." >&2
+  echo "   Remove the secret (use an env var), then commit again." >&2
+  echo "   False positive? Add a rule to .gitleaks.toml allowlist." >&2
+  exit 1
+fi

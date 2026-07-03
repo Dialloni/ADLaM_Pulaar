@@ -1,0 +1,23 @@
+#!/bin/sh
+# Secret guard: final check before anything reaches GitHub — scans the commits
+# about to be pushed. Requires gitleaks (brew install gitleaks).
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠️  gitleaks not installed — secret scan SKIPPED. Install: brew install gitleaks" >&2
+  exit 0
+fi
+
+# scan only commits not yet on the remote
+range="origin/main..HEAD"
+if ! git rev-parse --verify origin/main >/dev/null 2>&1; then
+  range="HEAD"
+fi
+
+gitleaks git --redact --log-opts="$range" .
+status=$?
+if [ $status -ne 0 ]; then
+  echo "" >&2
+  echo "🚫 Push blocked: possible secret in outgoing commits." >&2
+  echo "   Fix the commit (git rebase / amend), then push again." >&2
+  exit 1
+fi
