@@ -1,14 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
   <defs>
     <linearGradient id="fg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#3b82f6"></stop>
       <stop offset="100%" stop-color="#fd8b00"></stop>
     </linearGradient>
   </defs>
-  <!-- Gando mark, glyph only (Claude-style) — no container box, thick stroke for 16px legibility -->
-  <g transform="translate(32 32) scale(1.9) translate(-32 -32)">
-    <path d="M20 20 Q20 44 32 44 Q44 44 44 32 Q44 22 34 22 L28 22"
-      stroke="url(#fg)" stroke-width="5.5" stroke-linecap="round" fill="none"></path>
-    <circle cx="34" cy="22" r="3.2" fill="#fd8b00"></circle>
+  <!-- Real ADLaM capital Ga (U+1E918), outline extracted from ADLaM Display (OFL) — no font needed -->
+  <g transform="translate(4.72 60.00) scale(0.03812 -0.03812)">
+    <path d="M827 0H299Q275 0 263 8Q237 26 209.5 51.0Q182 76 150 111Q140 124 140 132Q140 141 150 152Q182 187 209.5 212.0Q237 237 263 255Q277 263 299 263H769Q861 263 906.0 292.5Q951 322 951 409Q951 483 925.0 527.5Q899 572 818.0 598.5Q737 625 570 642Q402 662 310.5 705.0Q219 748 183.5 818.5Q148 889 148 989V1274Q148 1303 158 1318Q203 1384 284 1457Q299 1469 310 1469Q322 1469 335 1457Q379 1419 409.0 1384.5Q439 1350 461 1318Q471 1302 471 1274V1057Q471 993 490.0 958.0Q509 923 563.0 907.0Q617 891 720 882Q849 882 900.5 937.5Q952 993 952 1057Q952 1119 916.0 1145.0Q880 1171 805 1171H760Q739 1171 727 1179Q701 1197 673.5 1221.5Q646 1246 614 1281Q604 1294 604 1302Q604 1311 614 1322Q677 1393 727 1426Q738 1434 763 1434H914Q1092 1434 1183.5 1362.5Q1275 1291 1275 1135V1071Q1275 1003 1242.5 946.0Q1210 889 1159.5 851.5Q1109 814 1053 804V794Q1082 786 1122.0 763.5Q1162 741 1201.0 696.0Q1240 651 1265.5 574.0Q1291 497 1291 380Q1291 233 1244.5 150.0Q1198 67 1096.0 33.5Q994 0 827 0Z" fill="url(#fg)"></path>
   </g>
 </svg>
