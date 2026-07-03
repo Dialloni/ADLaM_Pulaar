@@ -10,9 +10,12 @@ import { cn } from '../lib/utils';
 import type { User } from '../firebase';
 import type { Project } from '../types';
 import { AudioRecorder } from './AudioRecorder';
-import * as pdfjsLib from 'pdfjs-dist';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+// pdfjs (~400 KB) loads on first PDF use, not with the page
+async function getPdfjs() {
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+  return pdfjsLib;
+}
 
 type SubmissionStatus = 'pending' | 'verified' | 'rejected' | 'needs_adlam';
 type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
@@ -97,6 +100,7 @@ function ratioColor(r: number) {
 
 async function extractPdfText(file: File): Promise<{ text: string; pages: number }> {
   const arrayBuffer = await file.arrayBuffer();
+  const pdfjsLib = await getPdfjs();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const parts: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -152,6 +156,7 @@ async function ocrPdfWithGemini(
   if (!token) throw new Error('Not authenticated');
 
   const buf = await file.arrayBuffer();
+  const pdfjsLib = await getPdfjs();
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
   const pages = pdf.numPages;
 

@@ -5,6 +5,17 @@ import {defineConfig} from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        // stable vendor chunks — app-code changes don't bust the user's firebase/react cache
+        manualChunks: {
+          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+          vendor: ['react', 'react-dom', 'motion'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
