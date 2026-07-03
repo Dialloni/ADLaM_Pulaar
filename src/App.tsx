@@ -50,6 +50,7 @@ import { TEMPLATE_I18N, TEMPLATES_META } from './data/templates';
 import { ADLAM_UI, FRENCH_UI, ENGLISH_UI } from './data/uiMaps';
 import { ByokModal } from './components/ByokModal';
 import { LandingPage } from './components/LandingPage';
+import { ProjectThumb } from './components/ProjectThumb';
 
 /* ── constants ──────────────────────────────────── */
 
@@ -1509,12 +1510,13 @@ export default function App() {
                     <motion.div key={p.id} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                       className="group relative rounded-2xl border border-white/8 overflow-hidden transition-all hover:border-white/15"
                       style={{ background: 'var(--card-bg)' }}>
-                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                      <div className="p-6">
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)', zIndex: 1 }} />
+                      <ProjectThumb code={p.code} height={150} />
+                      <div className="p-6 pt-4">
                         <div className="flex justify-between items-start mb-4">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${P}18`, color: P }}>
-                            <Sparkles className="w-5 h-5" />
-                          </div>
+                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full self-center" style={{ background: `${T}15`, color: T }}>
+                            {p.language}
+                          </span>
                           <div className="flex items-center gap-2">
                             {p.featured ? (
                               <span className={cn('flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
@@ -1544,10 +1546,7 @@ export default function App() {
                           {p.name}
                         </h3>
                         <p className={cn('text-zinc-500 text-xs mb-5 line-clamp-2', isAdlam && 'font-adlam')}>{p.description}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full" style={{ background: `${T}15`, color: T }}>
-                            {p.language}
-                          </span>
+                        <div className="flex justify-end items-center">
                           <button onClick={() => openProject(p)}
                             className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black text-black transition-all hover:scale-105', isAdlam && 'font-adlam')}
                             style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)' }}
@@ -2548,11 +2547,9 @@ export default function App() {
                         className="group cursor-pointer rounded-2xl overflow-hidden border border-white/8 hover:border-white/15 transition-all"
                         style={{ background: 'var(--card-bg)' }}>
                         <div style={{ height: 2, background: 'var(--gradient-horizontal)' }} />
+                        <ProjectThumb code={p.code} height={120} />
                         <div className="p-5">
                           <div className="flex items-start justify-between mb-3">
-                            <div style={{ width: 36, height: 36, borderRadius: 10, background: `${P}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <Sparkles className="w-4 h-4" style={{ color: P }} />
-                            </div>
                             <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 9999, background: `${T}15`, color: T, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{p.language}</span>
                           </div>
                           <p className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{p.name}</p>
