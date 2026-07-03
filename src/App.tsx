@@ -44,6 +44,7 @@ import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode } from './translations';
 import { LANGS } from './lib/langs';
 import { latinToAdlam } from './lib/adlam';
+import { pickGreeting, greetEmoji } from './lib/greeting';
 import { P, S, T, MANROPE } from './lib/brand';
 import { useIsMobile } from './lib/useIsMobile';
 import { PROVIDER_LABEL, PROVIDER_COLOR, MODEL_OPTIONS, BYOK_PROVIDERS, BYOK_STORAGE_KEY, loadByokKeys } from './lib/providers';
@@ -530,6 +531,27 @@ export default function App() {
     setInput('');
     setMobileNavOpen(false);
   };
+
+  /* Greeting: stable random pick per session; previous visit read once, then stamped. */
+  const [greetSeed] = useState(() => Math.random());
+  // greeting emoji (☀️/🌙/🎉) shows briefly, then fades — decoration, not furniture
+  const [greetEmojiVisible, setGreetEmojiVisible] = useState(true);
+  useEffect(() => {
+    const id = setTimeout(() => setGreetEmojiVisible(false), 12000);
+    return () => clearTimeout(id);
+  }, []);
+  const [prevSeenMs, setPrevSeenMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        const ts: any = snap.data()?.lastSeenAt;
+        setPrevSeenMs(typeof ts?.toMillis === 'function' ? ts.toMillis() : null);
+        await setDoc(doc(db, 'users', user.uid), { lastSeenAt: serverTimestamp() }, { merge: true });
+      } catch { /* greeting is cosmetic — never block on it */ }
+    })();
+  }, [user?.uid]);
 
   /* Browser-tab title follows the work: project name, chat title, or page (Claude-style). */
   useEffect(() => {
@@ -1020,7 +1042,7 @@ export default function App() {
       <AnimatePresence>
         {globalError && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            className="fixed top-24 left-1/2 -translate-x-1/2 z-[300] max-w-md w-full px-4">
+            className="fixed top-8 left-1/2 -translate-x-1/2 z-[300] max-w-md w-full px-4">
             <div className="flex items-center gap-3 p-4 rounded-2xl border border-red-500/20 shadow-2xl backdrop-blur-xl" style={{ background: 'rgba(255,50,50,0.08)' }}>
               <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
               <p className="text-xs text-red-300 flex-1">{globalError}</p>
@@ -1030,40 +1052,18 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* ════════ HEADER ════════ */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center justify-between px-4 md:px-8 flex-shrink-0"
-        style={{ background: 'var(--navbar-bg)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)' }}>
-        {/* brand + nav */}
-        <div className="flex items-center gap-2 md:gap-8 min-w-0 flex-shrink-0">
-          <button onClick={() => setMobileNavOpen(o => !o)}
-            className="md:hidden p-2 -ml-1 rounded-lg text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
-            aria-label="Menu">
-            <PanelLeft className="w-5 h-5" />
-          </button>
-          <span className={cn('text-lg md:text-2xl font-black tracking-tight cursor-pointer select-none', isAdlam && 'font-adlam')}
-            style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-            onClick={() => { setCurrentProject(null); setPage('dashboard'); }}>
-            {t.appName.toUpperCase()}
-          </span>
-        </div>
-
-
-        {/* icons + language */}
-        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-          <button onClick={toggleTheme} title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="p-2 rounded-xl transition-colors"
-            style={{ color: 'var(--text-muted)', background: 'transparent' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
-            {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
-          {/* language selector — global, lives in the top bar */}
-          <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} />
-        </div>
-      </header>
+      {/* mobile: floating sidebar toggle (top bar is gone — Claude-style) */}
+      {!currentProject && !chatActive && (
+        <button onClick={() => setMobileNavOpen(o => !o)}
+          className="md:hidden fixed top-3 left-3 z-[120] p-2 rounded-xl"
+          style={{ background: 'var(--navbar-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', backdropFilter: 'blur(12px)' }}
+          aria-label="Menu">
+          <PanelLeft className="w-5 h-5" />
+        </button>
+      )}
 
       {/* ════════ BODY ════════ */}
-      <div className="flex flex-1 overflow-hidden pt-14">
+      <div className="flex flex-1 overflow-hidden">
 
 
         {/* mobile drawer backdrop */}
@@ -1075,7 +1075,7 @@ export default function App() {
         {/* ════ SIDEBAR ════ */}
         <aside className={cn(
             'flex-shrink-0 flex flex-col border-r border-white/5',
-            'fixed md:static top-14 md:top-0 bottom-0 left-0 z-[100] md:z-auto',
+            'fixed md:static top-0 bottom-0 left-0 z-[100] md:z-auto',
             'transition-transform duration-200 md:transition-none',
             mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
           )}
@@ -1092,8 +1092,17 @@ export default function App() {
               </button>
             </div>
           ) : (
-            /* Expanded: search (left) + collapse slider (right edge) */
+            /* Expanded: brand (home) + search + collapse */
             <div className="flex items-center px-3 pt-4 pb-2 justify-between">
+              <button onClick={() => { setCurrentProject(null); setPage('dashboard'); setMobileNavOpen(false); }}
+                className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/5 transition-all min-w-0" title="Dashboard">
+                <GandoLogo size={22} />
+                <span className={cn('text-base font-black tracking-tight select-none', isAdlam && 'font-adlam')}
+                  style={{ fontFamily: isAdlam ? undefined : MANROPE, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {t.appName.toUpperCase()}
+                </span>
+              </button>
+              <div className="flex items-center">
               <button onClick={() => { setSearchQuery(''); setSearchModalOpen(true); }}
                 className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-all"
                 title="Search projects & chats">
@@ -1104,6 +1113,7 @@ export default function App() {
                 title="Collapse sidebar">
                 <PanelLeft className="w-4 h-4" />
               </button>
+              </div>
             </div>
           )}
 
@@ -1161,6 +1171,18 @@ export default function App() {
           {/* spacer */}
           <div className="flex-1" />
 
+          {/* language — always visible (core to Gando), Claude keeps it buried; we don't */}
+          <div className={cn('px-3 pb-1', sidebarCollapsed && 'flex justify-center')}>
+            {sidebarCollapsed ? (
+              <button onClick={() => setSidebarCollapsed(false)} title="Language"
+                className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-all">
+                <Globe className="w-4 h-4" />
+              </button>
+            ) : (
+              <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} dropUp buttonClassName="w-full justify-between" />
+            )}
+          </div>
+
           {/* user (Claude-style, bottom) */}
           <div className="p-3 user-menu-container" style={{ position: 'relative' }}>
             <div className={cn('flex items-center rounded-xl cursor-pointer hover:bg-white/5 transition-all', sidebarCollapsed ? 'justify-center p-2' : 'gap-2.5 px-3 py-2.5')}
@@ -1205,6 +1227,15 @@ export default function App() {
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                   <BookOpen size={14} /> {t.documentationLabel}
+                </button>
+                <button onClick={e => { e.stopPropagation(); toggleTheme(); }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  {resolvedTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                  {resolvedTheme === 'dark'
+                    ? (selectedLang.code === 'fr' ? 'Mode clair' : 'Light mode')
+                    : (selectedLang.code === 'fr' ? 'Mode sombre' : 'Dark mode')}
                 </button>
                 <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
                 <button onClick={e => { e.stopPropagation(); logout(); setUserMenuOpen(false); }}
@@ -2334,30 +2365,41 @@ export default function App() {
               <div className="pointer-events-none fixed inset-0 z-0" style={{ background: `radial-gradient(ellipse 50% 40% at 70% 60%, ${S}09 0%, transparent 65%)` }} />
 
               {/* ── HERO SECTION ── */}
-              <div className="flex flex-col items-center px-6 pt-16 pb-10 relative z-10">
+              <div className="flex flex-col items-center justify-center px-6 pb-10 relative z-10" style={{ minHeight: '78vh', paddingTop: 48 }}>
                 <div style={{ maxWidth: 760, width: '100%' }}>
 
-                  {/* personalized greeting */}
+                  {/* personalized greeting — time-aware (en/fr); ADLaM keeps the verified phrase */}
                   {(() => {
                     const raw = userPrefs.preferredName?.trim() || user.displayName?.trim().split(/\s+/)[0] || user.email?.split('@')[0] || 'Builder';
-                    // ADLaM: write the name in ADLaM letters + render RTL (greeting
-                    // on the right, name on the left). Else Latin, capitalized.
                     const firstName = isAdlam ? latinToAdlam(raw) : raw.charAt(0).toUpperCase() + raw.slice(1);
-                    const greet = selectedLang.code === 'fr' ? 'Bonjour'
-                      : isAdlam ? '𞤔𞤢𞥄𞤪𞤢𞥄𞤥𞤢'
-                      : 'Welcome';
+                    const name = (
+                      <span key="n" style={{ background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        {firstName}
+                      </span>
+                    );
+                    const createdMs = user.metadata?.creationTime ? Date.parse(user.metadata.creationTime) : 0;
+                    const firstVisit = !prevSeenMs && Date.now() - createdMs < 10 * 60 * 1000;
+                    const welcomeBack = !!prevSeenMs && Date.now() - prevSeenMs > 7 * 24 * 3600 * 1000;
+                    const tpl = pickGreeting(selectedLang.code, { firstVisit, welcomeBack, seed: greetSeed });
+                    const emoji = greetEmoji({ firstVisit, welcomeBack });
+                    const [pre, post] = tpl.split('{name}');
+                    const parts: React.ReactNode[] = post === undefined ? [pre] : [pre, name, post];
+                    if (emoji) parts.push(
+                      <span key="e" aria-hidden
+                        style={{ display: 'inline-block', marginInlineStart: 10, opacity: greetEmojiVisible ? 1 : 0, transition: 'opacity 1.5s ease' }}>
+                        {emoji}
+                      </span>
+                    );
                     return (
                       <h1 dir={isAdlam ? 'rtl' : undefined}
-                        className={cn('text-center font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
-                        style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(30px, 5vw, 58px)', lineHeight: 1.05 }}>
-                        {greet},{' '}
-                        <span style={{ background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                          {firstName}
-                        </span>
+                        className={cn('flex items-center justify-center gap-3 text-center font-black text-white tracking-tight mb-2', isAdlam && 'font-adlam')}
+                        style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(22px, 2.6vw, 34px)', lineHeight: 1.15 }}>
+                        <GandoLogo size={30} />
+                        <span>{parts}</span>
                       </h1>
                     );
                   })()}
-                  <p className={cn('text-center text-zinc-500 mb-8', isAdlam && 'font-adlam')} style={{ fontSize: 15 }}>
+                  <p className={cn('text-center text-zinc-500 mb-7', isAdlam && 'font-adlam')} style={{ fontSize: 14 }}>
                     {selectedLang.code === 'fr' ? 'Que construisons-nous aujourd’hui ?'
                       : selectedLang.code === 'ff-adlm' ? t.gandoViewSubtitle
                       : 'What will we build today?'}
@@ -2576,8 +2618,8 @@ export default function App() {
                 </div>
               )}
 
-              {/* ── TEMPLATE GRID ── */}
-              {(() => {
+              {/* ── TEMPLATE GRID — inspiration for new users; veterans get a clean dashboard ── */}
+              {projects.length <= 2 && (() => {
                 const tl = TEMPLATE_I18N[selectedLang.code] || TEMPLATE_I18N.en;
                 return (
                   <div className="relative z-10 px-6 pb-24" style={{ maxWidth: 960, width: '100%', margin: '0 auto' }}>
