@@ -1,10 +1,39 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gando AI — Build in Your Language</title>
+    <meta name="description" content="Describe an app in Pulaar (ADLaM), French or English and watch it come alive — AI app builder made for African languages. No code needed." />
+    <meta name="theme-color" content="#0e0e0e" />
+
+    <!-- Open Graph / WhatsApp / social cards -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Gando AI" />
+    <meta property="og:title" content="Gando AI — Build in Your Language" />
+    <meta property="og:description" content="Describe an app in Pulaar (ADLaM), French or English and watch it come alive. No code needed." />
+    <meta property="og:url" content="https://gando-ai.up.railway.app/" />
+    <meta property="og:image" content="https://gando-ai.up.railway.app/assets/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Gando AI — Build in Your Language" />
+    <meta name="twitter:description" content="Describe an app in Pulaar (ADLaM), French or English and watch it come alive. No code needed." />
+    <meta name="twitter:image" content="https://gando-ai.up.railway.app/assets/og.png" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Resolve theme before first paint (mirrors src/lib/useTheme.ts) to avoid a dark/light flash -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('gando_theme');
+          if (!t || t === 'system') { var h = new Date().getHours(); t = h >= 7 && h < 19 ? 'light' : 'dark'; }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Adlam:wght@400;500;600;700&display=swap"
       rel="stylesheet"
