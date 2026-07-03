@@ -2438,10 +2438,15 @@ export default function App() {
                     );
                     return (
                       <h1 dir={isAdlam ? 'rtl' : undefined}
-                        className={cn('flex items-center justify-center gap-3 text-center font-black text-white tracking-tight mb-2', isAdlam && 'font-adlam')}
-                        style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(22px, 2.6vw, 34px)', lineHeight: 1.15 }}>
-                        <GandoLogo size={30} />
-                        <span>{parts}</span>
+                        className={cn('text-center font-black text-white tracking-tight mb-2', isAdlam && 'font-adlam')}
+                        style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 'clamp(22px, 2.6vw, 34px)', lineHeight: 1.2 }}>
+                        {/* logo flows inline with the text — stays glued to the first word
+                            even when a long phrase fills the row (was a flex row: logo got
+                            orphaned at the container edge on long English greetings) */}
+                        <span style={{ display: 'inline-block', verticalAlign: 'middle', marginInlineEnd: 12, marginTop: -4 }}>
+                          <GandoLogo size={30} />
+                        </span>
+                        {parts}
                       </h1>
                     );
                   })()}

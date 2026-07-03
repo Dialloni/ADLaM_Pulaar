@@ -321,8 +321,6 @@ async function runOpenAICompatible(
       ],
       max_tokens: maxTokens(),
       temperature: 0.8,
-      // reasoning_format is Groq-only; sending it to OpenAI/DeepSeek would 400.
-      ...(isGroq ? { reasoning_format: 'hidden' } : {}),
       stream: true,
     }),
   });
@@ -549,7 +547,6 @@ async function chatOpenAICompatible(
       ],
       max_tokens: 4096,
       temperature: 0.7,
-      ...(isGroq ? { reasoning_format: 'hidden' } : {}),
       stream: true,
     }),
   });

@@ -436,7 +436,7 @@ const ChatImpl: React.FC<ChatProps> = ({
 
       <div className="flex-1 overflow-y-auto custom-scrollbar relative">
         <div className={cn(
-          "max-w-4xl mx-auto w-full px-4 md:px-6 py-8 md:py-12 space-y-8",
+          "max-w-3xl mx-auto w-full px-4 md:px-6 py-8 md:py-12 space-y-8",
           isEmpty ? "min-h-[calc(100vh-64px)] flex flex-col justify-center py-12 md:py-20" : ""
         )}>
           <AnimatePresence mode="popLayout">
@@ -714,10 +714,6 @@ const ChatImpl: React.FC<ChatProps> = ({
                           </motion.div>
                         </div>
 
-                        {/* Metadata */}
-                        <span className="text-[11px] text-zinc-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          {m.role === 'user' ? t.you : t.gandoAI}
-                        </span>
                       </div>
                     </div>
                   </motion.div>
@@ -776,9 +772,10 @@ const ChatImpl: React.FC<ChatProps> = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ padding: '12px 16px', borderTop: '1px solid var(--border-subtle)', background: 'var(--chat-bar-bg)', flexShrink: 0 }}
+          style={{ padding: '8px 16px 22px', flexShrink: 0 }}
         >
-          <div style={{ position: 'relative', background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* floating, centered, same width as the message column (Claude-style) */}
+          <div style={{ position: 'relative', background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 768, width: '100%', margin: '0 auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
             {/* Textarea */}
             <textarea
               ref={textareaRef}
