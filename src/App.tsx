@@ -2308,7 +2308,7 @@ export default function App() {
 
           ) : page === 'admin' && isAdmin ? (
             /* ══ ADMIN PORTAL ══ */
-            <Suspense fallback={<LazyFallback />}><AdminPortal user={user} /></Suspense>
+            <Suspense fallback={<LazyFallback />}><AdminPortal user={user} langCode={selectedLang.code} /></Suspense>
 
           ) : (
             /* ══ DASHBOARD (Bolt-style) ══ */

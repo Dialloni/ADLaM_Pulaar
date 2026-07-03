@@ -171,7 +171,106 @@ async function ocrPdfWithGemini(
   return { text: texts.join('\n\n'), pages };
 }
 
-export function AdminPortal({ user }: { user: User }) {
+
+/* ── Admin UI i18n — en/fr (ADLaM slot ready, falls back to en until verified) ── */
+const ADMIN_I18N = {
+  en: {
+    title: 'Corpus Admin',
+    subtitle: 'Review and verify ADLaM text submissions',
+    exportJsonl: 'Export JSONL',
+    firestoreError: 'Firestore error:',
+    statNeedsAdlam: 'Needs ADLaM', statPending: 'Pending', statVerified: 'Verified', statRejected: 'Rejected',
+    tabQueue: 'Review Queue', tabCommunity: 'Community', tabUpload: 'Upload PDFs', tabPaste: 'Paste Text', tabDictionary: 'Dictionary',
+    communityHint: '{L.communityHint}',
+    loading: 'Loading…', noProjects: '{L.noProjects}', owner: 'owner',
+    approve: 'Approve', reject: 'Reject', confirm: 'Confirm', cancel: 'Cancel', save: 'Save', edit: '✏️ Edit',
+    dropPdfs: '{L.dropPdfs}',
+    dropHint: '{L.dropHint}',
+    submitted: 'Submitted', failed: 'Failed', words: 'words', pages: 'pages',
+    adlamText: 'ADLaM Text',
+    pastePlaceholder: 'Paste ADLaM text here — from PDFs, WhatsApp, Telegram, books…',
+    domain: 'Domain', source: 'Source',
+    encodingWarning: '{L.encodingWarning}',
+    encodingNote: '{L.encodingNote}',
+    encodingNote2: 'Check the codepoint label above — if it says',
+    encodingNote3: 'the text IS correct, just rendering wrong.',
+    decoding: 'Decoding…', decodeBtn: '✦ Decode with AI → Unicode ADLaM',
+    submitting: 'Submitting…', submittedQueue: 'Submitted to queue!', submitQueue: 'Submit to corpus queue',
+    need3Words: '{L.need3Words}',
+    draftCount: 'Draft', verifiedCount: 'Verified',
+    seeding: 'Seeding…', seedFromJson: 'Seed from JSON', seed50: 'Seed 50 terms from JSON', exportJson: 'Export JSON',
+    dictErrorHint: '— deploy firestore.rules then reload.',
+    addNewTerm: 'Add New Term',
+    typeAdlamPlaceholder: '𞤢𞤣𞤤𞤢𞤥 — type ADLaM script here',
+    adlamDetected: '{L.adlamDetected}',
+    adlamNotDetected: '{L.adlamNotDetected}',
+    englishLatin: 'English / latin',
+    adding: 'Adding…', added: 'Added!', addToDict: '+ Add to dictionary',
+    noTerms: '{L.noTerms}',
+    adlamScriptPlaceholder: 'ADLaM script…', frTranslation: 'French translation', domainPlaceholder: 'domain',
+    verify: 'Verify', unverify: 'Unverify',
+    results: 'results', noSubmissions: '{L.noSubmissions}',
+    contributorAudio: 'Contributor audio', verifiedAudio: '✓ Verified Pulaar audio',
+    adlamEquivalent: 'ADLaM equivalent',
+    writeAdlamPlaceholder: '𞤢𞤣𞤤𞤢𞤥… write the ADLaM here',
+    recordPulaar: 'Record Pulaar pronunciation (optional)',
+    saveAdlamQueue: 'Save ADLaM → queue', saveEdit: 'Save Edit', completeAdlam: '{L.completeAdlam}',
+    loadMore: 'Load more', remaining: 'remaining',
+    pulaarLatin: 'Pulaar (Latin):',
+    statusLabels: { all: 'all', needs_adlam: 'needs ADLaM', pending: 'pending', verified: 'verified', rejected: 'rejected' } as Record<string, string>,
+    dictFilterLabels: { all: 'all', draft: 'draft', verified: 'verified' } as Record<string, string>,
+  },
+  fr: {
+    title: 'Administration du corpus',
+    subtitle: 'Vérifiez et validez les soumissions de texte ADLaM',
+    exportJsonl: 'Exporter JSONL',
+    firestoreError: 'Erreur Firestore :',
+    statNeedsAdlam: 'ADLaM requis', statPending: 'En attente', statVerified: 'Vérifiés', statRejected: 'Rejetés',
+    tabQueue: 'File de révision', tabCommunity: 'Communauté', tabUpload: 'Importer des PDF', tabPaste: 'Coller du texte', tabDictionary: 'Dictionnaire',
+    communityHint: 'Projets partagés par les utilisateurs. Approuvez pour publier comme modèle communautaire ; rejetez pour masquer.',
+    loading: 'Chargement…', noProjects: 'Aucun projet en attente de révision.', owner: 'propriétaire',
+    approve: 'Approuver', reject: 'Rejeter', confirm: 'Confirmer', cancel: 'Annuler', save: 'Enregistrer', edit: '✏️ Modifier',
+    dropPdfs: 'Déposez des PDF ici ou cliquez pour parcourir',
+    dropHint: "PDF numériques + images scannées — l'OCR Gemini se lance automatiquement si aucun texte n'est trouvé",
+    submitted: 'Envoyé', failed: 'Échec', words: 'mots', pages: 'pages',
+    adlamText: 'Texte ADLaM',
+    pastePlaceholder: 'Collez du texte ADLaM ici — depuis PDF, WhatsApp, Telegram, livres…',
+    domain: 'Domaine', source: 'Source',
+    encodingWarning: 'Caractères arabes détectés (plage U+0600) — encodage de police pré-Unicode.',
+    encodingNote: "Remarque : Google Docs affiche aussi l'ADLaM Unicode correct comme de l'arabe, faute de police.",
+    encodingNote2: "Vérifiez l'étiquette ci-dessus — si elle indique",
+    encodingNote3: "le texte est correct, seul l'affichage est erroné.",
+    decoding: 'Décodage…', decodeBtn: "✦ Décoder avec l'IA → ADLaM Unicode",
+    submitting: 'Envoi…', submittedQueue: 'Envoyé dans la file !', submitQueue: 'Envoyer dans la file du corpus',
+    need3Words: 'Au moins 3 mots requis',
+    draftCount: 'Brouillons', verifiedCount: 'Vérifiés',
+    seeding: 'Insertion…', seedFromJson: 'Insérer depuis JSON', seed50: 'Insérer 50 termes depuis JSON', exportJson: 'Exporter JSON',
+    dictErrorHint: '— déployez firestore.rules puis rechargez.',
+    addNewTerm: 'Ajouter un terme',
+    typeAdlamPlaceholder: '𞤢𞤣𞤤𞤢𞤥 — écrivez en ADLaM ici',
+    adlamDetected: '✓ Écriture ADLaM détectée',
+    adlamNotDetected: '✗ Écrivez en ADLaM — caractères non reconnus comme ADLaM',
+    englishLatin: 'Anglais / latin',
+    adding: 'Ajout…', added: 'Ajouté !', addToDict: '+ Ajouter au dictionnaire',
+    noTerms: 'Aucun terme pour l’instant.',
+    adlamScriptPlaceholder: 'Écriture ADLaM…', frTranslation: 'Traduction française', domainPlaceholder: 'domaine',
+    verify: 'Vérifier', unverify: 'Invalider',
+    results: 'résultats', noSubmissions: 'Aucune soumission',
+    contributorAudio: 'Audio du contributeur', verifiedAudio: '✓ Audio pulaar vérifié',
+    adlamEquivalent: 'Équivalent ADLaM',
+    writeAdlamPlaceholder: '𞤢𞤣𞤤𞤢𞤥… écrivez l’ADLaM ici',
+    recordPulaar: 'Enregistrer la prononciation pulaar (optionnel)',
+    saveAdlamQueue: "Enregistrer l'ADLaM → file", saveEdit: 'Enregistrer', completeAdlam: "✏️ Compléter l'ADLaM",
+    loadMore: 'Charger plus', remaining: 'restants',
+    pulaarLatin: 'Pulaar (latin) :',
+    statusLabels: { all: 'tous', needs_adlam: 'ADLaM requis', pending: 'en attente', verified: 'vérifié', rejected: 'rejeté' } as Record<string, string>,
+    dictFilterLabels: { all: 'tous', draft: 'brouillon', verified: 'vérifié' } as Record<string, string>,
+  },
+};
+
+export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 'ff-adlm' | 'en' | 'fr' }) {
+  // ADLaM admin strings pending native review — falls back to English for now.
+  const L = langCode === 'fr' ? ADMIN_I18N.fr : ADMIN_I18N.en;
   const [tab, setTab] = useState<Tab>('queue');
 
   /* ── QUEUE STATE ── */
@@ -636,14 +735,14 @@ export function AdminPortal({ user }: { user: User }) {
       {/* header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tighter">Corpus Admin</h1>
-          <p className="text-[var(--text-muted)] text-sm mt-1">Review and verify ADLaM text submissions</p>
+          <h1 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tighter">{L.title}</h1>
+          <p className="text-[var(--text-muted)] text-sm mt-1">{L.subtitle}</p>
         </div>
         <button onClick={exportJSONL}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 flex-shrink-0"
           style={{ background: 'var(--btn-bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
           <Download className="w-4 h-4" />
-          Export JSONL ({stats.verified})
+          {L.exportJsonl} ({stats.verified})
         </button>
       </div>
 
@@ -651,17 +750,17 @@ export function AdminPortal({ user }: { user: User }) {
       {corpusError && (
         <div className="rounded-xl px-4 py-3 text-xs font-bold"
           style={{ background: '#f8717120', border: '1px solid #f8717140', color: '#f87171' }}>
-          Firestore error: {corpusError}
+          {L.firestoreError} {corpusError}
         </div>
       )}
 
       {/* stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {([
-          { label: 'Needs ADLaM', value: stats.needs_adlam, color: '#bca2ff' },
-          { label: 'Pending',  value: stats.pending,  color: '#fd8b00' },
-          { label: 'Verified', value: stats.verified, color: '#4ade80' },
-          { label: 'Rejected', value: stats.rejected, color: '#f87171' },
+          { label: L.statNeedsAdlam, value: stats.needs_adlam, color: '#bca2ff' },
+          { label: L.statPending,  value: stats.pending,  color: '#fd8b00' },
+          { label: L.statVerified, value: stats.verified, color: '#4ade80' },
+          { label: L.statRejected, value: stats.rejected, color: '#f87171' },
         ] as const).map(({ label, value, color }) => (
           <div key={label} className="rounded-2xl p-5 border border-[var(--border)]" style={{ background: 'var(--card-bg)' }}>
             <p className="text-[var(--text-muted)] text-xs font-bold uppercase tracking-widest">{label}</p>
@@ -674,11 +773,11 @@ export function AdminPortal({ user }: { user: User }) {
       <div className="flex items-center gap-1 p-1 rounded-xl w-full sm:w-fit overflow-x-auto"
         style={{ background: 'var(--btn-bg)', border: '1px solid var(--border-subtle)' }}>
         {([
-          { id: 'queue', label: 'Review Queue' },
-          { id: 'community', label: `Community${communityProjects.length ? ` (${communityProjects.length})` : ''}` },
-          { id: 'upload', label: 'Upload PDFs' },
-          { id: 'paste', label: 'Paste Text' },
-          { id: 'dictionary', label: 'Dictionary' },
+          { id: 'queue', label: L.tabQueue },
+          { id: 'community', label: `${L.tabCommunity}${communityProjects.length ? ` (${communityProjects.length})` : ''}` },
+          { id: 'upload', label: L.tabUpload },
+          { id: 'paste', label: L.tabPaste },
+          { id: 'dictionary', label: L.tabDictionary },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className="px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex-shrink-0"
@@ -695,11 +794,11 @@ export function AdminPortal({ user }: { user: User }) {
       {/* ── COMMUNITY TAB ── */}
       {tab === 'community' && (
         <div className="space-y-4">
-          <p className="text-sm text-[var(--text-muted)]">Projects users shared to the gallery. Approve to publish as a community template; reject to hide.</p>
+          <p className="text-sm text-[var(--text-muted)]">{L.communityHint}</p>
           {communityLoading ? (
-            <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm"><RefreshCw className="w-4 h-4 animate-spin" /> Loading…</div>
+            <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm"><RefreshCw className="w-4 h-4 animate-spin" /> {L.loading}</div>
           ) : communityProjects.length === 0 ? (
-            <div className="py-16 text-center text-[var(--text-faint)] text-sm">No projects awaiting review.</div>
+            <div className="py-16 text-center text-[var(--text-faint)] text-sm">{L.noProjects}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {communityProjects.map(cp => (
@@ -711,17 +810,17 @@ export function AdminPortal({ user }: { user: User }) {
                   <div className="p-4">
                     <h3 className="font-black text-[var(--text-primary)] text-sm mb-1 truncate">{cp.name}</h3>
                     <p className="text-[var(--text-muted)] text-xs line-clamp-2 mb-1">{cp.description}</p>
-                    <p className="text-[10px] text-[var(--text-faint)] mb-3">{cp.language} · owner {cp.userId.slice(0, 8)}…</p>
+                    <p className="text-[10px] text-[var(--text-faint)] mb-3">{cp.language} · {L.owner} {cp.userId.slice(0, 8)}…</p>
                     <div className="flex items-center gap-2">
                       <button onClick={() => approveShare(cp.id)} disabled={communityActionId === cp.id}
                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all"
                         style={{ background: '#22c55e1a', color: '#4ade80', border: '1px solid #22c55e33' }}>
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                        <CheckCircle2 className="w-3.5 h-3.5" /> {L.approve}
                       </button>
                       <button onClick={() => rejectShare(cp.id)} disabled={communityActionId === cp.id}
                         className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all"
                         style={{ background: '#ef44441a', color: '#f87171', border: '1px solid #ef444433' }}>
-                        <XCircle className="w-3.5 h-3.5" /> Reject
+                        <XCircle className="w-3.5 h-3.5" /> {L.reject}
                       </button>
                     </div>
                   </div>
@@ -748,8 +847,8 @@ export function AdminPortal({ user }: { user: User }) {
               background: dragOver ? `${P}08` : 'var(--card-bg)',
             }}>
             <Upload className="w-8 h-8" style={{ color: dragOver ? P : '#52525b' }} />
-            <p className="text-sm font-bold text-[var(--text-muted)]">Drop PDFs here or click to browse</p>
-            <p className="text-xs text-[var(--text-faint)]">Digital PDFs + scanned images — Gemini OCR auto-runs if no text found</p>
+            <p className="text-sm font-bold text-[var(--text-muted)]">{L.dropPdfs}</p>
+            <p className="text-xs text-[var(--text-faint)]">{L.dropHint}</p>
             <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden"
               onChange={e => processPdfs(Array.from(e.target.files ?? []))} />
           </div>
@@ -768,12 +867,12 @@ export function AdminPortal({ user }: { user: User }) {
                     )}
                     {r.status === 'done' && (
                       <span className="flex items-center gap-1.5 text-xs font-bold text-green-400">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Submitted
+                        <CheckCircle2 className="w-3.5 h-3.5" /> {L.submitted}
                       </span>
                     )}
                     {r.status === 'error' && (
                       <span className="flex items-center gap-1.5 text-xs font-bold text-red-400">
-                        <XCircle className="w-3.5 h-3.5" /> Failed
+                        <XCircle className="w-3.5 h-3.5" /> {L.failed}
                       </span>
                     )}
                     <button onClick={() => setResults(prev => prev.filter((_, j) => j !== i))}>
@@ -791,8 +890,8 @@ export function AdminPortal({ user }: { user: User }) {
                             style={{ background: `${ratioColor(r.adlam_ratio)}20`, color: ratioColor(r.adlam_ratio) }}>
                             𞤀𞤁𞤂 {Math.round(r.adlam_ratio * 100)}%
                           </span>
-                          <span className="text-xs text-[var(--text-muted)]">{r.word_count} words</span>
-                          <span className="text-xs text-[var(--text-muted)]">{r.pages} pages</span>
+                          <span className="text-xs text-[var(--text-muted)]">{r.word_count} {L.words}</span>
+                          <span className="text-xs text-[var(--text-muted)]">{r.pages} {L.pages}</span>
                         </div>
                       )}
                       {r.text && r.adlam_ratio > 0 && (
@@ -815,7 +914,7 @@ export function AdminPortal({ user }: { user: User }) {
           {/* textarea */}
           <div className="rounded-2xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--card-bg)' }}>
             <div className="px-5 pt-4 pb-2 border-b border-[var(--border-subtle)] flex items-center justify-between gap-3 flex-wrap">
-              <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">ADLaM Text</span>
+              <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{L.adlamText}</span>
               <div className="flex items-center gap-3 flex-wrap">
                 {pasteText.length > 0 && (
                   <>
@@ -827,7 +926,7 @@ export function AdminPortal({ user }: { user: User }) {
                       style={{ background: `${ratioColor(pasteRatio)}20`, color: ratioColor(pasteRatio) }}>
                       𞤀𞤁𞤂 {Math.round(pasteRatio * 100)}%
                     </span>
-                    <span className="text-xs text-[var(--text-muted)]">{pasteWords} words</span>
+                    <span className="text-xs text-[var(--text-muted)]">{pasteWords} {L.words}</span>
                   </>
                 )}
               </div>
@@ -835,7 +934,7 @@ export function AdminPortal({ user }: { user: User }) {
             <textarea
               value={pasteText}
               onChange={e => setPasteText(e.target.value)}
-              placeholder="Paste ADLaM text here — from PDFs, WhatsApp, Telegram, books…"
+              placeholder={L.pastePlaceholder}
               className="w-full bg-transparent outline-none resize-none text-[var(--text-primary)] placeholder-[var(--text-faint)] px-5 py-4"
               style={{
                 minHeight: 220, fontSize: 15, lineHeight: 1.7,
@@ -848,7 +947,7 @@ export function AdminPortal({ user }: { user: User }) {
           {/* metadata row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-[var(--border)] p-4 space-y-2" style={{ background: 'var(--card-bg)' }}>
-              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Domain</p>
+              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{L.domain}</p>
               <div className="flex flex-wrap gap-1.5">
                 {DOMAINS.map(d => (
                   <button key={d} onClick={() => setPasteDomain(d)}
@@ -865,7 +964,7 @@ export function AdminPortal({ user }: { user: User }) {
             </div>
 
             <div className="rounded-xl border border-[var(--border)] p-4 space-y-2" style={{ background: 'var(--card-bg)' }}>
-              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Source</p>
+              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{L.source}</p>
               <div className="flex flex-wrap gap-1.5">
                 {(['text_upload', 'telegram', 'pdf', 'collector'] as const).map(s => (
                   <button key={s} onClick={() => setPasteSource(s)}
@@ -875,7 +974,7 @@ export function AdminPortal({ user }: { user: User }) {
                       color: pasteSource === s ? (SOURCE_COLORS[s] ?? '#fff') : '#52525b',
                       border: `1px solid ${pasteSource === s ? (SOURCE_COLORS[s] ?? '#fff') + '50' : 'transparent'}`,
                     }}>
-                    {s}
+                    {L.statusLabels[s] ?? s}
                   </button>
                 ))}
               </div>
@@ -889,10 +988,10 @@ export function AdminPortal({ user }: { user: User }) {
               <div className="flex items-start gap-2 font-bold">
                 <span className="mt-0.5">⚠</span>
                 <span>
-                  Arabic codepoints detected (U+0600 range) — pre-Unicode font encoding.
+                  {L.encodingWarning}
                   <span className="block font-normal opacity-70 mt-0.5">
-                    Note: Google Docs also shows correct ADLaM Unicode as Arabic because it lacks the font.
-                    Check the codepoint label above — if it says <code>U+1E9xx</code> the text IS correct, just rendering wrong.
+                    {L.encodingNote}
+                    {L.encodingNote2} <code>U+1E9xx</code> {L.encodingNote3}
                   </span>
                 </span>
               </div>
@@ -902,8 +1001,8 @@ export function AdminPortal({ user }: { user: User }) {
                 className="self-start flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all disabled:opacity-50"
                 style={{ background: '#fd8b0025', color: '#fd8b00', border: '1px solid #fd8b0050' }}>
                 {pasteDecoding
-                  ? <><RefreshCw className="w-3 h-3 animate-spin" /> Decoding…</>
-                  : <>✦ Decode with AI → Unicode ADLaM</>}
+                  ? <><RefreshCw className="w-3 h-3 animate-spin" /> {L.decoding}</>
+                  : <>{L.decodeBtn}</>}
               </button>
             </div>
           )}
@@ -915,15 +1014,15 @@ export function AdminPortal({ user }: { user: User }) {
             className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm transition-all disabled:opacity-40"
             style={{ background: pasteSuccess ? '#4ade8030' : 'var(--gradient-brand)', color: pasteSuccess ? '#4ade80' : '#000' }}>
             {pasteSubmitting ? (
-              <><RefreshCw className="w-4 h-4 animate-spin" /> Submitting…</>
+              <><RefreshCw className="w-4 h-4 animate-spin" /> {L.submitting}</>
             ) : pasteSuccess ? (
-              <><CheckCircle2 className="w-4 h-4" /> Submitted to queue!</>
+              <><CheckCircle2 className="w-4 h-4" /> {L.submittedQueue}</>
             ) : (
-              <><Upload className="w-4 h-4" /> Submit to corpus queue</>
+              <><Upload className="w-4 h-4" /> {L.submitQueue}</>
             )}
           </button>
           {pasteWords > 0 && pasteWords < 3 && (
-            <p className="text-xs text-[var(--text-faint)]">Need at least 3 words</p>
+            <p className="text-xs text-[var(--text-faint)]">{L.need3Words}</p>
           )}
         </div>
       )}
@@ -935,10 +1034,10 @@ export function AdminPortal({ user }: { user: User }) {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-4">
               <span className="text-xs font-bold" style={{ color: '#fd8b00' }}>
-                Draft: {dictTerms.filter(t => t.status === 'draft').length}
+                {L.draftCount}: {dictTerms.filter(t => t.status === 'draft').length}
               </span>
               <span className="text-xs font-bold" style={{ color: '#4ade80' }}>
-                Verified: {dictTerms.filter(t => t.status === 'verified').length}
+                {L.verifiedCount}: {dictTerms.filter(t => t.status === 'verified').length}
               </span>
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -947,8 +1046,8 @@ export function AdminPortal({ user }: { user: User }) {
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40"
                   style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
                   {dictSeeding
-                    ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Seeding…</>
-                    : <><BookMarked className="w-3.5 h-3.5" /> Seed from JSON</>}
+                    ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> {L.seeding}</>
+                    : <><BookMarked className="w-3.5 h-3.5" /> {L.seedFromJson}</>}
                 </button>
               )}
               <button onClick={exportDictJSON}
@@ -956,7 +1055,7 @@ export function AdminPortal({ user }: { user: User }) {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40"
                 style={{ background: 'var(--btn-bg)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
                 <Download className="w-4 h-4" />
-                Export JSON ({dictTerms.filter(t => t.status === 'verified').length})
+                {L.exportJson} ({dictTerms.filter(t => t.status === 'verified').length})
               </button>
             </div>
           </div>
@@ -965,19 +1064,19 @@ export function AdminPortal({ user }: { user: User }) {
           {dictError && (
             <div className="rounded-xl px-4 py-3 text-xs font-bold"
               style={{ background: '#f8717120', border: '1px solid #f8717140', color: '#f87171' }}>
-              Firestore error: {dictError} — deploy firestore.rules then reload.
+              {L.firestoreError} {dictError} {L.dictErrorHint}
             </div>
           )}
 
           {/* add term form */}
           <div className="rounded-2xl border border-[var(--border)] p-5 space-y-3" style={{ background: 'var(--card-bg)' }}>
-            <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Add New Term</p>
+            <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{L.addNewTerm}</p>
             <div className="space-y-1.5">
               <input
                 value={addAdlam}
                 onChange={e => setAddAdlam(e.target.value)}
                 dir="rtl"
-                placeholder="𞤢𞤣𞤤𞤢𞤥 — type ADLaM script here"
+                placeholder={L.typeAdlamPlaceholder}
                 className="w-full rounded-xl px-4 py-3 text-[var(--text-primary)] text-xl bg-[var(--input-bg)] outline-none transition-all"
                 style={{
                   fontFamily: '"Noto Sans Adlam", serif',
@@ -991,11 +1090,11 @@ export function AdminPortal({ user }: { user: User }) {
               {addAdlam.trim() !== '' && (
                 adlamRatio(addAdlam) >= 0.8 ? (
                   <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: '#4ade80' }}>
-                    ✓ ADLaM script detected
+                    {L.adlamDetected}
                   </p>
                 ) : (
                   <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: '#f87171' }}>
-                    ✗ Type in ADLaM script — characters not recognized as ADLaM
+                    {L.adlamNotDetected}
                   </p>
                 )
               )}
@@ -1004,7 +1103,7 @@ export function AdminPortal({ user }: { user: User }) {
               <input
                 value={addLatin}
                 onChange={e => setAddLatin(e.target.value)}
-                placeholder="English / latin"
+                placeholder={L.englishLatin}
                 className="rounded-xl px-4 py-2.5 text-[var(--text-primary)] text-sm bg-[var(--input-bg)] outline-none"
                 style={{ border: '1px solid var(--border)' }}
               />
@@ -1031,10 +1130,10 @@ export function AdminPortal({ user }: { user: User }) {
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition-all disabled:opacity-40"
               style={{ background: addSuccess ? '#4ade8030' : 'var(--gradient-brand)', color: addSuccess ? '#4ade80' : '#000' }}>
               {addSubmitting
-                ? <><RefreshCw className="w-4 h-4 animate-spin" /> Adding…</>
+                ? <><RefreshCw className="w-4 h-4 animate-spin" /> {L.adding}</>
                 : addSuccess
-                  ? <><CheckCircle2 className="w-4 h-4" /> Added!</>
-                  : '+ Add to dictionary'}
+                  ? <><CheckCircle2 className="w-4 h-4" /> {L.added}</>
+                  : L.addToDict}
             </button>
           </div>
 
@@ -1049,7 +1148,7 @@ export function AdminPortal({ user }: { user: User }) {
                   color: dictFilter === f ? 'var(--text-primary)' : 'var(--text-muted)',
                   border: 'none',
                 }}>
-                {f}
+                {L.dictFilterLabels[f] ?? f}
               </button>
             ))}
           </div>
@@ -1061,13 +1160,13 @@ export function AdminPortal({ user }: { user: User }) {
             </div>
           ) : dictTerms.length === 0 ? (
             <div className="text-center py-20 space-y-3">
-              <p className="text-[var(--text-faint)] text-sm">No terms yet.</p>
+              <p className="text-[var(--text-faint)] text-sm">{L.noTerms}</p>
               <button onClick={seedDictFromJson} disabled={dictSeeding}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-80 disabled:opacity-40 mx-auto"
                 style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
                 {dictSeeding
-                  ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Seeding…</>
-                  : <><BookMarked className="w-3.5 h-3.5" /> Seed 50 terms from JSON</>}
+                  ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> {L.seeding}</>
+                  : <><BookMarked className="w-3.5 h-3.5" /> {L.seed50}</>}
               </button>
             </div>
           ) : (
@@ -1084,7 +1183,7 @@ export function AdminPortal({ user }: { user: User }) {
                             value={dictEditAdlam}
                             onChange={e => setDictEditAdlam(e.target.value)}
                             dir="rtl"
-                            placeholder="ADLaM script…"
+                            placeholder={L.adlamScriptPlaceholder}
                             className="w-full rounded-lg px-3 py-2 text-[var(--text-primary)] text-xl bg-[var(--input-bg)] outline-none"
                             style={{ fontFamily: '"Noto Sans Adlam", serif', border: '1px solid rgba(59,130,246,0.3)' }}
                           />
@@ -1092,14 +1191,14 @@ export function AdminPortal({ user }: { user: User }) {
                             <input
                               value={dictEditFr}
                               onChange={e => setDictEditFr(e.target.value)}
-                              placeholder="French translation"
+                              placeholder={L.frTranslation}
                               className="flex-1 rounded-lg px-3 py-2 text-[var(--text-primary)] text-sm bg-[var(--input-bg)] outline-none"
                               style={{ border: '1px solid var(--border)' }}
                             />
                             <input
                               value={dictEditDomain}
                               onChange={e => setDictEditDomain(e.target.value)}
-                              placeholder="domain"
+                              placeholder={L.domainPlaceholder}
                               className="w-28 rounded-lg px-3 py-2 text-[var(--text-primary)] text-sm bg-[var(--input-bg)] outline-none"
                               style={{ border: '1px solid var(--border)' }}
                             />
@@ -1108,11 +1207,11 @@ export function AdminPortal({ user }: { user: User }) {
                             <button onClick={() => saveEditDict(t.id)} disabled={dictActionLoading === t.id}
                               className="px-4 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                               style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                              Save
+                              {L.save}
                             </button>
                             <button onClick={() => setDictEditingId(null)}
                               className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors px-2">
-                              Cancel
+                              {L.cancel}
                             </button>
                           </div>
                         </div>
@@ -1142,19 +1241,19 @@ export function AdminPortal({ user }: { user: User }) {
                               onClick={() => { setDictEditingId(t.id); setDictEditAdlam(t.adlam); setDictEditFr(t.fr); setDictEditDomain(t.domain); }}
                               className="px-2.5 py-1.5 rounded-lg text-xs transition-all hover:opacity-80"
                               style={{ background: 'var(--btn-bg)', color: '#71717a' }}>
-                              ✏️ Edit
+                              {L.edit}
                             </button>
                             {t.status === 'draft' ? (
                               <button onClick={() => verifyTerm(t.id)} disabled={dictActionLoading === t.id}
                                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                                 style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Verify
+                                <CheckCircle2 className="w-3.5 h-3.5" /> {L.verify}
                               </button>
                             ) : (
                               <button onClick={() => unverifyTerm(t.id)} disabled={dictActionLoading === t.id}
                                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                                 style={{ background: '#f8717120', color: '#f87171', border: '1px solid #f8717140' }}>
-                                <XCircle className="w-3.5 h-3.5" /> Unverify
+                                <XCircle className="w-3.5 h-3.5" /> {L.unverify}
                               </button>
                             )}
                           </div>
@@ -1184,11 +1283,11 @@ export function AdminPortal({ user }: { user: User }) {
                       color: statusFilter === s ? 'var(--text-primary)' : 'var(--text-muted)',
                       border: 'none',
                     }}>
-                    {s}
+                    {L.statusLabels[s] ?? s}
                   </button>
                 ))}
               </div>
-              <span className="text-[var(--text-faint)] text-xs ml-auto">{filtered.length} results</span>
+              <span className="text-[var(--text-faint)] text-xs ml-auto">{filtered.length} {L.results}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {sources.map(s => {
@@ -1215,7 +1314,7 @@ export function AdminPortal({ user }: { user: User }) {
               <RefreshCw className="w-6 h-6 text-[var(--text-faint)] animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-20 text-[var(--text-faint)] text-sm">No submissions</div>
+            <div className="text-center py-20 text-[var(--text-faint)] text-sm">{L.noSubmissions}</div>
           ) : (
             <div className="space-y-3">
               {filtered.slice(0, visibleCount).map(s => (
@@ -1230,7 +1329,7 @@ export function AdminPortal({ user }: { user: User }) {
                       style={{ background: `${ratioColor(s.adlam_ratio)}20`, color: ratioColor(s.adlam_ratio) }}>
                       𞤀𞤁𞤂 {Math.round(s.adlam_ratio * 100)}%
                     </span>
-                    <span className="text-xs text-[var(--text-faint)]">{s.word_count ?? s.raw_text?.trim().split(/\s+/).filter(Boolean).length ?? 0} words</span>
+                    <span className="text-xs text-[var(--text-faint)]">{s.word_count ?? s.raw_text?.trim().split(/\s+/).filter(Boolean).length ?? 0} {L.words}</span>
                     {s.domain && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                         style={{ background: `${DOMAIN_COLORS[s.domain]}20`, color: DOMAIN_COLORS[s.domain] }}>
@@ -1242,7 +1341,7 @@ export function AdminPortal({ user }: { user: User }) {
                         background: s.status === 'verified' ? '#4ade8020' : s.status === 'rejected' ? '#f8717120' : s.status === 'needs_adlam' ? '#bca2ff20' : '#fd8b0020',
                         color: s.status === 'verified' ? '#4ade80' : s.status === 'rejected' ? '#f87171' : s.status === 'needs_adlam' ? '#bca2ff' : '#fd8b00',
                       }}>
-                      {s.status === 'needs_adlam' ? 'needs ADLaM' : s.status}
+                      {L.statusLabels[s.status] ?? s.status}
                     </span>
                   </div>
 
@@ -1273,7 +1372,7 @@ export function AdminPortal({ user }: { user: User }) {
                         )}
                         {s.pulaar_latin && (
                           <span className="px-2.5 py-1 rounded-lg font-bold" style={{ background: '#4ade8015', color: '#4ade80' }}>
-                            Pulaar (Latin): {s.pulaar_latin}
+                            {L.pulaarLatin} {s.pulaar_latin}
                           </span>
                         )}
                       </div>
@@ -1282,13 +1381,13 @@ export function AdminPortal({ user }: { user: User }) {
                     {/* audio: contributor + verified Pulaar */}
                     {s.audio_url && (
                       <div className="space-y-1">
-                        <p className="text-xs text-[var(--text-faint)] uppercase tracking-widest font-bold">Contributor audio</p>
+                        <p className="text-xs text-[var(--text-faint)] uppercase tracking-widest font-bold">{L.contributorAudio}</p>
                         <audio src={s.audio_url} controls className="w-full" />
                       </div>
                     )}
                     {s.pulaar_audio_url && (
                       <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#4ade80' }}>✓ Verified Pulaar audio</p>
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#4ade80' }}>{L.verifiedAudio}</p>
                         <audio src={s.pulaar_audio_url} controls className="w-full" />
                       </div>
                     )}
@@ -1297,7 +1396,7 @@ export function AdminPortal({ user }: { user: User }) {
                       <div className="space-y-3">
                         <div className="space-y-1.5">
                           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#bca2ff' }}>
-                            ADLaM equivalent
+                            {L.adlamEquivalent}
                           </p>
                           <textarea
                             value={editText}
@@ -1311,7 +1410,7 @@ export function AdminPortal({ user }: { user: User }) {
                               el.style.height = 'auto';
                               el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.6) + 'px';
                             }}
-                            placeholder="𞤢𞤣𞤤𞤢𞤥… write the ADLaM here"
+                            placeholder={L.writeAdlamPlaceholder}
                             className="w-full rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] leading-relaxed resize-y"
                             dir="rtl"
                             style={{
@@ -1330,7 +1429,7 @@ export function AdminPortal({ user }: { user: User }) {
                         <AudioRecorder
                           value={editAudio}
                           onChange={setEditAudio}
-                          label="Record Pulaar pronunciation (optional)"
+                          label={L.recordPulaar}
                           accent="#4ade80"
                           disabled={actionLoading === s.id}
                         />
@@ -1353,11 +1452,11 @@ export function AdminPortal({ user }: { user: User }) {
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                             style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
                             {actionLoading === s.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                            {s.status === 'needs_adlam' ? 'Save ADLaM → queue' : 'Save Edit'}
+                            {s.status === 'needs_adlam' ? L.saveAdlamQueue : L.saveEdit}
                           </button>
                           <button onClick={() => { setEditingId(null); setEditText(''); setEditAudio(null); }}
                             className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
-                            Cancel
+                            {L.cancel}
                           </button>
                         </>
                       ) : approvingId === s.id ? (
@@ -1370,11 +1469,11 @@ export function AdminPortal({ user }: { user: User }) {
                           <button onClick={() => approve(s.id)} disabled={actionLoading === s.id}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                             style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Confirm
+                            <CheckCircle2 className="w-3.5 h-3.5" /> {L.confirm}
                           </button>
                           <button onClick={() => setApprovingId(null)}
                             className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
-                            Cancel
+                            {L.cancel}
                           </button>
                         </>
                       ) : (
@@ -1383,26 +1482,26 @@ export function AdminPortal({ user }: { user: User }) {
                             <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? ''); setEditAudio(null); }}
                               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
                               style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                              ✏️ Complete ADLaM
+                              {L.completeAdlam}
                             </button>
                           ) : (
                             <>
                               <button onClick={() => setApprovingId(s.id)}
                                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
                                 style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                                <CheckCircle2 className="w-3.5 h-3.5" /> {L.approve}
                               </button>
                               <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? s.raw_text); setEditAudio(null); }}
                                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
                                 style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                                ✏️ Edit
+                                {L.edit}
                               </button>
                             </>
                           )}
                           <button onClick={() => reject(s.id)} disabled={actionLoading === s.id}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
                             style={{ background: '#f8717120', color: '#f87171', border: '1px solid #f8717140' }}>
-                            <XCircle className="w-3.5 h-3.5" /> Reject
+                            <XCircle className="w-3.5 h-3.5" /> {L.reject}
                           </button>
                         </>
                       )}
@@ -1415,7 +1514,7 @@ export function AdminPortal({ user }: { user: User }) {
                   onClick={() => setVisibleCount(c => c + 40)}
                   className="w-full py-3 rounded-2xl border border-[var(--border)] text-sm font-bold transition-colors"
                   style={{ background: 'var(--btn-bg)', color: 'var(--text-secondary)' }}>
-                  Load more ({filtered.length - visibleCount} remaining)
+                  {L.loadMore} ({filtered.length - visibleCount} {L.remaining})
                 </button>
               )}
             </div>
