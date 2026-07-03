@@ -629,7 +629,9 @@ export function AdminPortal({ user }: { user: User }) {
   const sources = ['all', ...Array.from(new Set(submissions.map(s => s.source)))];
 
   return (
-    <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-8 space-y-6" style={{ fontFamily: MANROPE }}>
+    // data-theme="dark": the admin portal is an internal tool styled dark-only —
+    // re-scoping the CSS vars here keeps it consistent when the app is in light mode.
+    <div data-theme="dark" className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-4 md:p-8 space-y-6" style={{ fontFamily: MANROPE, background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
 
       {/* header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">

@@ -200,7 +200,8 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
   const inputCls = 'w-full rounded-xl px-4 py-3 text-white bg-black/40 outline-none transition-all placeholder-zinc-600';
 
   return (
-    <div className="flex-1 overflow-y-auto p-8" style={{ fontFamily: MANROPE }}>
+    // dark-only internal tool — see AdminPortal for the data-theme re-scoping trick
+    <div data-theme="dark" className="flex-1 overflow-y-auto p-8" style={{ fontFamily: MANROPE, background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
       <div className="max-w-2xl mx-auto space-y-6">
 
         {/* header */}

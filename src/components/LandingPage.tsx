@@ -116,8 +116,8 @@ export function LandingPage({
           </button>
           <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} buttonClassName="!px-2.5 md:!px-4" />
           <button onClick={() => { setAuthMode('login'); setAuthError(null); setAuthModalOpen(true); }}
-            className="hidden sm:inline-flex text-sm font-bold text-zinc-400 hover:text-white transition-colors px-2.5 md:px-4 py-2 rounded-xl hover:bg-white/5"
-            style={{ fontFamily: MANROPE }}>
+            className="hidden sm:inline-flex text-sm font-bold transition-colors px-2.5 md:px-4 py-2 rounded-xl"
+            style={{ color: 'var(--text-secondary)', fontFamily: MANROPE }}>
             {t.signIn}
           </button>
           <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
@@ -376,12 +376,12 @@ export function LandingPage({
             <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(20px)' }}
               onClick={() => { setAuthModalOpen(false); setAuthError(null); }} />
             <motion.div role="dialog" aria-modal="true" aria-label="Sign in" className="relative z-10 w-full rounded-3xl border border-white/10 p-8"
-              style={{ maxWidth: 420, background: '#0f0f0f', boxShadow: '0 40px 100px rgba(0,0,0,0.85)' }}
+              style={{ maxWidth: 420, background: 'var(--card-elevated)', border: '1px solid var(--border)', boxShadow: '0 40px 100px rgba(0,0,0,0.55)' }}
               initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}>
 
               <button aria-label="Close" onClick={() => { setAuthModalOpen(false); setAuthError(null); }}
-                className="absolute top-4 right-4 p-2 rounded-lg text-zinc-600 hover:text-white hover:bg-white/5 transition-all">
+                className="absolute top-4 right-4 p-2 rounded-lg transition-all" style={{ color: 'var(--text-muted)' }}>
                 <X className="w-4 h-4" />
               </button>
 
@@ -407,7 +407,7 @@ export function LandingPage({
                   </button>
                   {authError && <p className="text-red-400 text-xs text-center">{authError}</p>}
                   <button onClick={() => { setAuthMode('login'); setAuthError(null); }}
-                    className="w-full text-sm font-medium transition-colors hover:text-white text-center"
+                    className="w-full text-sm font-medium transition-colors text-center"
                     style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
                     Or use email & password
                   </button>
@@ -415,9 +415,11 @@ export function LandingPage({
               ) : (
                 <div className="space-y-3">
                   <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}
-                    className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all" />
+                    className="gando-input w-full rounded-xl px-4 py-3 border outline-none transition-all"
+                    style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }} />
                   <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-                    className="gando-input w-full rounded-xl px-4 py-3 text-white border border-white/10 outline-none transition-all"
+                    className="gando-input w-full rounded-xl px-4 py-3 border outline-none transition-all"
+                    style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}
                     onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }} />
                   {authError && <p className="text-red-400 text-xs">{authError}</p>}
                   <button onClick={handleLogin}
@@ -433,7 +435,7 @@ export function LandingPage({
                       {authMode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}
                     </button>
                     <button onClick={() => { setAuthMode('google'); setAuthError(null); }}
-                      className="text-xs font-medium transition-colors hover:text-white text-center" style={{ color: '#52525b' }}>
+                      className="text-xs font-medium transition-colors text-center" style={{ color: 'var(--text-muted)' }}>
                       ← Back to Google login
                     </button>
                   </div>
