@@ -425,7 +425,7 @@ const ChatImpl: React.FC<ChatProps> = ({
       {/* Header bar (skipped when the parent view provides its own) */}
       {!hideHeader && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 10 }}>
-          <span style={{ fontFamily: 'Manrope, sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>Chat with Gando</span>
+          <span style={{ fontFamily: 'Manrope, var(--adlam-ui), sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>Chat with Gando</span>
         </div>
       )}
       {/* Background Glows */}
@@ -505,7 +505,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           aria-haspopup="menu" aria-expanded={modelOpen}
                           title="Choose the AI model"
                           className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/5 transition-colors"
-                          style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}
+                          style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}
                         >
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider ?? 'claude'] }} />
                           {PROVIDER_LABEL[provider ?? 'claude']}
@@ -524,8 +524,8 @@ const ChatImpl: React.FC<ChatProps> = ({
                               >
                                 <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                                 <div style={{ minWidth: 0, flex: 1 }}>
-                                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                                  <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{m.label}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{m.sub}</div>
                                 </div>
                                 {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                               </button>
@@ -535,7 +535,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)', width: '100%', textAlign: 'left', borderLeft: 'none', borderRight: 'none', borderBottom: 'none' }}>
                               <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
+                              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                             </button>
                           </div>
                         )}
@@ -848,7 +848,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           onClick={action}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
                           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', background: 'transparent' }}
                         >
                           <Icon className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                           {label}
@@ -864,7 +864,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                     onClick={() => setModelOpen(o => !o)}
                           aria-haspopup="menu" aria-expanded={modelOpen}
                     title="Choose the AI model"
-                    style={{ height: 32, borderRadius: 8, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden' }}
+                    style={{ height: 32, borderRadius: 8, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', color: 'var(--text-secondary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden' }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider ?? 'claude'], flexShrink: 0 }} />
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{PROVIDER_LABEL[provider ?? 'claude']}</span>
@@ -884,8 +884,8 @@ const ChatImpl: React.FC<ChatProps> = ({
                         >
                           <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                            <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{m.label}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{m.sub}</div>
                           </div>
                           {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                         </button>
@@ -895,7 +895,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)', width: '100%', textAlign: 'left', borderLeft: 'none', borderRight: 'none', borderBottom: 'none' }}>
                         <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                       </button>
                     </div>
                   )}

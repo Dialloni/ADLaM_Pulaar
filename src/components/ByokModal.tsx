@@ -25,7 +25,7 @@ export const ByokModal: React.FC<{
   };
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, padding: 16 }}>
-      <div role="dialog" aria-modal="true" aria-label="API keys" onClick={e => e.stopPropagation()} style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', padding: 24, fontFamily: 'Inter, sans-serif' }}>
+      <div role="dialog" aria-modal="true" aria-label="API keys" onClick={e => e.stopPropagation()} style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto', padding: 24, fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>{fr ? 'Utilisez votre propre clé API' : 'Bring your own API key'}</h2>
           <button aria-label="Close" onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X className="w-5 h-5" /></button>

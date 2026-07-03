@@ -38,7 +38,7 @@ export const ModeSwitch: React.FC<{
         style={{
           height: 32, borderRadius: 8, background: 'var(--btn-bg)', border: '1px solid var(--border)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px',
-          color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600,
+          color: 'var(--text-secondary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 12, fontWeight: 600,
         }}
       >
         <active.Icon className="w-3.5 h-3.5" style={{ color: '#3b82f6' }} />
@@ -58,8 +58,8 @@ export const ModeSwitch: React.FC<{
             >
               <o.Icon className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{o.label}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{o.sub}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{o.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{o.sub}</div>
               </div>
               {mode === o.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
             </div>

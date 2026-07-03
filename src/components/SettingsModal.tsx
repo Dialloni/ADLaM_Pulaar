@@ -130,7 +130,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   ];
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, padding: 16, fontFamily: 'Inter, sans-serif' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, padding: 16, fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>
       <div onClick={e => e.stopPropagation()} className="settings-modal" style={{ background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 20, width: '100%', maxWidth: 720, height: 560, maxHeight: '85vh', overflow: 'hidden', display: 'flex', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
         {/* sidebar tabs */}
         <div className="settings-sidebar" style={{ width: 180, flexShrink: 0, borderRight: '1px solid var(--border)', padding: 12, display: 'flex', flexDirection: 'column', gap: 2 }}>
