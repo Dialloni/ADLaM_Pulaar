@@ -13,10 +13,15 @@ interface LanguageSelectorProps {
   dropUp?: boolean;
   buttonClassName?: string;
   iconOnly?: boolean; // compact globe trigger (collapsed sidebar rail)
+  /* When provided, the ADLaM entry splits into two rows — joined (cursive) and
+     unjoined (standalone letters) — each rendered in its own font so the user
+     sees the difference before choosing. */
+  adlamStyle?: 'joined' | 'unjoined';
+  onAdlamStyle?: (style: 'joined' | 'unjoined') => void;
 }
 
 export function LanguageSelector({
-  currentLanguage, languages, onSelect, className, dropUp, buttonClassName, iconOnly,
+  currentLanguage, languages, onSelect, className, dropUp, buttonClassName, iconOnly, adlamStyle, onAdlamStyle,
 }: LanguageSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [style, setStyle] = useState<React.CSSProperties>({});
@@ -26,7 +31,7 @@ export function LanguageSelector({
   const computeStyle = () => {
     if (!btnRef.current) return;
     const r = btnRef.current.getBoundingClientRect();
-    const approxMenuH = languages.length * 46 + 12;
+    const approxMenuH = (languages.length + (onAdlamStyle ? 1 : 0)) * 46 + 12;
     const spaceBelow = window.innerHeight - r.bottom;
 
     const openUp = dropUp || spaceBelow < approxMenuH + 8;
@@ -74,23 +79,50 @@ export function LanguageSelector({
       style={{ position: 'fixed', zIndex: 99999, background: 'var(--card-elevated)', border: '1px solid var(--border)', ...style }}
       className="rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] overflow-hidden backdrop-blur-xl"
     >
-      {languages.map(lang => (
-        <button
-          key={lang.code}
-          onClick={() => { onSelect(lang); setIsOpen(false); }}
-          className={cn(
-            'w-full flex items-center gap-3 px-4 py-3 text-xs font-bold transition-all text-left hover:bg-white/5',
-            lang.code === 'ff-adlm' && 'font-adlam',
-            currentLanguage.code === lang.code ? 'text-black' : 'text-zinc-300',
-          )}
-          style={currentLanguage.code === lang.code
-            ? { background: 'linear-gradient(135deg,#3b82f6,#fd8b00)' }
-            : undefined}
-        >
-          <Globe className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-          {lang.name}
-        </button>
-      ))}
+      {languages.flatMap(lang => {
+        if (lang.code === 'ff-adlm' && onAdlamStyle) {
+          // two script styles, each row previews itself in its own font
+          return (['joined', 'unjoined'] as const).map(style => {
+            const active = currentLanguage.code === lang.code && adlamStyle === style;
+            return (
+              <button
+                key={`${lang.code}-${style}`}
+                onClick={() => { onAdlamStyle(style); onSelect(lang); setIsOpen(false); }}
+                className={cn(
+                  'w-full flex items-center gap-3 px-4 py-3 text-xs font-bold transition-all text-left hover:bg-white/5',
+                  active ? 'text-black' : 'text-zinc-300',
+                )}
+                style={{
+                  ...(active ? { background: 'linear-gradient(135deg,#3b82f6,#fd8b00)' } : {}),
+                  fontFamily: style === 'unjoined'
+                    ? '"Noto Sans Adlam Unjoined", sans-serif'
+                    : 'var(--font-adlam)',
+                }}
+              >
+                <Globe className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+                {lang.name}
+              </button>
+            );
+          });
+        }
+        return [(
+          <button
+            key={lang.code}
+            onClick={() => { onSelect(lang); setIsOpen(false); }}
+            className={cn(
+              'w-full flex items-center gap-3 px-4 py-3 text-xs font-bold transition-all text-left hover:bg-white/5',
+              lang.code === 'ff-adlm' && 'font-adlam',
+              currentLanguage.code === lang.code ? 'text-black' : 'text-zinc-300',
+            )}
+            style={currentLanguage.code === lang.code
+              ? { background: 'linear-gradient(135deg,#3b82f6,#fd8b00)' }
+              : undefined}
+          >
+            <Globe className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
+            {lang.name}
+          </button>
+        )];
+      })}
     </div>,
     document.body,
   ) : null;

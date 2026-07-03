@@ -562,6 +562,24 @@ export default function App() {
   };
 
   /* Greeting: stable random pick per session; previous visit read once, then stamped. */
+  /* ADLaM reading mode: joined (authentic cursive, default) vs unjoined
+     (standalone letters — easier for new readers). Persisted per browser. */
+  const [adlamStyle, setAdlamStyle] = useState<'joined' | 'unjoined'>(() => {
+    try { return localStorage.getItem('gando_adlam_style') === 'joined' ? 'joined' : 'unjoined'; } catch { return 'unjoined'; }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.adlam = adlamStyle;
+    try { localStorage.setItem('gando_adlam_style', adlamStyle); } catch { /* ignore */ }
+  }, [adlamStyle]);
+
+  /* Script style for GENERATED apps when building in ADLaM: unjoined default
+     (easier for the general public reading the built site); fluent builders can
+     switch to joined. Corpus/admin never touched by this. */
+  const [buildScript, setBuildScript] = useState<'joined' | 'unjoined'>(() => {
+    try { return localStorage.getItem('gando_build_script') === 'joined' ? 'joined' : 'unjoined'; } catch { return 'unjoined'; }
+  });
+  useEffect(() => { try { localStorage.setItem('gando_build_script', buildScript); } catch { /* ignore */ } }, [buildScript]);
+
   const [greetSeed] = useState(() => Math.random());
   // greeting emoji (☀️/🌙/🎉) shows briefly, then fades — decoration, not furniture
   const [greetEmojiVisible, setGreetEmojiVisible] = useState(true);
@@ -808,7 +826,10 @@ export default function App() {
       : importMode === 'figma'
       ? `Build a pixel-perfect web UI matching this Figma design: ${input}`
       : input;
-    const prompt = extraContext ? `${extraContext}\n\n${basePrompt}` : basePrompt;
+    let prompt = extraContext ? `${extraContext}\n\n${basePrompt}` : basePrompt;
+    if (selectedLang.code === 'ff-adlm' && buildScript === 'unjoined') {
+      prompt += `\n\nADLaM font requirement: render ALL ADLaM text with the "Noto Sans Adlam Unjoined" Google Font (letters NOT connected — easier for new readers). Include <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Adlam+Unjoined:wght@400;700&display=swap" rel="stylesheet"> and use font-family: 'Noto Sans Adlam Unjoined', sans-serif. Do NOT use the joined "Noto Sans Adlam" font.`;
+    }
     const originalInput = input; // restore on stop-before-any-code so the user can retry
     setInput('');
     try {
@@ -964,6 +985,8 @@ export default function App() {
       setMode={setMode}
       byokKeys={byokKeys}
       saveByokKeys={saveByokKeys}
+      adlamStyle={adlamStyle}
+      onAdlamStyle={st => { setAdlamStyle(st); setBuildScript(st); }}
     />
   );
 
@@ -1016,7 +1039,7 @@ export default function App() {
                   onKeyDown={e => { if (e.key === 'Escape') setSearchModalOpen(false); }}
                   placeholder={selectedLang.code === 'fr' ? 'Rechercher projets et discussions…' : 'Search projects and chats…'}
                   className="gando-input"
-                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 15, fontFamily: 'Inter, sans-serif' }} />
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: 15, fontFamily: 'Inter, var(--adlam-ui), sans-serif' }} />
                 <button onClick={() => setSearchModalOpen(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X className="w-4 h-4" /></button>
               </div>
               <div style={{ overflowY: 'auto', padding: 8 }}>
@@ -1192,7 +1215,7 @@ export default function App() {
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all hover:bg-white/5"
                     style={{ color: 'var(--text-muted)' }}>
                     <Sparkles className="w-3 h-3 flex-shrink-0 opacity-60" style={{ color: P }} />
-                    <span className="text-xs font-medium truncate" style={{ fontFamily: 'Inter, sans-serif' }}>{p.name}</span>
+                    <span className="text-xs font-medium truncate" style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{p.name}</span>
                   </button>
                 ))}
               </div>
@@ -1206,9 +1229,9 @@ export default function App() {
           <div className={cn('px-3 pb-1', sidebarCollapsed && 'flex justify-center')}>
             {sidebarCollapsed ? (
               /* popup menu next to the rail — no sidebar expand needed (Claude-style) */
-              <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} dropUp iconOnly />
+              <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} dropUp iconOnly adlamStyle={adlamStyle} onAdlamStyle={st => { setAdlamStyle(st); setBuildScript(st); }} />
             ) : (
-              <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} dropUp buttonClassName="w-full justify-between" />
+              <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} dropUp buttonClassName="w-full justify-between" adlamStyle={adlamStyle} onAdlamStyle={st => { setAdlamStyle(st); setBuildScript(st); }} />
             )}
           </div>
 
@@ -1230,7 +1253,7 @@ export default function App() {
                     <p className={cn('text-sm font-bold text-white truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
                       {user.displayName || user.email?.split('@')[0] || 'Builder'}
                     </p>
-                    <p className="text-[11px] text-zinc-500 truncate" style={{ fontFamily: 'Inter, sans-serif' }}>{user.email}</p>
+                    <p className="text-[11px] text-zinc-500 truncate" style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{user.email}</p>
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" style={{ transform: 'rotate(-90deg)' }} />
                 </>
@@ -1239,29 +1262,29 @@ export default function App() {
             {userMenuOpen && createPortal(
               /* portaled to <body>: the sidebar's transform+overflow would clip it (worst when collapsed) */
               <div className="user-menu-container" style={{ position: 'fixed', bottom: sidebarCollapsed ? 16 : 74, left: sidebarCollapsed ? 66 : 12, width: 232, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', zIndex: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
+                <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{user.email}</div>
                 <button onClick={e => { e.stopPropagation(); setSettingsOpen(true); setUserMenuOpen(false); }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                   <Settings size={14} /> {t.settingsNav}
                 </button>
                 <button onClick={e => { e.stopPropagation(); setPage('status'); setCurrentProject(null); setUserMenuOpen(false); setMobileNavOpen(false); }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                   <Activity size={14} /> {t.systemStatusLabel}
                 </button>
                 <button onClick={e => { e.stopPropagation(); setPage('docs'); setCurrentProject(null); setUserMenuOpen(false); setMobileNavOpen(false); }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                   <BookOpen size={14} /> {t.documentationLabel}
                 </button>
                 <button onClick={e => { e.stopPropagation(); toggleTheme(); }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                   {resolvedTheme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
                   {resolvedTheme === 'dark'
                     ? (selectedLang.code === 'fr' ? 'Mode clair' : 'Light mode')
@@ -1271,7 +1294,7 @@ export default function App() {
                 <button onClick={e => { e.stopPropagation(); logout(); setUserMenuOpen(false); }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                   <LogOut size={14} /> {t.signOut}
                 </button>
               </div>,
@@ -1670,13 +1693,13 @@ export default function App() {
                       style={isMobile ? { height: '68vh', flexShrink: 0 } : undefined}>
                       <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--app-bg)' }}>
                         <button onClick={() => setSelectedCommunity(null)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#fff'}
                           onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#adaaaa'}>
                           <ChevronRight className="w-3 h-3 rotate-180" /> {t.templatesNav}
                         </button>
                         <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>/</span>
-                        <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{cc.name}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{cc.name}</span>
                       </div>
                       <div className="flex-1 relative" style={{ background: 'var(--app-bg)' }}>
                         <iframe srcDoc={cc.code} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-same-origin" />
@@ -1684,18 +1707,18 @@ export default function App() {
                     </div>
                     {/* RIGHT (mobile: BELOW): info + actions */}
                     <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: 'var(--app-bg)', padding: 20 } : { width: 340, flexShrink: 0, background: 'var(--app-bg)', padding: 28 }}>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedCommunity(null)}>{t.templatesNav}</span>
                         <ChevronRight className="w-3 h-3" />
                         <span style={{ color: 'var(--text-muted)' }}>{cc.name}</span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cc.language}</span>
-                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
+                        <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cc.language}</span>
+                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{t.communityTitle}</span>
                       </div>
                       <h2 className={cn('font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 26, lineHeight: 1.15 }}>{cc.name}</h2>
-                      <p style={{ fontSize: 14, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, marginBottom: 24, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description) || cc.name}</p>
+                      <p style={{ fontSize: 14, color: '#a1a1aa', fontFamily: 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.6, marginBottom: 24, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description) || cc.name}</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
                         <button onClick={() => remixCommunity(cc)}
                           className={cn(isAdlam && 'font-adlam')}
@@ -1703,7 +1726,7 @@ export default function App() {
                           {tl.useTemplate}
                         </button>
                         <button onClick={() => openFullPreview(cc.code)}
-                          style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                          style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer' }}>
                           Open full preview ↗
                         </button>
                       </div>
@@ -1711,17 +1734,17 @@ export default function App() {
                         <>
                           {/* original prompt (the language it was built in) */}
                           <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 12 }}>
-                            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Original prompt</p>
-                            <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description)}</p>
+                            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Original prompt</p>
+                            <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.6, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description)}</p>
                           </div>
                           {/* translation into the selected language */}
                           {selectedLang.code !== 'en' && (
                             <div style={{ padding: '14px 16px', borderRadius: 12, background: `${T}0c`, border: `1px solid ${T}33`, marginBottom: 24 }}>
-                              <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, fontWeight: 700, color: T, fontFamily: isAdlam ? undefined : 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>{selectedLang.name}</p>
+                              <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, fontWeight: 700, color: T, fontFamily: isAdlam ? undefined : 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>{selectedLang.name}</p>
                               {promptTr.loading ? (
-                                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', fontStyle: 'italic' }}>…</p>
+                                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontStyle: 'italic' }}>…</p>
                               ) : (
-                                <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#d4d4d8', fontFamily: isAdlam ? undefined : 'Inter, sans-serif', lineHeight: 1.7, overflowWrap: 'anywhere' }}>{promptTr.text || cleanPrompt(cc.description)}</p>
+                                <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: '#d4d4d8', fontFamily: isAdlam ? undefined : 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.7, overflowWrap: 'anywhere' }}>{promptTr.text || cleanPrompt(cc.description)}</p>
                               )}
                             </div>
                           )}
@@ -1744,14 +1767,14 @@ export default function App() {
                       <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, background: 'var(--app-bg)' }}>
                         <button
                           onClick={() => setSelectedTemplate(null)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, fontFamily: 'Inter, sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 12, fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', padding: '4px 8px', borderRadius: 6 }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#fff'}
                           onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#adaaaa'}
                         >
                           <ChevronRight className="w-3 h-3 rotate-180" /> {t.templatesNav}
                         </button>
                         <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12 }}>/</span>
-                        <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{tr.name}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{tr.name}</span>
                       </div>
                       {/* iframe */}
                       <div className="flex-1 relative" style={{ background: selectedTemplate.color }}>
@@ -1766,7 +1789,7 @@ export default function App() {
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center gap-3">
                             <Layers className="w-12 h-12 opacity-20" style={{ color: '#fff' }} />
-                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>Preview coming soon</span>
+                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>Preview coming soon</span>
                           </div>
                         )}
                       </div>
@@ -1791,7 +1814,7 @@ export default function App() {
                     {/* RIGHT (mobile: BELOW): info panel */}
                     <div className={cn(!isMobile && 'overflow-y-auto')} style={isMobile ? { width: '100%', flexShrink: 0, background: 'var(--app-bg)', padding: 20 } : { width: 340, flexShrink: 0, background: 'var(--app-bg)', padding: 28 }}>
                       {/* breadcrumb */}
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ cursor: 'pointer' }} onClick={() => setSelectedTemplate(null)}>{t.templatesNav}</span>
                         <ChevronRight className="w-3 h-3" />
                         <span style={{ color: 'var(--text-muted)' }}>{tr.name}</span>
@@ -1799,8 +1822,8 @@ export default function App() {
 
                       {/* category + city */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{selectedTemplate.category}</span>
-                        <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{selectedTemplate.city}</span>
+                        <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{selectedTemplate.category}</span>
+                        <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{selectedTemplate.city}</span>
                       </div>
 
                       {/* name */}
@@ -1808,7 +1831,7 @@ export default function App() {
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 26, lineHeight: 1.15 }}>{tr.name}</h2>
 
                       {/* description */}
-                      <p style={{ fontSize: 14, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6, marginBottom: 24 }}>{tr.description}</p>
+                      <p style={{ fontSize: 14, color: '#a1a1aa', fontFamily: 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.6, marginBottom: 24 }}>{tr.description}</p>
 
                       {/* CTA buttons */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
@@ -1820,7 +1843,7 @@ export default function App() {
                         {selectedTemplate.previewUrl && (
                           <button
                             onClick={() => window.open(selectedTemplate.previewUrl!, '_blank')}
-                            style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif', cursor: 'pointer' }}>
+                            style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer' }}>
                             Open full preview ↗
                           </button>
                         )}
@@ -1828,12 +1851,12 @@ export default function App() {
 
                       {/* starter prompt preview */}
                       <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 24 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Starter prompt</p>
-                        <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, sans-serif', lineHeight: 1.6 }}>{tr.starterPrompt}</p>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Starter prompt</p>
+                        <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.6 }}>{tr.starterPrompt}</p>
                       </div>
 
                       {/* credit */}
-                      <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>{tl.credit}</p>
+                      <p style={{ fontSize: 10, color: '#52525b', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{tl.credit}</p>
                     </div>
                   </div>
                 );
@@ -1846,7 +1869,7 @@ export default function App() {
                     <div>
                       <h1 className={cn('text-4xl font-black text-white tracking-tighter', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{tl.pageTitle}</h1>
-                      <p className="text-zinc-500 mt-1" style={{ fontFamily: 'Inter, sans-serif', fontSize: 14 }}>{tl.pageSubtitle}</p>
+                      <p className="text-zinc-500 mt-1" style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 14 }}>{tl.pageSubtitle}</p>
                     </div>
                   </div>
 
@@ -1871,18 +1894,18 @@ export default function App() {
                               </div>
                             )}
                             <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Preview →</span>
+                              <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>Preview →</span>
                             </div>
                           </div>
                           {/* info */}
                           <div className="p-4">
                             <div className="flex items-center gap-2 mb-2">
-                              <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
-                              <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
+                              <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
+                              <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{tmpl.city}</span>
                             </div>
                             <h3 className={cn('font-black text-white text-sm mb-1', isAdlam && 'font-adlam')}
                               style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{tr.name}</h3>
-                            <p className="text-zinc-500 text-xs line-clamp-2" style={{ fontFamily: 'Inter, sans-serif' }}>{tr.description}</p>
+                            <p className="text-zinc-500 text-xs line-clamp-2" style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{tr.description}</p>
                           </div>
                         </motion.div>
                       );
@@ -1909,16 +1932,16 @@ export default function App() {
                               <iframe srcDoc={ct.code} title={ct.name} className="border-none pointer-events-none"
                                 style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
                               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{tl.preview}</span>
+                                <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{tl.preview}</span>
                               </div>
                             </div>
                             <div className="p-4">
                               <div className="flex items-center gap-2 mb-2">
-                                <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ct.language}</span>
-                                <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{t.communityTitle}</span>
+                                <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{ct.language}</span>
+                                <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{t.communityTitle}</span>
                               </div>
                               <h3 className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{ct.name}</h3>
-                              <p className="text-zinc-500 text-xs line-clamp-2" style={{ fontFamily: 'Inter, sans-serif' }}>{ct.description}</p>
+                              <p className="text-zinc-500 text-xs line-clamp-2" style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{ct.description}</p>
                             </div>
                           </motion.div>
                         ))}
@@ -1926,7 +1949,7 @@ export default function App() {
                     </div>
                   )}
 
-                  <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginTop: 32 }}>{tl.credit}</p>
+                  <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', marginTop: 32 }}>{tl.credit}</p>
                 </div>
               );
             })()
@@ -1939,7 +1962,7 @@ export default function App() {
               <div>
                 <h1 className={cn('text-4xl font-black text-white tracking-tighter mb-2', isAdlam && 'font-adlam')}
                   style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.languageAssetsLabel}</h1>
-                <p className={cn('text-zinc-500', isAdlam && 'font-adlam')} style={{ fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
+                <p className={cn('text-zinc-500', isAdlam && 'font-adlam')} style={{ fontSize: 14, fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>
                   Supported languages in Gando AI — switch your active language below.
                 </p>
               </div>
@@ -1967,7 +1990,7 @@ export default function App() {
                             <div>
                               <p className={cn('font-black text-sm mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
                                 style={{ color: 'var(--text-primary)', fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{lang.name}</p>
-                              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.script}</p>
+                              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{m.script}</p>
                             </div>
                             {active && (
                               <span style={{ padding: '2px 10px', borderRadius: 9999, background: `${P}20`, color: P, fontSize: 10, fontWeight: 800, fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Active</span>
@@ -1978,18 +2001,18 @@ export default function App() {
                           <div className="mb-4 p-3 rounded-xl" style={{ background: 'var(--hover-bg)', border: '1px solid var(--border)' }}>
                             <p className={cn('font-bold mb-0.5', lang.code === 'ff-adlm' && 'font-adlam')}
                               style={{ fontSize: lang.code === 'ff-adlm' ? 15 : 14, color: 'var(--text-primary)', fontFamily: lang.code === 'ff-adlm' ? undefined : MANROPE }}>{m.sample}</p>
-                            <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sampleLabel}</p>
+                            <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{m.sampleLabel}</p>
                           </div>
 
                           {/* stats row */}
                           <div className="flex gap-4 mb-4">
                             <div>
-                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Speakers</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Speakers</p>
                               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', fontFamily: MANROPE }}>{m.speakers}</p>
                             </div>
                             <div>
-                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Region</p>
-                              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', lineHeight: 1.4 }}>{m.region}</p>
+                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Region</p>
+                              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.4 }}>{m.region}</p>
                             </div>
                           </div>
 
@@ -2023,7 +2046,7 @@ export default function App() {
                       style={{ background: 'var(--card-bg)' }}>
                       <p style={{ fontSize: 22, marginBottom: 6 }}>{flag}</p>
                       <p style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: 'var(--text-primary)', marginBottom: 2 }}>{name}</p>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#52525b' }}>{region}</p>
+                      <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 10, color: '#52525b' }}>{region}</p>
                       <span style={{ marginTop: 8, display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'var(--btn-bg)', border: '1px solid var(--border)', fontSize: 9, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Soon</span>
                     </div>
                   ))}
@@ -2044,14 +2067,14 @@ export default function App() {
                       </div>
                       <div>
                         <h3 className="font-black text-white mb-1" style={{ fontFamily: MANROPE }}>ADLaM Alphabet — Complete Reference</h3>
-                        <p style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>
+                        <p style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>
                           Unicode U+1E900–U+1E95F · RTL script by Ibrahima & Abdoulaye Barry · 28 core letters + 6 loan · 40M+ Fulani speakers
                         </p>
                       </div>
                     </div>
 
                     {/* column legend */}
-                    <div className="grid grid-cols-5 gap-1 px-1" style={{ fontSize: 9, fontWeight: 700, color: '#3f3f46', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    <div className="grid grid-cols-5 gap-1 px-1" style={{ fontSize: 9, fontWeight: 700, color: '#3f3f46', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                       <span>Capital</span><span>Small</span><span>Latin</span><span>Name</span><span>IPA</span>
                     </div>
 
@@ -2072,7 +2095,7 @@ export default function App() {
                             <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
                             <span className="font-adlam text-lg" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>{sml}</span>
                             <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>{latin}</span>
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
+                            <span style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
                             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
                           </div>
                         ))}
@@ -2114,7 +2137,7 @@ export default function App() {
                             <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
                             <span className="font-adlam text-lg" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>{sml}</span>
                             <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>{latin}</span>
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
+                            <span style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
                             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
                           </div>
                         ))}
@@ -2139,7 +2162,7 @@ export default function App() {
                             <span className="font-adlam text-xl text-white" style={{ lineHeight: 1 }}>{cap}</span>
                             <span className="font-adlam text-lg" style={{ color: 'var(--text-muted)', lineHeight: 1 }}>{sml}</span>
                             <span style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 13, color: 'var(--text-primary)' }}>{latin}</span>
-                            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
+                            <span style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 11, color: 'var(--text-muted)' }}>{name}</span>
                             <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: P }}>{ipa}</span>
                           </div>
                         ))}
@@ -2159,7 +2182,7 @@ export default function App() {
                           <div key={latin} className="p-3 rounded-xl border border-white/6" style={{ background: 'rgba(255,255,255,0.02)' }}>
                             <p className="font-adlam text-white font-bold mb-0.5" style={{ fontSize: 20 }}>{adlam}</p>
                             <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>{latin}</p>
-                            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#52525b' }}>{meaning}</p>
+                            <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 11, color: '#52525b' }}>{meaning}</p>
                           </div>
                         ))}
                       </div>
@@ -2186,7 +2209,7 @@ export default function App() {
                   <p className={cn('text-zinc-500 mb-5', isAdlam && 'font-adlam')} style={{ fontSize: 14 }}>{t.docsPageSubtitle}</p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', marginBottom: 14 }}>
                     <Search className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ fontSize: 13, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>Search docs — prompting, deploy, ADLaM...</span>
+                    <span style={{ fontSize: 13, color: '#52525b', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>Search docs — prompting, deploy, ADLaM...</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {['Getting Started', 'Prompting Guide', 'Deploy', 'API Reference', 'ADLaM support'].map(chip => (
@@ -2301,7 +2324,7 @@ export default function App() {
                         </div>
                         <div>
                           <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 11, color: '#fff', lineHeight: 1.3 }}>Gando Team</p>
-                          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.3 }}>Updated 2 weeks ago</p>
+                          <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.3 }}>Updated 2 weeks ago</p>
                         </div>
                       </div>
                     </div>
@@ -2471,6 +2494,23 @@ export default function App() {
                         <Icon className="w-3 h-3" />{label}
                       </button>
                     ))}
+                    {/* script style of the GENERATED site — ADLaM builds only */}
+                    {isAdlam && (
+                      <button onClick={() => setBuildScript(b => b === 'unjoined' ? 'joined' : 'unjoined')}
+                        title={buildScript === 'unjoined'
+                          ? 'Generated app uses UNJOINED ADLaM (easy reading) — click for joined cursive'
+                          : 'Generated app uses JOINED cursive ADLaM — click for unjoined (easy reading)'}
+                        className="ml-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all"
+                        style={{
+                          fontFamily: MANROPE,
+                          color: 'var(--text-secondary)',
+                          background: 'var(--btn-bg)',
+                          border: '1px solid var(--border)',
+                        }}>
+                        <span style={{ fontFamily: buildScript === 'unjoined' ? '"Noto Sans Adlam Unjoined", sans-serif' : 'var(--font-adlam)', fontSize: 14, lineHeight: 1 }}>𞤢𞤣𞤤𞤢𞤥</span>
+                        {buildScript === 'unjoined' ? 'unjoined' : 'joined'}
+                      </button>
+                    )}
                   </div>
                   )}
 
@@ -2530,7 +2570,7 @@ export default function App() {
                                       onClick={action}
                                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
                                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', background: 'transparent' }}
                                     >
                                       <Icon className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                                       {label}
@@ -2546,7 +2586,7 @@ export default function App() {
                                 title="Choose the AI model"
                                 aria-haspopup="menu" aria-expanded={dashModelOpen}
                                 className="flex items-center gap-1.5 py-2 px-3 rounded-xl transition-colors"
-                                style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', background: 'var(--btn-bg)', border: '1px solid var(--border)' }}
+                                style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', background: 'var(--btn-bg)', border: '1px solid var(--border)' }}
                               >
                                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider] }} />
                                 {PROVIDER_LABEL[provider]}
@@ -2565,8 +2605,8 @@ export default function App() {
                                     >
                                       <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                                       <div style={{ minWidth: 0, flex: 1 }}>
-                                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{m.label}</div>
+                                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{m.sub}</div>
                                       </div>
                                       {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                                     </button>
@@ -2576,13 +2616,13 @@ export default function App() {
                                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)', width: '100%', textAlign: 'left', borderLeft: 'none', borderRight: 'none', borderBottom: 'none' }}>
                                     <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                                    <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{selectedLang.code === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
+                                    <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{selectedLang.code === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                                   </button>
                                 </div>
                               )}
                             </div>
                           </div>
-                        : <span style={{ fontSize: 11, color: '#52525b', fontFamily: 'Inter, sans-serif' }}>
+                        : <span style={{ fontSize: 11, color: '#52525b', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>
                             {importMode === 'github' ? 'github.com/user/repo' : 'figma.com/design/…'}
                           </span>
                       }
@@ -2692,12 +2732,12 @@ export default function App() {
                                 </div>
                               )}
                               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '6px 14px', borderRadius: 6, fontSize: 11, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Preview →</span>
+                                <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '6px 14px', borderRadius: 6, fontSize: 11, fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>Preview →</span>
                               </div>
                             </div>
                             <div className="p-3">
                               <p className={cn('font-black text-white text-xs mb-0.5 truncate', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{tr.name}</p>
-                              <p className="text-zinc-500 text-[10px] line-clamp-1" style={{ fontFamily: 'Inter, sans-serif' }}>{tr.description}</p>
+                              <p className="text-zinc-500 text-[10px] line-clamp-1" style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{tr.description}</p>
                             </div>
                           </motion.div>
                         );

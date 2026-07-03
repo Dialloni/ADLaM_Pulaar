@@ -36,12 +36,15 @@ interface LandingPageProps {
   setMode: (m: 'build' | 'chat') => void;
   byokKeys: Partial<Record<ByokProvider, string>>;
   saveByokKeys: (next: Partial<Record<ByokProvider, string>>) => void;
+  adlamStyle: 'joined' | 'unjoined';
+  onAdlamStyle: (s: 'joined' | 'unjoined') => void;
 }
 
 export function LandingPage({
   t, isAdlam, selectedLang, setSelectedLang, resolvedTheme, toggleTheme,
   landingInput, setLandingInput, twText, twCursor,
   provider, setProvider, modelOptions, mode, setMode, byokKeys, saveByokKeys,
+  adlamStyle, onAdlamStyle,
 }: LandingPageProps) {
   const { signIn, signInWithEmail, signUpWithEmail, error: authContextError } = useAuth();
 
@@ -114,7 +117,7 @@ export function LandingPage({
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
             {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} buttonClassName="!px-2.5 md:!px-4" />
+          <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} adlamStyle={adlamStyle} onAdlamStyle={onAdlamStyle} buttonClassName="!px-2.5 md:!px-4" />
           <button onClick={() => { setAuthMode('login'); setAuthError(null); setAuthModalOpen(true); }}
             className="hidden sm:inline-flex text-sm font-bold transition-colors px-2.5 md:px-4 py-2 rounded-xl"
             style={{ color: 'var(--text-secondary)', fontFamily: MANROPE }}>
@@ -216,7 +219,7 @@ export function LandingPage({
                     onClick={() => setLandingModelOpen(o => !o)}
                     title="Choose AI model"
                     aria-haspopup="menu" aria-expanded={landingModelOpen}
-                    style={{ height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700 }}>
+                    style={{ height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px', color: 'var(--text-secondary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 12, fontWeight: 700 }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider] }} />
                     {PROVIDER_LABEL[provider]}
                     <ChevronDown className="w-3 h-3 opacity-60" />
@@ -230,8 +233,8 @@ export function LandingPage({
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', width: '100%', textAlign: 'left', border: 'none' }}>
                           <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{m.label}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
+                            <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{m.label}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{m.sub}</div>
                           </div>
                           {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
                         </button>
@@ -241,7 +244,7 @@ export function LandingPage({
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)', width: '100%', textAlign: 'left', borderLeft: 'none', borderRight: 'none', borderBottom: 'none' }}>
                         <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
-                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{selectedLang.code === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{selectedLang.code === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
                       </button>
                     </div>
                   )}
@@ -284,7 +287,7 @@ export function LandingPage({
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 24, color: 'var(--text-primary)', margin: 0 }}>{tl.pageTitle}</h2>
-                <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{tl.pageSubtitle}</p>
+                <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{tl.pageSubtitle}</p>
               </div>
               <button onClick={() => { setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); }}
                 style={{ fontSize: 11, fontWeight: 900, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: MANROPE }}>
@@ -309,16 +312,16 @@ export function LandingPage({
                         </div>
                       )}
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>Use template →</span>
+                        <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>Use template →</span>
                       </div>
                     </div>
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
-                        <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{tmpl.city}</span>
+                        <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${P}18`, color: P, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tmpl.category}</span>
+                        <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{tmpl.city}</span>
                       </div>
                       <h3 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>{tr.name}</h3>
-                      <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: '#71717a', lineHeight: 1.5 }}>{tr.description}</p>
+                      <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 11, color: '#71717a', lineHeight: 1.5 }}>{tr.description}</p>
                     </div>
                   </motion.div>
                 );
@@ -337,7 +340,7 @@ export function LandingPage({
                 <GandoLogo size={20} />
                 <span style={{ fontFamily: MANROPE, fontSize: 16, fontWeight: 900, background: `linear-gradient(135deg,${P},${S})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Gando</span>
               </div>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#52525b', lineHeight: 1.6 }}>
+              <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 12, color: '#52525b', lineHeight: 1.6 }}>
                 Build apps in your own language — ADLaM, French, English, and more African languages coming.
               </p>
             </div>
@@ -364,7 +367,7 @@ export function LandingPage({
                       rel={'href' in lnk && lnk.href.startsWith('http') ? 'noreferrer' : undefined}
                       onClick={e => { if (!('href' in lnk)) { e.preventDefault(); setAuthMode('google'); setAuthError(null); setAuthModalOpen(true); } }}
                       className="block"
-                      style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.15s' }}
+                      style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.15s' }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'}>
                       {lnk.label}
@@ -375,7 +378,7 @@ export function LandingPage({
             ))}
           </div>
           <div className="flex flex-col md:flex-row items-center justify-between gap-3 pt-6 border-t border-white/5">
-            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, color: '#3f3f46' }}>© 2026 Gando. All rights reserved.</p>
+            <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 12, color: '#3f3f46' }}>© 2026 Gando. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -405,7 +408,7 @@ export function LandingPage({
               <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 26, color: 'var(--text-primary)', marginBottom: 6 }}>
                 {authMode === 'login' ? 'Welcome back' : authMode === 'signup' ? 'Create account' : 'Get started free'}
               </h2>
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>
+              <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>
                 {authMode === 'login' ? 'Sign in to continue building.' : authMode === 'signup' ? 'Build your first app in minutes.' : 'One click to start building.'}
               </p>
 
@@ -420,7 +423,7 @@ export function LandingPage({
                   {authError && <p className="text-red-400 text-xs text-center">{authError}</p>}
                   <button onClick={() => { setAuthMode('login'); setAuthError(null); }}
                     className="w-full text-sm font-medium transition-colors text-center"
-                    style={{ color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif', marginTop: 4 }}>
+                    style={{ color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', marginTop: 4 }}>
                     Or use email & password
                   </button>
                 </div>
@@ -455,7 +458,7 @@ export function LandingPage({
               )}
 
               {/* data/training disclosure (GDPR — opt-out lives in Settings → Privacy) */}
-              <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 11, color: 'var(--text-faint)', marginTop: 18, lineHeight: 1.5, textAlign: 'center' }}>
+              <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 11, color: 'var(--text-faint)', marginTop: 18, lineHeight: 1.5, textAlign: 'center' }}>
                 By continuing, your chats may be used to improve our AI models. You can turn this off anytime in Settings → Privacy.
               </p>
             </motion.div>
