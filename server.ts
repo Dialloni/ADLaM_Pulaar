@@ -7,6 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { verifyIdToken } from './lib/firebaseAdmin';
 import { runStream, translateText, chatStream } from './lib/llm';
+import { checkRateLimit, RATE_LIMIT_MESSAGE, type RateKind } from './lib/rateLimit';
 
 dotenv.config();
 
@@ -150,11 +151,22 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    await verifyIdToken(token);
+    (req as AuthedRequest).uid = (await verifyIdToken(token)).uid;
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
+}
+type AuthedRequest = Request & { uid: string };
+
+// Daily per-user quota on the routes that spend our LLM credits (BYOK exempt).
+function meter(kind: RateKind) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (req.body?.byok?.apiKey) return next();
+    const { ok } = await checkRateLimit((req as AuthedRequest).uid, kind);
+    if (!ok) return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
+    next();
+  };
 }
 
 async function startServer() {
@@ -176,7 +188,8 @@ async function startServer() {
     })
   );
 
-  app.use(express.json({ limit: '50mb' }));
+  // Big enough for a few base64 vision images (≤5 MB each × 1.33 overhead), small enough to blunt abuse.
+  app.use(express.json({ limit: '25mb' }));
 
   const startTime = Date.now();
 
@@ -223,7 +236,7 @@ async function startServer() {
     res.setHeader('X-Accel-Buffering', 'no');
   };
 
-  app.post('/api/generate', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/generate', requireAuth, meter('generate'), async (req: Request, res: Response) => {
     const { prompt, preferredLanguage, provider, byok, images } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
@@ -247,7 +260,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/edit', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/edit', requireAuth, meter('edit'), async (req: Request, res: Response) => {
     const { prompt, currentCode, history, preferredLanguage, provider, byok, images } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });
@@ -274,7 +287,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/chat', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/chat', requireAuth, meter('chat'), async (req: Request, res: Response) => {
     const { prompt, history, currentCode, preferredLanguage, provider, byok, images } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'prompt is required' });

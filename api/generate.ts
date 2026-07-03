@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyIdToken } from '../lib/firebaseAdmin';
 import { runStream } from '../lib/llm';
+import { checkRateLimit, RATE_LIMIT_MESSAGE } from '../lib/rateLimit';
 
 // Streams a new app generation as Server-Sent Events:
 //   {type:"code", chunk}   — incremental HTML (forward to the live preview)
@@ -11,11 +12,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const token = (req.headers.authorization ?? '').split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  try { await verifyIdToken(token); } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
+  let uid: string;
+  try { uid = (await verifyIdToken(token)).uid; } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
 
-  const { prompt, preferredLanguage, provider, images } = req.body ?? {};
+  const { prompt, preferredLanguage, provider, byok, images } = req.body ?? {};
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt is required' });
+  }
+
+  // BYOK runs on the user's own key/quota — only meter requests we pay for.
+  if (!byok?.apiKey) {
+    const { ok } = await checkRateLimit(uid, 'generate');
+    if (!ok) return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
   }
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
@@ -26,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const result = await runStream(
-      { kind: 'generate', prompt, preferredLanguage, provider, images },
+      { kind: 'generate', prompt, preferredLanguage, provider, byok, images },
       (chunk) => send({ type: 'code', chunk }),
       (text) => send({ type: 'status', text })
     );
