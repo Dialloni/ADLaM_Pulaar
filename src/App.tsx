@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { GandoLogo } from './components/GandoLogo';
 import {
   Loader2, Trash2, Eye, Code as CodeIcon, Download, AlertTriangle,
@@ -529,6 +530,18 @@ export default function App() {
     setInput('');
     setMobileNavOpen(false);
   };
+
+  /* Browser-tab title follows the work: project name, chat title, or page (Claude-style). */
+  useEffect(() => {
+    const PAGE_TITLES: Partial<Record<NavPage, string>> = {
+      projects: 'Projects', chats: 'Chats', assets: 'Language Assets', templates: 'Templates',
+      docs: 'Docs', status: 'Status', collector: 'Collector', admin: 'Corpus Admin',
+    };
+    const name = currentProject ? currentProject.name
+      : chatActive ? (chats.find(c => c.id === currentChatId)?.title || 'New chat')
+      : PAGE_TITLES[page] || '';
+    document.title = name ? `${name} – Gando` : 'Gando';
+  }, [currentProject?.name, chatActive, currentChatId, chats, page]);
 
   /* ── hash routing — back button, refresh, shareable #/project/<id> links ──
      The hash mirrors view state (page / open project / open chat). Back and
@@ -1171,8 +1184,9 @@ export default function App() {
                 </>
               )}
             </div>
-            {userMenuOpen && (
-              <div style={{ position: 'absolute', bottom: '100%', left: 12, right: 12, marginBottom: 6, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', zIndex: 200, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+            {userMenuOpen && createPortal(
+              /* portaled to <body>: the sidebar's transform+overflow would clip it (worst when collapsed) */
+              <div className="user-menu-container" style={{ position: 'fixed', bottom: sidebarCollapsed ? 16 : 74, left: sidebarCollapsed ? 66 : 12, width: 232, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', zIndex: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
                 <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{user.email}</div>
                 <button onClick={e => { e.stopPropagation(); setSettingsOpen(true); setUserMenuOpen(false); }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
@@ -1199,7 +1213,8 @@ export default function App() {
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', fontSize: 13, color: '#f87171', fontFamily: 'Inter, sans-serif', cursor: 'pointer', border: 'none', background: 'transparent', width: '100%', textAlign: 'left' }}>
                   <LogOut size={14} /> {t.signOut}
                 </button>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
 
