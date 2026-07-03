@@ -12,10 +12,11 @@ interface LanguageSelectorProps {
   className?: string;
   dropUp?: boolean;
   buttonClassName?: string;
+  iconOnly?: boolean; // compact globe trigger (collapsed sidebar rail)
 }
 
 export function LanguageSelector({
-  currentLanguage, languages, onSelect, className, dropUp, buttonClassName,
+  currentLanguage, languages, onSelect, className, dropUp, buttonClassName, iconOnly,
 }: LanguageSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [style, setStyle] = useState<React.CSSProperties>({});
@@ -99,15 +100,19 @@ export function LanguageSelector({
       <button
         ref={btnRef}
         onClick={toggle}
+        title={iconOnly ? (currentLanguage.short || currentLanguage.name) : undefined}
+        aria-haspopup="menu" aria-expanded={isOpen}
         className={cn(
-          'flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-zinc-400 hover:text-white group',
+          iconOnly
+            ? 'flex items-center justify-center p-2 rounded-lg hover:bg-white/5 transition-all text-zinc-500 hover:text-zinc-300 group'
+            : 'flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-zinc-400 hover:text-white group',
           buttonClassName,
           currentLanguage.code === 'ff-adlm' && 'font-adlam',
         )}
       >
         <Globe className="w-4 h-4 group-hover:rotate-12 transition-transform flex-shrink-0" />
-        <span className="text-xs font-bold tracking-wider uppercase truncate">{currentLanguage.short || currentLanguage.name}</span>
-        <ChevronDown className={cn('w-3 h-3 transition-transform flex-shrink-0', isOpen && 'rotate-180')} />
+        {!iconOnly && <span className="text-xs font-bold tracking-wider uppercase truncate">{currentLanguage.short || currentLanguage.name}</span>}
+        {!iconOnly && <ChevronDown className={cn('w-3 h-3 transition-transform flex-shrink-0', isOpen && 'rotate-180')} />}
       </button>
       {menu}
     </div>

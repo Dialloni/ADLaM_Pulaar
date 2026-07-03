@@ -1203,10 +1203,8 @@ export default function App() {
           {/* language — always visible (core to Gando), Claude keeps it buried; we don't */}
           <div className={cn('px-3 pb-1', sidebarCollapsed && 'flex justify-center')}>
             {sidebarCollapsed ? (
-              <button onClick={() => setSidebarCollapsed(false)} title="Language"
-                className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-all">
-                <Globe className="w-4 h-4" />
-              </button>
+              /* popup menu next to the rail — no sidebar expand needed (Claude-style) */
+              <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} dropUp iconOnly />
             ) : (
               <LanguageSelector currentLanguage={selectedLang} languages={LANGS} onSelect={setSelectedLang} dropUp buttonClassName="w-full justify-between" />
             )}
@@ -1217,9 +1215,10 @@ export default function App() {
             <div className={cn('flex items-center rounded-xl cursor-pointer hover:bg-white/5 transition-all', sidebarCollapsed ? 'justify-center p-2' : 'gap-2.5 px-3 py-2.5')}
               onClick={() => setUserMenuOpen(o => !o)}>
               {user.photoURL
-                ? <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-                : <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-black flex-shrink-0"
-                    style={{ background: `linear-gradient(135deg,${P},${S})` }}>
+                ? <img src={user.photoURL} alt="" className="rounded-full object-cover flex-shrink-0"
+                    style={{ width: 28, height: 28, minWidth: 28, minHeight: 28, aspectRatio: '1 / 1' }} />
+                : <div className="rounded-full flex items-center justify-center text-xs font-black text-black flex-shrink-0"
+                    style={{ width: 28, height: 28, minWidth: 28, minHeight: 28, aspectRatio: '1 / 1', background: `linear-gradient(135deg,${P},${S})` }}>
                     {(user.displayName || user.email || 'U')[0].toUpperCase()}
                   </div>
               }
