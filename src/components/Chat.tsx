@@ -8,32 +8,11 @@ import { cn } from '../lib/utils';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { ModeSwitch } from './ModeSwitch';
 import { type Provider, speakText } from '../services/geminiService';
+import { PROVIDER_COLOR, PROVIDER_LABEL, MODEL_OPTIONS } from '../lib/providers';
 import { collection, addDoc, serverTimestamp, db, auth } from '../firebase';
 
 type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
 
-const PROVIDER_COLOR: Record<Provider, string> = {
-  'claude': '#3b82f6',
-  'gemini': '#5b9bff',
-  'groq-llama': '#22c55e',
-  'groq-scout': '#f59e0b',
-  'byok-openai': '#10a37f',
-  'byok-anthropic': '#d97757',
-  'byok-gemini': '#5b9bff',
-  'byok-deepseek': '#4d6bfe',
-  'byok-groq': '#f55036',
-};
-const PROVIDER_LABEL: Record<Provider, string> = {
-  'claude': 'Claude',
-  'gemini': 'Gemini',
-  'groq-llama': 'Llama 3.3',
-  'groq-scout': 'Llama 4 Scout',
-  'byok-openai': 'OpenAI',
-  'byok-anthropic': 'Claude',
-  'byok-gemini': 'Gemini',
-  'byok-deepseek': 'DeepSeek',
-  'byok-groq': 'Groq',
-};
 
 interface ChatProps {
   messages: Message[];
@@ -62,12 +41,6 @@ interface ChatProps {
   onStop?: () => void;
 }
 
-const MODELS: { id: Provider; label: string; sub: string }[] = [
-  { id: 'claude', label: 'Claude Sonnet 4.6', sub: 'Best ADLaM quality' },
-  { id: 'gemini', label: 'Gemini 2.5 Flash', sub: 'Free tier · Google' },
-  { id: 'groq-llama', label: 'Llama 3.3 70B', sub: 'Free · Groq · Fast' },
-  { id: 'groq-scout', label: 'Llama 4 Scout', sub: 'Free · Groq · Multimodal' },
-];
 
 
 const SUGGESTIONS = (t: any) => [
@@ -283,8 +256,14 @@ const ChatImpl: React.FC<ChatProps> = ({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [modelOpen, setModelOpen] = useState(false);
+  useEffect(() => {
+    if (!modelOpen) return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') setModelOpen(false); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [modelOpen]);
   const modelRef = useRef<HTMLDivElement>(null);
-  const modelOptions = [...MODELS, ...byokModels];
+  const modelOptions = [...MODEL_OPTIONS, ...byokModels];
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSending, setIsSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -519,6 +498,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                       <div ref={modelRef} style={{ position: 'relative' }}>
                         <button
                           onClick={() => setModelOpen(o => !o)}
+                          aria-haspopup="menu" aria-expanded={modelOpen}
                           title="Choose the AI model"
                           className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/5 transition-colors"
                           style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}
@@ -530,12 +510,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                         {modelOpen && (
                           <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
                             {modelOptions.map(m => (
-                              <div
+                              <button
+                                type="button"
                                 key={m.id}
                                 onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
-                                onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
-                                onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
+                                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
+                                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', width: '100%', textAlign: 'left', border: 'none' }}
                               >
                                 <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                                 <div style={{ minWidth: 0, flex: 1 }}>
@@ -543,15 +524,15 @@ const ChatImpl: React.FC<ChatProps> = ({
                                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                                 </div>
                                 {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
-                              </div>
+                              </button>
                             ))}
-                            <div onClick={() => { onManageKeys?.(); setModelOpen(false); }}
-                              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
-                              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
+                            <button type="button" onClick={() => { onManageKeys?.(); setModelOpen(false); }}
+                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
+                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)', width: '100%', textAlign: 'left', borderLeft: 'none', borderRight: 'none', borderBottom: 'none' }}>
                               <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
                               <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
-                            </div>
+                            </button>
                           </div>
                         )}
                       </div>
@@ -862,8 +843,8 @@ const ChatImpl: React.FC<ChatProps> = ({
                         <div
                           key={label}
                           onClick={action}
-                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', cursor: 'pointer', background: 'transparent' }}
                         >
                           <Icon className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
@@ -878,6 +859,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                 <div ref={modelRef} style={{ position: 'relative', flexShrink: 1, minWidth: 0 }}>
                   <button
                     onClick={() => setModelOpen(o => !o)}
+                          aria-haspopup="menu" aria-expanded={modelOpen}
                     title="Choose the AI model"
                     style={{ height: 32, borderRadius: 8, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, maxWidth: 160, overflow: 'hidden' }}
                   >
@@ -889,12 +871,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                   {modelOpen && (
                     <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
                       {modelOptions.map(m => (
-                        <div
+                        <button
+                          type="button"
                           key={m.id}
                           onClick={() => { onProviderChange?.(m.id); setModelOpen(false); }}
-                          onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent' }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', width: '100%', textAlign: 'left', border: 'none' }}
                         >
                           <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[m.id] }} />
                           <div style={{ minWidth: 0, flex: 1 }}>
@@ -902,15 +885,15 @@ const ChatImpl: React.FC<ChatProps> = ({
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif' }}>{m.sub}</div>
                           </div>
                           {provider === m.id && <Check className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />}
-                        </div>
+                        </button>
                       ))}
-                      <div onClick={() => { onManageKeys?.(); setModelOpen(false); }}
-                        onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--hover-bg)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)' }}>
+                      <button type="button" onClick={() => { onManageKeys?.(); setModelOpen(false); }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', cursor: 'pointer', background: 'transparent', borderTop: '1px solid var(--border)', width: '100%', textAlign: 'left', borderLeft: 'none', borderRight: 'none', borderBottom: 'none' }}>
                         <Plus className="w-3.5 h-3.5" style={{ color: '#3b82f6', flexShrink: 0 }} />
                         <div style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, sans-serif', fontWeight: 600 }}>{languageCode === "fr" ? "Utilisez votre clé" : "Bring your own key"}</div>
-                      </div>
+                      </button>
                     </div>
                   )}
                 </div>
