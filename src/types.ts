@@ -12,8 +12,9 @@ export interface Project {
   shareStatus?: 'pending' | 'approved' | 'rejected';
   featured?: boolean;
   sharedAt?: any;
-  published?: boolean;   // publicly served at /p/<id>
+  published?: boolean;   // publicly served at /p/<slug || id>
   publishedAt?: any;
+  slug?: string;         // custom public URL name (doc id in /slugs)
 }
 
 export interface Message {

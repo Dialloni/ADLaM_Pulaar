@@ -30,11 +30,21 @@ export const NOT_FOUND_HTML = `<!DOCTYPE html>
 <a href="/" style="color:#3b82f6;text-decoration:none;font-weight:600;font-size:14px">Build your own with Gando →</a>
 </div></body></html>`;
 
-/** Load a published project's HTML (with badge), or null if not published. */
-export async function loadPublishedApp(id: string): Promise<string | null> {
-  // Firestore auto-ids are 20 chars; accept a safe range, reject path tricks.
-  if (!/^[A-Za-z0-9_-]{10,40}$/.test(id)) return null;
-  const snap = await adminDb().collection('projects').doc(id).get();
+/**
+ * Load a published project's HTML (with badge), or null if not published.
+ * `idOrSlug` may be a raw project id (old links) or a custom slug — the
+ * project id is tried first, then the slugs/<slug> reservation doc.
+ */
+export async function loadPublishedApp(idOrSlug: string): Promise<string | null> {
+  if (!/^[A-Za-z0-9_-]{3,40}$/.test(idOrSlug)) return null;
+  const db = adminDb();
+  let snap = await db.collection('projects').doc(idOrSlug).get();
+  if (!snap.exists) {
+    const slugSnap = await db.collection('slugs').doc(idOrSlug.toLowerCase()).get();
+    const projectId = slugSnap.data()?.projectId;
+    if (typeof projectId !== 'string' || !projectId) return null;
+    snap = await db.collection('projects').doc(projectId).get();
+  }
   const d = snap.data();
   if (!snap.exists || d?.published !== true || typeof d.code !== 'string' || !d.code.trim()) return null;
   const code = d.code as string;

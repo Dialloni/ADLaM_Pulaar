@@ -47,6 +47,7 @@ import { latinToAdlam } from './lib/adlam';
 import { pickGreeting, greetEmoji } from './lib/greeting';
 import { P, S, T, MANROPE } from './lib/brand';
 import { downscaleDataUrl, uploadAppImages, embedImagesPrompt, MAX_APP_IMAGES } from './lib/appImages';
+import { suggestSlug, isValidSlug, claimSlug } from './lib/slug';
 import { useIsMobile } from './lib/useIsMobile';
 import { PROVIDER_LABEL, PROVIDER_COLOR, MODEL_OPTIONS, BYOK_PROVIDERS, BYOK_STORAGE_KEY, loadByokKeys } from './lib/providers';
 import { TEMPLATE_I18N, TEMPLATES_META } from './data/templates';
@@ -929,16 +930,43 @@ export default function App() {
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [publishOpen]);
-  const publishUrl = (id: string) => `${window.location.origin}/p/${id}`;
-  const setPublished = async (p: Project, published: boolean) => {
+  const [slugInput, setSlugInput] = useState('');
+  const [slugErr, setSlugErr] = useState<'' | 'taken' | 'invalid' | 'error'>('');
+  const [slugBusy, setSlugBusy] = useState(false);
+  const publishUrl = (p: Project) => `${window.location.origin}/p/${p.slug || p.id}`;
+  const openPublishPopover = () => {
+    if (!currentProject) return;
+    setSlugInput(currentProject.slug || suggestSlug(currentProject.name, currentProject.id));
+    setSlugErr('');
+    setPublishOpen(true);
+  };
+  // Publish (or rename the slug of an already-published app): claim the slug
+  // atomically, then flip the flag. 'taken' surfaces inline, never as a toast.
+  const doPublish = async () => {
+    const p = currentProject;
+    if (!p || !user || slugBusy) return;
+    const s = slugInput.trim().toLowerCase();
+    if (!isValidSlug(s)) { setSlugErr('invalid'); return; }
+    setSlugBusy(true); setSlugErr('');
     try {
-      await updateDoc(doc(db, 'projects', p.id), { published, publishedAt: published ? serverTimestamp() : null });
-      setCurrentProject(cp => (cp && cp.id === p.id) ? { ...cp, published } : cp);
-      setPublishOpen(published);
+      await claimSlug(user.uid, p.id, s, p.slug);
+      await updateDoc(doc(db, 'projects', p.id), { published: true, publishedAt: serverTimestamp() });
+      setCurrentProject(cp => (cp && cp.id === p.id) ? { ...cp, slug: s, published: true } : cp);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : '';
+      setSlugErr(m === 'taken' ? 'taken' : m === 'invalid' ? 'invalid' : 'error');
+    } finally { setSlugBusy(false); }
+  };
+  // Unpublish keeps the slug reservation so republishing gets the same name back.
+  const unpublish = async (p: Project) => {
+    try {
+      await updateDoc(doc(db, 'projects', p.id), { published: false });
+      setCurrentProject(cp => (cp && cp.id === p.id) ? { ...cp, published: false } : cp);
+      setPublishOpen(false);
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${p.id}`); }
   };
-  const copyPublishLink = async (id: string) => {
-    try { await navigator.clipboard.writeText(publishUrl(id)); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1800); }
+  const copyPublishLink = async (p: Project) => {
+    try { await navigator.clipboard.writeText(publishUrl(p)); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1800); }
     catch { /* clipboard denied — user can select the text */ }
   };
 
@@ -1398,44 +1426,71 @@ export default function App() {
                   {/* Publish — live public link at /p/<id> */}
                   <div ref={publishRef} style={{ position: 'relative' }}>
                     {currentProject.published ? (
-                      <button onClick={() => setPublishOpen(o => !o)}
+                      <button onClick={() => publishOpen ? setPublishOpen(false) : openPublishPopover()}
                         className="flex items-center gap-1.5 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold transition-all"
                         style={{ background: '#22c55e1a', color: '#4ade80', border: '1px solid #22c55e33' }}>
                         <Globe2 className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'En ligne' : 'Live'}</span>
                       </button>
                     ) : (
-                      <button onClick={() => setPublished(currentProject, true)}
+                      <button onClick={() => publishOpen ? setPublishOpen(false) : openPublishPopover()}
                         className="flex items-center gap-1.5 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold transition-all border"
                         style={{ color: P, borderColor: `${P}33`, background: `${P}0c` }}>
                         <Globe2 className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'Publier' : 'Publish'}</span>
                       </button>
                     )}
-                    {publishOpen && currentProject.published && (
-                      <div style={{ position: 'absolute', top: 44, right: 0, width: 300, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 14, padding: 14, zIndex: 60, boxShadow: '0 16px 48px rgba(0,0,0,0.45)' }}>
-                        <p style={{ fontSize: 11, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontFamily: MANROPE }}>
-                          {selectedLang.code === 'fr' ? '● Votre app est en ligne' : '● Your app is live'}
+                    {publishOpen && (
+                      <div style={{ position: 'absolute', top: 44, right: 0, width: 320, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 14, padding: 14, zIndex: 60, boxShadow: '0 16px 48px rgba(0,0,0,0.45)' }}>
+                        <p style={{ fontSize: 11, fontWeight: 800, color: currentProject.published ? '#4ade80' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontFamily: MANROPE }}>
+                          {currentProject.published
+                            ? (selectedLang.code === 'fr' ? '● Votre app est en ligne' : '● Your app is live')
+                            : (selectedLang.code === 'fr' ? 'Choisissez le nom du lien' : 'Choose your link name')}
                         </p>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--btn-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 10px', marginBottom: 10 }}>
-                          <span style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {publishUrl(currentProject.id)}
-                          </span>
-                          <button onClick={() => copyPublishLink(currentProject.id)}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: linkCopied ? '#4ade80' : 'var(--text-muted)', flexShrink: 0, padding: 2 }}
-                            title={selectedLang.code === 'fr' ? 'Copier le lien' : 'Copy link'}>
-                            {linkCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-                          </button>
+                        {/* slug editor — /p/<name> */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--btn-bg)', border: `1px solid ${slugErr ? 'rgba(248,113,113,0.5)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 10px', marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', flexShrink: 0 }}>/p/</span>
+                          <input
+                            value={slugInput}
+                            onChange={e => { setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')); setSlugErr(''); }}
+                            onKeyDown={e => { if (e.key === 'Enter') void doPublish(); }}
+                            spellCheck={false}
+                            className="gando-input"
+                            style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', fontSize: 12, color: 'var(--text-primary)', fontFamily: 'JetBrains Mono, monospace' }} />
+                          {currentProject.published && (
+                            <button onClick={() => copyPublishLink(currentProject)}
+                              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: linkCopied ? '#4ade80' : 'var(--text-muted)', flexShrink: 0, padding: 2 }}
+                              title={selectedLang.code === 'fr' ? 'Copier le lien' : 'Copy link'}>
+                              {linkCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                            </button>
+                          )}
                         </div>
+                        <p style={{ fontSize: 11, minHeight: 16, marginBottom: 8, color: slugErr ? '#f87171' : 'var(--text-faint)' }}>
+                          {slugErr === 'taken' ? (selectedLang.code === 'fr' ? 'Ce nom est déjà pris — essayez-en un autre.' : 'That name is taken — try another.')
+                            : slugErr === 'invalid' ? (selectedLang.code === 'fr' ? '3–40 caractères : lettres minuscules, chiffres, tirets.' : '3–40 chars: lowercase letters, numbers, hyphens.')
+                            : slugErr === 'error' ? (selectedLang.code === 'fr' ? 'Échec — réessayez.' : 'Failed — try again.')
+                            : (selectedLang.code === 'fr' ? 'Minuscules, chiffres et tirets uniquement.' : 'Lowercase letters, numbers and hyphens only.')}
+                        </p>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <a href={publishUrl(currentProject.id)} target="_blank" rel="noreferrer"
-                            style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'var(--gradient-brand)', color: '#0a0a0a', fontSize: 12, fontWeight: 800, textDecoration: 'none', fontFamily: MANROPE }}>
-                            {selectedLang.code === 'fr' ? 'Ouvrir ↗' : 'Open ↗'}
-                          </a>
-                          <button onClick={() => setPublished(currentProject, false)}
-                            style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'transparent', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: MANROPE }}>
-                            {selectedLang.code === 'fr' ? 'Dépublier' : 'Unpublish'}
-                          </button>
+                          {(!currentProject.published || slugInput.trim().toLowerCase() !== (currentProject.slug || '')) ? (
+                            <button onClick={() => void doPublish()} disabled={slugBusy}
+                              style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'var(--gradient-brand)', border: 'none', color: '#0a0a0a', fontSize: 12, fontWeight: 800, cursor: slugBusy ? 'wait' : 'pointer', fontFamily: MANROPE, opacity: slugBusy ? 0.7 : 1 }}>
+                              {slugBusy ? '…' : currentProject.published
+                                ? (selectedLang.code === 'fr' ? 'Renommer' : 'Save name')
+                                : (selectedLang.code === 'fr' ? 'Publier' : 'Publish')}
+                            </button>
+                          ) : (
+                            <a href={publishUrl(currentProject)} target="_blank" rel="noreferrer"
+                              style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'var(--gradient-brand)', color: '#0a0a0a', fontSize: 12, fontWeight: 800, textDecoration: 'none', fontFamily: MANROPE }}>
+                              {selectedLang.code === 'fr' ? 'Ouvrir ↗' : 'Open ↗'}
+                            </a>
+                          )}
+                          {currentProject.published && (
+                            <button onClick={() => unpublish(currentProject)}
+                              style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'transparent', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: MANROPE }}>
+                              {selectedLang.code === 'fr' ? 'Dépublier' : 'Unpublish'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
