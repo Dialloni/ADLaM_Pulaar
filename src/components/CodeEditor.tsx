@@ -33,12 +33,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-[#0e0e0e] p-4 md:p-6 lg:p-8 overflow-hidden">
-      <div className="flex-1 flex flex-col bg-[#0d1117] rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] border border-white/5">
+    /* .gando-code-editor scopes the theme vars + light-mode Prism palette (index.css) */
+    <div className="gando-code-editor h-full w-full flex flex-col p-4 md:p-6 lg:p-8 overflow-hidden" style={{ background: 'var(--editor-shell)' }}>
+      <div className="flex-1 flex flex-col rounded-[2rem] overflow-hidden border border-white/5" style={{ background: 'var(--editor-bg)', boxShadow: 'var(--editor-frame-shadow)' }}>
         {/* Editor Header */}
-        <div className="h-14 bg-[#161b22] border-b border-white/5 flex items-center justify-between px-6">
+        <div className="h-14 border-b border-white/5 flex items-center justify-between px-6" style={{ background: 'var(--editor-header)' }}>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#0d1117] rounded-t-xl border-t border-x border-white/5 -mb-[15px] relative z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-t-xl border-t border-x border-white/5 -mb-[15px] relative z-10" style={{ background: 'var(--editor-bg)', boxShadow: 'var(--editor-tab-shadow)' }}>
               <FileCode className="w-3.5 h-3.5 text-emerald-500" />
               <span className="text-[11px] font-mono text-zinc-300 font-medium tracking-tight">index.html</span>
             </div>
@@ -68,7 +69,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
 
         {/* Editor Content */}
-        <div className="flex-1 overflow-auto custom-scrollbar bg-[#0d1117]">
+        <div className="flex-1 overflow-auto custom-scrollbar" style={{ background: 'var(--editor-bg)' }}>
           <Editor
             value={code}
             onValueChange={onChange || (() => {})}
@@ -80,6 +81,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               fontSize: 13,
               lineHeight: '1.6',
               backgroundColor: 'transparent',
+              /* base color for un-tokenized code (var names, punctuation) — must
+                 contrast with --editor-bg in BOTH themes; inheriting the page
+                 color made it invisible in light mode */
+              color: 'var(--editor-text)',
+              caretColor: 'var(--editor-text)',
             }}
             readOnly={readOnly}
           />

@@ -173,6 +173,13 @@
   --input-bg: rgba(255,255,255,0.04);
   --hover-bg: rgba(255,255,255,0.05);
   --sidebar-bg: #0a0a0a;
+  /* code editor (GitHub-dark) — prism-tomorrow supplies token colors */
+  --editor-shell: #0e0e0e;
+  --editor-bg: #0d1117;
+  --editor-header: #161b22;
+  --editor-text: #e6edf3;
+  --editor-frame-shadow: 0 40px 100px -20px rgba(0,0,0,0.8);
+  --editor-tab-shadow: 0 -4px 12px rgba(0,0,0,0.5);
 }
 [data-theme="light"] {
   --app-bg: #f7f7f8;
@@ -190,7 +197,45 @@
   --input-bg: rgba(0,0,0,0.04);
   --hover-bg: rgba(0,0,0,0.04);
   --sidebar-bg: #ffffff;
+  /* code editor (GitHub-light) — token colors overridden below */
+  --editor-shell: #f0f0f2;
+  --editor-bg: #ffffff;
+  --editor-header: #f1f3f5;
+  --editor-text: #1f2328;
+  --editor-frame-shadow: 0 24px 60px -20px rgba(0,0,0,0.18);
+  --editor-tab-shadow: none;
 }
+
+/* ── LIGHT MODE code editor: prism-tomorrow is a dark theme (pale tokens,
+   unreadable on white). Re-color every token GitHub-light style. Scoped to
+   .gando-code-editor so chat-bubble code blocks are untouched. ── */
+[data-theme="light"] .gando-code-editor .token.comment,
+[data-theme="light"] .gando-code-editor .token.prolog,
+[data-theme="light"] .gando-code-editor .token.doctype,
+[data-theme="light"] .gando-code-editor .token.cdata { color: #57606a; }
+[data-theme="light"] .gando-code-editor .token.punctuation { color: #24292f; }
+[data-theme="light"] .gando-code-editor .token.tag { color: #116329; }
+[data-theme="light"] .gando-code-editor .token.attr-name { color: #8250df; }
+[data-theme="light"] .gando-code-editor .token.attr-value,
+[data-theme="light"] .gando-code-editor .token.string,
+[data-theme="light"] .gando-code-editor .token.char { color: #0a3069; }
+[data-theme="light"] .gando-code-editor .token.keyword,
+[data-theme="light"] .gando-code-editor .token.rule,
+[data-theme="light"] .gando-code-editor .token.important { color: #cf222e; }
+[data-theme="light"] .gando-code-editor .token.function,
+[data-theme="light"] .gando-code-editor .token.class-name { color: #8250df; }
+[data-theme="light"] .gando-code-editor .token.number,
+[data-theme="light"] .gando-code-editor .token.boolean,
+[data-theme="light"] .gando-code-editor .token.constant,
+[data-theme="light"] .gando-code-editor .token.symbol { color: #0550ae; }
+[data-theme="light"] .gando-code-editor .token.operator,
+[data-theme="light"] .gando-code-editor .token.entity,
+[data-theme="light"] .gando-code-editor .token.url { color: #cf222e; background: none; }
+[data-theme="light"] .gando-code-editor .token.selector,
+[data-theme="light"] .gando-code-editor .token.property { color: #0550ae; }
+[data-theme="light"] .gando-code-editor .token.atrule { color: #cf222e; }
+[data-theme="light"] .gando-code-editor .token.regex,
+[data-theme="light"] .gando-code-editor .token.variable { color: #0a3069; }
 
 /* ── LIGHT MODE: fix prose-invert (markdown chat bubbles) ── */
 [data-theme="light"] .prose-invert,
@@ -224,10 +269,13 @@
 /* ── LIGHT MODE: inputs/textareas/selects often carry an INLINE dark background
    (e.g. rgba(0,0,0,0.4)) that the variable system can't reach. Force a light
    surface + dark text so the writing is visible. !important beats inline. ── */
-[data-theme="light"] textarea,
+/* The code editor's textarea must stay transparent: react-simple-code-editor
+   overlays an invisible textarea on the highlighted <pre> — an opaque
+   background here paints a white sheet over the code (light-mode bug). */
+[data-theme="light"] textarea:not(.npm__react-simple-code-editor__textarea),
 [data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="light"] select,
-[data-theme="light"] .gando-input {
+[data-theme="light"] .gando-input:not(.npm__react-simple-code-editor__textarea) {
   background-color: var(--card-elevated) !important;
   color: var(--text-primary) !important;
 }
