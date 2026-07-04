@@ -1702,7 +1702,9 @@ export default function App() {
                         <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{cc.name}</span>
                       </div>
                       <div className="flex-1 relative" style={{ background: 'var(--app-bg)' }}>
-                        <iframe srcDoc={cc.code} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-same-origin" />
+                        {/* community code is user-submitted — never allow-same-origin on srcDoc
+                            (would run with the app's origin: localStorage BYOK keys, auth tokens) */}
+                        <iframe srcDoc={cc.code} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-forms allow-modals allow-popups" />
                       </div>
                     </div>
                     {/* RIGHT (mobile: BELOW): info + actions */}
@@ -1930,6 +1932,7 @@ export default function App() {
                             style={{ background: 'var(--card-bg)' }}>
                             <div className="relative overflow-hidden" style={{ height: 180, background: 'var(--app-bg)' }}>
                               <iframe srcDoc={ct.code} title={ct.name} className="border-none pointer-events-none"
+                                sandbox="allow-scripts"
                                 style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
                               <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                 <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{tl.preview}</span>
