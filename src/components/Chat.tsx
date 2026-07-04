@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Loader2, Sparkles, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Camera, Link, Check, ChevronDown, MessageSquare, Square, Volume2, VolumeX } from 'lucide-react';
+import { Send, Loader2, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Check, ChevronDown, MessageSquare, Square, Volume2, VolumeX } from 'lucide-react';
 import { GandoSpark } from './GandoSpark';
 import ReactMarkdown from 'react-markdown';
 import { Message } from '../types';
@@ -255,8 +255,6 @@ const ChatImpl: React.FC<ChatProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [speakError, setSpeakError] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const [modelOpen, setModelOpen] = useState(false);
   useEffect(() => {
     if (!modelOpen) return;
@@ -314,17 +312,6 @@ const ChatImpl: React.FC<ChatProps> = ({
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isGenerating, generationStatus]);
-
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [dropdownOpen]);
 
   useEffect(() => {
     if (!modelOpen) return;
@@ -434,7 +421,10 @@ const ChatImpl: React.FC<ChatProps> = ({
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+      {/* container-type lets the empty-state greeting scale with the PANEL width
+          (cqw units) — md: breakpoints track the viewport, so a narrow chat panel
+          on a wide screen got 72px ADLaM glyphs (unreadable wall of text) */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar relative" style={{ containerType: 'inline-size' }}>
         <div className={cn(
           "max-w-3xl mx-auto w-full px-4 md:px-6 py-8 md:py-12 space-y-8",
           isEmpty ? "min-h-[calc(100vh-64px)] flex flex-col justify-center py-12 md:py-20" : ""
@@ -449,19 +439,11 @@ const ChatImpl: React.FC<ChatProps> = ({
                 className="space-y-12 text-center"
               >
                 <div className="space-y-4">
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3b82f6]/10 border border-[#3b82f6]/20 text-[#3b82f6] text-[10px] font-bold uppercase tracking-widest mb-4"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>{t.appName} {t.beta}</span>
-                  </motion.div>
                   <h1 className={cn(
-                    "text-5xl md:text-7xl font-bold tracking-tight text-white leading-[1.1]",
+                    "text-4xl font-bold tracking-tight text-white leading-[1.15]",
                     languageCode === 'ff-adlm' ? "font-adlam" : "font-display"
-                  )}>
+                  )}
+                    style={{ fontSize: 'clamp(24px, 7.5cqw, 52px)' }}>
                     {languageCode === 'ff-adlm' ? (
                       t.chatWelcome
                     ) : (
@@ -470,12 +452,6 @@ const ChatImpl: React.FC<ChatProps> = ({
                       </>
                     )}
                   </h1>
-                  <p className={cn(
-                    "text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto font-medium",
-                    languageCode === 'ff-adlm' && "font-adlam"
-                  )}>
-                    {t.chatSubtitle.replace('{language}', selectedLanguage)}
-                  </p>
                 </div>
 
                 <div className="relative max-w-3xl mx-auto group">
@@ -493,11 +469,14 @@ const ChatImpl: React.FC<ChatProps> = ({
                       }}
                       placeholder={t.chatPlaceholder.replace('{language}', selectedLanguage)}
                       className={cn(
-                        "gando-input w-full bg-transparent border-none rounded-3xl px-6 pt-6 pb-20 pr-20 text-lg focus:outline-none focus:ring-0 transition-all resize-none min-h-[200px] text-zinc-100 placeholder:text-zinc-600 font-medium leading-relaxed",
+                        "gando-input w-full bg-transparent border-none rounded-3xl px-5 pt-5 pb-2 text-lg focus:outline-none focus:ring-0 transition-all resize-none min-h-[140px] text-zinc-100 placeholder:text-zinc-600 font-medium leading-relaxed",
                         languageCode === 'ff-adlm' && "font-adlam"
                       )}
                     />
-                    <div className="absolute bottom-5 left-5 flex items-center gap-2">
+                    {/* controls in normal flow (were absolute overlays — clusters
+                        collided with each other on narrow panels/mobile) */}
+                    <div className="flex items-center justify-between gap-2 px-2 pb-1">
+                    <div className="flex items-center gap-2 min-w-0">
                       {/* Model picker */}
                       <div ref={modelRef} style={{ position: 'relative' }}>
                         <button
@@ -505,11 +484,11 @@ const ChatImpl: React.FC<ChatProps> = ({
                           aria-haspopup="menu" aria-expanded={modelOpen}
                           title="Choose the AI model"
                           className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/10 border border-white/5 transition-colors"
-                          style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}
+                          style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', maxWidth: 130, overflow: 'hidden' }}
                         >
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: PROVIDER_COLOR[provider ?? 'claude'] }} />
-                          {PROVIDER_LABEL[provider ?? 'claude']}
-                          <ChevronDown className="w-3 h-3 opacity-60" />
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: PROVIDER_COLOR[provider ?? 'claude'] }} />
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{PROVIDER_LABEL[provider ?? 'claude']}</span>
+                          <ChevronDown className="w-3 h-3" style={{ flexShrink: 0, opacity: 0.6 }} />
                         </button>
                         {modelOpen && (
                           <div style={{ position: 'absolute', bottom: 38, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'hidden', overflowY: 'auto', minWidth: 240, maxHeight: 132, zIndex: 50 }}>
@@ -542,13 +521,13 @@ const ChatImpl: React.FC<ChatProps> = ({
                       </div>
                       <ModeSwitch mode={mode} onChange={onModeChange} dropUp />
                     </div>
-                    <div className="absolute bottom-6 right-6 flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={toggleListening}
                         className={cn(
-                          "p-4 rounded-2xl transition-all shadow-2xl active:scale-95 group/mic relative overflow-hidden",
-                          isListening 
-                            ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse" 
+                          "p-2.5 rounded-xl transition-all active:scale-95 group/mic relative overflow-hidden",
+                          isListening
+                            ? "bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse"
                             : isTranscribing
                             ? "bg-[#3b82f6]/20 text-[#3b82f6] border border-[#3b82f6]/30 animate-spin"
                             : "bg-white/5 text-zinc-400 border border-white/5 hover:bg-white/10 hover:text-white"
@@ -559,7 +538,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                       {isGenerating && mode === 'build' ? (
                         <button
                           onClick={onStop}
-                          className="p-4 rounded-2xl transition-all shadow-2xl active:scale-95 bg-white/10 text-white border border-white/20 hover:bg-white/20"
+                          className="p-2.5 rounded-xl transition-all active:scale-95 bg-white/10 text-white border border-white/20 hover:bg-white/20"
                         >
                           <Square className="w-5 h-5 fill-current" />
                         </button>
@@ -568,7 +547,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           onClick={() => void handleSendClick()}
                           disabled={(!input.trim() && attachments.length === 0) || isSending}
                           className={cn(
-                            "p-4 rounded-2xl transition-all shadow-2xl active:scale-95 group/btn relative overflow-hidden",
+                            "p-2.5 rounded-xl transition-all active:scale-95 group/btn relative overflow-hidden",
                             (input.trim() || attachments.length > 0) && !isSending
                               ? "bg-white text-black hover:bg-zinc-200"
                               : "bg-white/5 text-zinc-600 cursor-not-allowed"
@@ -577,6 +556,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                           <ArrowUp className={cn("w-5 h-5 transition-transform", input.trim() && "group-hover/btn:-translate-y-0.5")} />
                         </button>
                       )}
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -826,37 +806,15 @@ const ChatImpl: React.FC<ChatProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               {/* Left cluster: Plus · Model picker · Build/Chat */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                {/* Plus dropdown */}
-                <div ref={dropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
-                  <button
-                    onClick={() => setDropdownOpen(o => !o)}
-                    title="Attach files, photos or a URL"
-                    style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-
-                  {dropdownOpen && (
-                    <div style={{ position: 'absolute', bottom: 40, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
-                      {[
-                        { icon: Paperclip, label: 'Add files or photos', action: () => { setDropdownOpen(false); fileInputRef.current?.click(); } },
-                        { icon: Camera,    label: 'Take a screenshot',   action: () => setDropdownOpen(false) },
-                        { icon: Link,      label: 'Add from URL',         action: () => setDropdownOpen(false) },
-                      ].map(({ icon: Icon, label, action }) => (
-                        <div
-                          key={label}
-                          onClick={action}
-                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', background: 'transparent' }}
-                        >
-                          <Icon className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {/* Plus — attach files/photos (direct picker; dead screenshot/URL
+                    menu items removed until actually wired) */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Attach files or photos"
+                  style={{ width: 32, height: 32, borderRadius: 8, flexShrink: 0, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
 
                 {/* Model picker (Claude / Gemini) */}
                 <div ref={modelRef} style={{ position: 'relative', flexShrink: 1, minWidth: 0 }}>
