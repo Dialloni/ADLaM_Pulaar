@@ -1018,8 +1018,12 @@ export default function App() {
     return t.replace(/\s+/g, ' ').trim();
   };
 
+  // Real status, derived — nothing ever wrote p.status, so the tabs filtered
+  // against a phantom field and LIVE/BUILDING/DRAFT were always empty.
+  const projStatus = (p: Project): 'live' | 'building' | 'draft' =>
+    p.published ? 'live' : (!p.code || !p.code.trim()) ? 'building' : 'draft';
   const filteredProjects = projects
-    .filter(p => projectFilter === 'all' || p.status === projectFilter)
+    .filter(p => projectFilter === 'all' || projStatus(p) === projectFilter)
     .filter(p =>
     p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
     (p.description || '').toLowerCase().includes(projectSearch.toLowerCase())
@@ -1756,12 +1760,20 @@ export default function App() {
                     <Sparkles className="w-8 h-8" style={{ color: P }} />
                   </div>
                   <p className={cn('text-white font-black text-lg', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                    {projectSearch ? 'No projects match your search' : t.noProjectsTitle}
+                    {projectSearch ? 'No projects match your search'
+                      : projects.length > 0 && projectFilter !== 'all'
+                      ? (selectedLang.code === 'fr' ? `Aucun projet « ${projectFilter} »` : `No ${projectFilter} projects`)
+                      : t.noProjectsTitle}
                   </p>
                   <p className="text-zinc-500 text-sm text-center max-w-xs">
-                    {projectSearch ? 'Try a different search term.' : 'Describe an app in any language and Gando will build it for you.'}
+                    {projectSearch ? 'Try a different search term.'
+                      : projects.length > 0 && projectFilter !== 'all'
+                      ? (projectFilter === 'live'
+                        ? (selectedLang.code === 'fr' ? 'Publiez un projet pour le voir ici.' : 'Publish a project and it will show up here.')
+                        : (selectedLang.code === 'fr' ? 'Changez de filtre pour voir vos projets.' : 'Switch filters to see your projects.'))
+                      : 'Describe an app in any language and Gando will build it for you.'}
                   </p>
-                  {!projectSearch && (
+                  {!projectSearch && projects.length === 0 && (
                     <button onClick={() => { setPage('dashboard'); setCurrentProject(null); }}
                       className={cn('flex items-center gap-2 px-6 py-3 rounded-xl font-black text-black text-sm', isAdlam && 'font-adlam')}
                       style={{ background: 'var(--gradient-brand)', fontFamily: isAdlam ? undefined : MANROPE }}>
@@ -1779,9 +1791,25 @@ export default function App() {
                       <ProjectThumb code={p.code} height={150} />
                       <div className="p-6 pt-4">
                         <div className="flex justify-between items-start mb-4">
-                          <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full self-center" style={{ background: `${T}15`, color: T }}>
-                            {p.language}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full self-center" style={{ background: `${T}15`, color: T }}>
+                              {p.language}
+                            </span>
+                            {(() => {
+                              const st = projStatus(p);
+                              const c = st === 'live' ? { bg: '#22c55e1a', fg: '#4ade80' }
+                                : st === 'building' ? { bg: '#eab3081a', fg: '#fbbf24' }
+                                : { bg: 'rgba(255,255,255,0.06)', fg: 'var(--text-muted)' };
+                              const label = selectedLang.code === 'fr'
+                                ? (st === 'live' ? 'en ligne' : st === 'building' ? 'en cours' : 'brouillon')
+                                : st;
+                              return (
+                                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full self-center" style={{ background: c.bg, color: c.fg }}>
+                                  {label}
+                                </span>
+                              );
+                            })()}
+                          </div>
                           <div className="flex items-center gap-2">
                             {p.featured ? (
                               <span className={cn('flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
