@@ -3,10 +3,10 @@ import { createPortal } from 'react-dom';
 import { GandoLogo } from './components/GandoLogo';
 import {
   Loader2, Trash2, Eye, Code as CodeIcon, Download, AlertTriangle,
-  Search, Bell, LayoutDashboard, FolderKanban, Globe2, Settings,
+  Search, LayoutDashboard, FolderKanban, Globe2, Settings,
   Users, BookOpen, Activity, Sparkles, LogOut, ChevronRight,
   RotateCcw, CheckCircle2, XCircle, AlertCircle, X, PanelLeft,
-  HelpCircle, Gift, Globe, Layers, Github, Figma, Camera,
+  Layers, Github, Figma, Camera,
   Share2, Heart, ChevronDown, Check, Plus, Paperclip, Mic, MicOff,
   MessageSquare, ArrowLeft, ArrowUp, Sun, Moon,
 } from 'lucide-react';
@@ -135,8 +135,6 @@ export default function App() {
   const modelOptions = [...MODEL_OPTIONS, ...byokModelOptions];
   const [dashModelOpen, setDashModelOpen] = useState(false);
   const dashModelRef = useRef<HTMLDivElement>(null);
-  const [dashPlusOpen, setDashPlusOpen] = useState(false);
-  const dashPlusRef = useRef<HTMLDivElement>(null);
   type DashAttachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
   const [dashAttachments, setDashAttachments] = useState<DashAttachment[]>([]);
   const dashFileInputRef = useRef<HTMLInputElement>(null);
@@ -301,7 +299,7 @@ export default function App() {
     const h = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       setProfileOpen(false); setSearchOpen(false); setNotifOpen(false); setUserMenuOpen(false);
-      setDashModelOpen(false); setDashPlusOpen(false); setSearchModalOpen(false); setByokModalOpen(false);
+      setDashModelOpen(false); setSearchModalOpen(false); setByokModalOpen(false);
     };
     document.addEventListener('keydown', h);
     return () => document.removeEventListener('keydown', h);
@@ -445,15 +443,6 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handler);
   }, [dashModelOpen]);
 
-
-  useEffect(() => {
-    if (!dashPlusOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (dashPlusRef.current && !dashPlusRef.current.contains(e.target as Node)) setDashPlusOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [dashPlusOpen]);
 
   /* typewriter */
   useEffect(() => {
@@ -937,10 +926,6 @@ export default function App() {
     return t.replace(/\s+/g, ' ').trim();
   };
 
-  /* ── derived metrics ──────────────────────────── */
-  const completionPct = Math.min(projects.length * 12, 96);
-  const tokenPct = Math.min(messages.length * 2.5, 90);
-  const userMessages = messages.filter(m => m.role === 'user').length;
   const filteredProjects = projects
     .filter(p => projectFilter === 'all' || p.status === projectFilter)
     .filter(p =>
@@ -2210,66 +2195,26 @@ export default function App() {
                     {t.docsPageTitle}
                   </h1>
                   <p className={cn('text-zinc-500 mb-5', isAdlam && 'font-adlam')} style={{ fontSize: 14 }}>{t.docsPageSubtitle}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', marginBottom: 14 }}>
-                    <Search className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ fontSize: 13, color: '#52525b', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>Search docs — prompting, deploy, ADLaM...</span>
-                  </div>
+                  {/* real actions only — the fake search box and decorative chips are gone */}
                   <div className="flex flex-wrap gap-2">
-                    {['Getting Started', 'Prompting Guide', 'Deploy', 'API Reference', 'ADLaM support'].map(chip => (
-                      <span key={chip} style={{ padding: '4px 12px', borderRadius: 9999, background: 'var(--btn-bg)', border: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', fontFamily: MANROPE }}>{chip}</span>
-                    ))}
+                    <button onClick={() => { setPage('status'); setCurrentProject(null); }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:border-white/20"
+                      style={{ background: 'var(--btn-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontFamily: MANROPE, cursor: 'pointer' }}>
+                      <Activity className="w-3.5 h-3.5" /> {t.systemStatusLabel}
+                    </button>
+                    <a href="mailto:gandoadlam25@gmail.com"
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:border-white/20"
+                      style={{ background: 'var(--btn-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontFamily: MANROPE, textDecoration: 'none' }}>
+                      <AlertTriangle className="w-3.5 h-3.5" /> {selectedLang.code === 'fr' ? 'Contacter le support' : 'Contact Support'}
+                    </a>
                   </div>
                 </div>
 
-                {/* ── TWO-COLUMN: sidebar + content (stacks on mobile) ── */}
+                {/* ── CONTENT ── */}
                 <div className="flex flex-col md:flex-row gap-8 items-start">
 
-                  {/* SIDEBAR */}
-                  <div className="w-full md:w-52 flex-shrink-0 space-y-6">
-                    <div>
-                      <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginBottom: 8, fontFamily: MANROPE }}>BROWSE</p>
-                      <div className="space-y-1">
-                        {[
-                          { Icon: BookOpen, label: t.docsSection1Title, active: true },
-                          { Icon: Sparkles, label: t.docsSection2Title, active: false },
-                          { Icon: Globe2,   label: t.docsSection3Title, active: false },
-                          { Icon: Settings, label: 'API & Integrations', active: false },
-                          { Icon: Globe2,   label: 'Supported Languages', active: false },
-                          { Icon: Activity, label: 'Billing & Tokens',    active: false },
-                        ].map(({ Icon, label, active }) => (
-                          <div key={label} className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-default"
-                            style={active
-                              ? { background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', color: 'var(--text-primary)', fontWeight: 700 }
-                              : { background: 'transparent', border: '1px solid transparent', color: 'var(--text-muted)', fontWeight: 500 }}>
-                            <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? '#3b82f6' : undefined }} />
-                            <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontFamily: isAdlam ? undefined : MANROPE }}>{label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.15em', color: '#52525b', textTransform: 'uppercase', marginBottom: 8, fontFamily: MANROPE }}>QUICK LINKS</p>
-                      <div className="space-y-1">
-                        {[
-                          { Icon: Activity,      label: t.systemStatusLabel },
-                          { Icon: BookOpen,      label: 'Release Notes' },
-                          { Icon: Users,         label: 'Community Forum' },
-                          { Icon: AlertTriangle, label: 'Contact Support' },
-                        ].map(({ Icon, label }) => (
-                          <div key={label} className="flex items-center justify-between px-3 py-2 rounded-xl transition-all hover:bg-white/5 cursor-default"
-                            style={{ color: 'var(--text-muted)' }}>
-                            <div className="flex items-center gap-3">
-                              <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 500 }}>{label}</span>
-                            </div>
-                            <ChevronRight className="w-3 h-3 flex-shrink-0" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* CONTENT */}
+                  {/* CONTENT (fake browse-nav + dead quick-links sidebar removed — nothing
+                      there was clickable; real actions live in the hero card above) */}
                   <div className="flex-1 min-w-0 space-y-6">
                     {/* Section header */}
                     <div className="flex items-center gap-4 p-5 rounded-2xl relative overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -2291,13 +2236,13 @@ export default function App() {
                         { n: '03', label: 'Your first prompt' },
                         { n: '04', label: 'Understanding previews' },
                       ].map(({ n, label }) => (
-                        <div key={n} className="flex items-center gap-3 transition-all hover:bg-white/5 cursor-pointer"
+                        /* numbered steps, not links — no hover/cursor/chevron pretending otherwise */
+                        <div key={n} className="flex items-center gap-3"
                           style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                           <div style={{ width: 22, height: 22, borderRadius: 7, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#3b82f6', fontFamily: MANROPE, fontWeight: 900, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             {n}
                           </div>
                           <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', fontFamily: isAdlam ? undefined : MANROPE, flex: 1 }}>{label}</span>
-                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
                         </div>
                       ))}
                     </div>
@@ -2305,7 +2250,6 @@ export default function App() {
                     {/* ARTICLE CARD */}
                     <div className="rounded-2xl p-6 relative overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gradient-horizontal)' }} />
-                      <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10, fontFamily: MANROPE }}>ARTICLE · 3 MIN READ</p>
                       <h3 className={cn('font-black text-white', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 20, marginBottom: 12 }}>{t.docsSection2Title}</h3>
                       <p className={cn('text-sm leading-relaxed', isAdlam && 'font-adlam')} style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{t.docsSection2Body}</p>
                       <div className="space-y-2 mb-4">
@@ -2319,16 +2263,6 @@ export default function App() {
                             <p className={cn('text-xs', isAdlam && 'font-adlam')} style={{ color: bold ? '#e5e5e5' : '#767575', fontWeight: bold ? 700 : 400 }}>{label}</p>
                           </div>
                         ))}
-                      </div>
-                      {/* Author row */}
-                      <div style={{ paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span style={{ fontSize: 10, fontWeight: 900, color: '#fff', fontFamily: MANROPE }}>G</span>
-                        </div>
-                        <div>
-                          <p style={{ fontFamily: MANROPE, fontWeight: 700, fontSize: 11, color: '#fff', lineHeight: 1.3 }}>Gando Team</p>
-                          <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.3 }}>Updated 2 weeks ago</p>
-                        </div>
                       </div>
                     </div>
 
@@ -2345,7 +2279,6 @@ export default function App() {
                           'After generation, ask follow-up questions to refine your app.',
                           'Use the Revert button on any chat message to go back to that version.',
                           'Download your app as a single HTML file — works offline.',
-                          'Set GEMINI_MODEL=gemini-2.5-pro in .env for higher-quality generation.',
                         ].map((tip, i) => (
                           <div key={i} className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background: P }} />
@@ -2407,11 +2340,19 @@ export default function App() {
                 <h3 className={cn('font-black text-white mb-4', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.statusModel}</h3>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-bold text-sm">{sysStatus.model}</p>
-                    <p className="text-zinc-500 text-xs mt-0.5">Google Gemini via Gando Server</p>
+                    {/* the model the user actually builds with — not the health-probe model */}
+                    <p className="text-white font-bold text-sm">{PROVIDER_LABEL[provider]}</p>
+                    <p className="text-zinc-500 text-xs mt-0.5">
+                      {selectedLang.code === 'fr' ? 'Votre modèle de génération' : 'Your selected build model'}
+                    </p>
                   </div>
                   <span className="text-xs font-black px-3 py-1 rounded-full" style={{ background: `${P}15`, color: P }}>Active</span>
                 </div>
+                {sysStatus.model !== '—' && (
+                  <p className="text-zinc-600 text-[11px] mt-3">
+                    {selectedLang.code === 'fr' ? 'Sonde de disponibilité' : 'Health probe'}: {sysStatus.model}
+                  </p>
+                )}
               </div>
 
               {sysStatus.checked && (
@@ -2552,36 +2493,15 @@ export default function App() {
                       <div className="flex items-center gap-2 min-w-0">
                       {importMode === 'describe'
                         ? <div className="flex items-center gap-2">
-                            {/* Plus — attach files/photos/PDF */}
-                            <div ref={dashPlusRef} style={{ position: 'relative' }}>
-                              <button
-                                onClick={() => setDashPlusOpen(o => !o)}
-                                title="Attach files, photos or a URL"
-                                style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                              {dashPlusOpen && (
-                                <div style={{ position: 'absolute', top: 44, left: 0, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', minWidth: 220, zIndex: 50 }}>
-                                  {([
-                                    { icon: Paperclip, label: 'Add files or photos', action: () => { setDashPlusOpen(false); dashFileInputRef.current?.click(); } },
-                                    { icon: Camera,    label: 'Take a screenshot',   action: () => setDashPlusOpen(false) },
-                                    { icon: Globe,     label: 'Add from URL',         action: () => setDashPlusOpen(false) },
-                                  ]).map(({ icon: Icon, label, action }) => (
-                                    <div
-                                      key={label}
-                                      onClick={action}
-                                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--hover-bg)'}
-                                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', fontSize: 13, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer', background: 'transparent' }}
-                                    >
-                                      <Icon className="w-4 h-4" style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                                      {label}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
+                            {/* Plus — attach files/photos (opens the picker directly; screenshot/URL
+                                imports were dead menu items — removed until actually wired) */}
+                            <button
+                              onClick={() => dashFileInputRef.current?.click()}
+                              title="Attach files or photos"
+                              style={{ width: 38, height: 38, borderRadius: 12, background: 'var(--btn-bg)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
                             {/* Model picker */}
                             <div ref={dashModelRef} style={{ position: 'relative' }}>
                               <button
