@@ -12,6 +12,8 @@ export interface Project {
   shareStatus?: 'pending' | 'approved' | 'rejected';
   featured?: boolean;
   sharedAt?: any;
+  published?: boolean;   // publicly served at /p/<id>
+  publishedAt?: any;
 }
 
 export interface Message {

@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import { verifyIdToken } from './lib/firebaseAdmin';
 import { runStream, translateText, chatStream } from './lib/llm';
 import { checkRateLimit, RATE_LIMIT_MESSAGE, type RateKind } from './lib/rateLimit';
+import { loadPublishedApp, NOT_FOUND_HTML, PUBLISH_CSP } from './lib/publishPage';
 
 dotenv.config();
 
@@ -474,6 +475,22 @@ Output ONLY the extracted text, nothing else.`;
     } catch (err) {
       console.error('speak error:', err);
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  // Public page for a published app — must sit BEFORE the SPA fallback.
+  // Mirrors api/p/[id].ts (Vercel). CSP sandbox isolates user-generated HTML.
+  app.get('/p/:id', async (req: Request, res: Response) => {
+    try {
+      const html = await loadPublishedApp(String(req.params.id ?? ''));
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      if (!html) return res.status(404).send(NOT_FOUND_HTML);
+      res.setHeader('Content-Security-Policy', PUBLISH_CSP);
+      res.setHeader('Cache-Control', 'public, max-age=60');
+      res.send(html);
+    } catch (err) {
+      console.error('publish serve error:', err);
+      res.status(500).send('Server error');
     }
   });
 

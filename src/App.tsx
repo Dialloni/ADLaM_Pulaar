@@ -320,7 +320,7 @@ export default function App() {
     const h = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       setProfileOpen(false); setSearchOpen(false); setNotifOpen(false); setUserMenuOpen(false);
-      setDashModelOpen(false); setSearchModalOpen(false); setByokModalOpen(false);
+      setDashModelOpen(false); setSearchModalOpen(false); setByokModalOpen(false); setPublishOpen(false);
     };
     document.addEventListener('keydown', h);
     return () => document.removeEventListener('keydown', h);
@@ -916,6 +916,32 @@ export default function App() {
 
   const openProject = (p: Project) => { setCurrentProject(p); };
 
+  /* Publish — the project becomes publicly served at /p/<id> (no login).
+     Toggle lives on the project doc; serving is done server-side (lib/publishPage). */
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const publishRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!publishOpen) return;
+    const h = (e: MouseEvent) => {
+      if (publishRef.current && !publishRef.current.contains(e.target as Node)) setPublishOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [publishOpen]);
+  const publishUrl = (id: string) => `${window.location.origin}/p/${id}`;
+  const setPublished = async (p: Project, published: boolean) => {
+    try {
+      await updateDoc(doc(db, 'projects', p.id), { published, publishedAt: published ? serverTimestamp() : null });
+      setCurrentProject(cp => (cp && cp.id === p.id) ? { ...cp, published } : cp);
+      setPublishOpen(published);
+    } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${p.id}`); }
+  };
+  const copyPublishLink = async (id: string) => {
+    try { await navigator.clipboard.writeText(publishUrl(id)); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1800); }
+    catch { /* clipboard denied — user can select the text */ }
+  };
+
   const shareProject = async (p: Project) => {
     if (p.shareStatus === 'pending' || p.featured) return;
     if (!confirm(t.shareConfirm)) return;
@@ -1369,6 +1395,51 @@ export default function App() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                  {/* Publish — live public link at /p/<id> */}
+                  <div ref={publishRef} style={{ position: 'relative' }}>
+                    {currentProject.published ? (
+                      <button onClick={() => setPublishOpen(o => !o)}
+                        className="flex items-center gap-1.5 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                        style={{ background: '#22c55e1a', color: '#4ade80', border: '1px solid #22c55e33' }}>
+                        <Globe2 className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'En ligne' : 'Live'}</span>
+                      </button>
+                    ) : (
+                      <button onClick={() => setPublished(currentProject, true)}
+                        className="flex items-center gap-1.5 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold transition-all border"
+                        style={{ color: P, borderColor: `${P}33`, background: `${P}0c` }}>
+                        <Globe2 className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'Publier' : 'Publish'}</span>
+                      </button>
+                    )}
+                    {publishOpen && currentProject.published && (
+                      <div style={{ position: 'absolute', top: 44, right: 0, width: 300, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 14, padding: 14, zIndex: 60, boxShadow: '0 16px 48px rgba(0,0,0,0.45)' }}>
+                        <p style={{ fontSize: 11, fontWeight: 800, color: '#4ade80', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontFamily: MANROPE }}>
+                          {selectedLang.code === 'fr' ? '● Votre app est en ligne' : '● Your app is live'}
+                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--btn-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 10px', marginBottom: 10 }}>
+                          <span style={{ flex: 1, fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {publishUrl(currentProject.id)}
+                          </span>
+                          <button onClick={() => copyPublishLink(currentProject.id)}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: linkCopied ? '#4ade80' : 'var(--text-muted)', flexShrink: 0, padding: 2 }}
+                            title={selectedLang.code === 'fr' ? 'Copier le lien' : 'Copy link'}>
+                            {linkCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                          </button>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <a href={publishUrl(currentProject.id)} target="_blank" rel="noreferrer"
+                            style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'var(--gradient-brand)', color: '#0a0a0a', fontSize: 12, fontWeight: 800, textDecoration: 'none', fontFamily: MANROPE }}>
+                            {selectedLang.code === 'fr' ? 'Ouvrir ↗' : 'Open ↗'}
+                          </a>
+                          <button onClick={() => setPublished(currentProject, false)}
+                            style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'transparent', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: MANROPE }}>
+                            {selectedLang.code === 'fr' ? 'Dépublier' : 'Unpublish'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--btn-bg)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <button onClick={() => setActiveTab('preview')}
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"

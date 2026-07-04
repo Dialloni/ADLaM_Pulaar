@@ -12,6 +12,7 @@
     { "source": "/api/ocr", "destination": "/api/ocr" },
     { "source": "/api/decode", "destination": "/api/decode" },
     { "source": "/api/translate", "destination": "/api/translate" },
+    { "source": "/p/:id", "destination": "/api/p/:id" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
