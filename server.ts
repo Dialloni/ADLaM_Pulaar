@@ -9,6 +9,7 @@ import { verifyIdToken } from './lib/firebaseAdmin';
 import { runStream, translateText, chatStream } from './lib/llm';
 import { checkRateLimit, RATE_LIMIT_MESSAGE, type RateKind } from './lib/rateLimit';
 import { loadPublishedApp, NOT_FOUND_HTML, PUBLISH_CSP } from './lib/publishPage';
+import { storeSubmission } from './lib/submissions';
 
 dotenv.config();
 
@@ -475,6 +476,27 @@ Output ONLY the extracted text, nothing else.`;
     } catch (err) {
       console.error('speak error:', err);
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  // Public form endpoint for published apps (visitors are not signed in).
+  // Sandboxed published pages send Origin: null → CORS wide open, no credentials.
+  const submitCors = (res: Response) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  };
+  app.options('/api/submit/:id', (_req: Request, res: Response) => { submitCors(res); res.status(204).end(); });
+  app.post('/api/submit/:id', async (req: Request, res: Response) => {
+    submitCors(res);
+    try {
+      const ip = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || req.socket.remoteAddress || undefined;
+      const result = await storeSubmission(String(req.params.id ?? ''), req.body, ip, String(req.headers['user-agent'] ?? ''));
+      if (result.ok === false) return res.status(result.status).json({ error: result.error });
+      res.json({ ok: true });
+    } catch (err) {
+      console.error('submit error:', err);
+      res.status(500).json({ error: 'Server error' });
     }
   });
 

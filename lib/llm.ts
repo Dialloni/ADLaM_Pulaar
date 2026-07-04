@@ -94,6 +94,13 @@ Code rules:
 - Use Tailwind via CDN: <script src="https://cdn.tailwindcss.com"></script>
 - No external backend, no Firebase, no API keys, no npm modules.
 
+Forms (contact / order / booking / feedback) — make them REAL:
+- Every form must actually submit to the Gando submissions API. On submit (preventDefault):
+  fetch('/api/submit/__GANDO_PROJECT_ID__', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { /* one entry per form input, named meaningfully */ }, _gotcha: document.querySelector('[name=_gotcha]')?.value || '' }) })
+- Use the literal placeholder __GANDO_PROJECT_ID__ exactly as written — it is replaced with the real id automatically. Never invent an id.
+- Add a hidden spam-trap input to each form: <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off">
+- On success: clear the form and show a confirmation message IN THE APP'S LANGUAGE. On failure: show a polite error in the same language. Never leave a form that does nothing.
+
 ADLaM (Fulani) rules — CRITICAL:
 - If the detected language is Fulani/Pulaar, render ALL text using ONLY characters from the ADLaM Unicode block (U+1E900–U+1E95F).
 - Include in <head>: <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Adlam&display=swap" rel="stylesheet">`;

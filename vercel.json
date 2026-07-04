@@ -13,6 +13,7 @@
     { "source": "/api/decode", "destination": "/api/decode" },
     { "source": "/api/translate", "destination": "/api/translate" },
     { "source": "/p/:id", "destination": "/api/p/:id" },
+    { "source": "/api/submit/:id", "destination": "/api/submit/:id" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {

@@ -14,11 +14,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './contexts/AuthContext';
 import {
   collection, addDoc, updateDoc, doc, setDoc, getDoc, query, where, orderBy,
-  onSnapshot, deleteDoc, db, serverTimestamp,
+  limit, onSnapshot, deleteDoc, db, serverTimestamp,
   handleFirestoreError, OperationType, auth,
   storage, ref, uploadBytes, getDownloadURL,
 } from './firebase';
-import { Project, Message, ChatThread } from './types';
+import { Project, Message, ChatThread, Submission } from './types';
 import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider, type ImageInput } from './services/geminiService';
 import { Chat } from './components/Chat';
 import { Preview } from './components/Preview';
@@ -64,6 +64,66 @@ const NAV_PAGES: NavPage[] = ['dashboard', 'projects', 'chats', 'assets', 'templ
 
 
 
+/* Owner inbox: form submissions from the published app (written server-side). */
+function InboxPanel({ submissions, fr, projectId, published }: {
+  submissions: Submission[]; fr: boolean; projectId: string; published?: boolean;
+}) {
+  const del = async (sid: string) => {
+    try { await deleteDoc(doc(db, 'projects', projectId, 'submissions', sid)); } catch { /* row stays; retry */ }
+  };
+  const fmtTime = (ts: any) => {
+    try { return ts?.toDate ? ts.toDate().toLocaleString() : ''; } catch { return ''; }
+  };
+  return (
+    <div className="h-full overflow-y-auto custom-scrollbar" style={{ background: 'var(--app-bg)', padding: '20px 24px' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+        <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 18, color: 'var(--text-primary)', marginBottom: 4 }}>
+          {fr ? 'Messages de votre app' : 'Messages from your app'}
+        </h2>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+          {fr ? 'Chaque formulaire envoyé sur votre app publiée arrive ici.'
+              : 'Every form submitted on your published app lands here.'}
+        </p>
+        {submissions.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 16px', color: 'var(--text-muted)' }}>
+            <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-30" />
+            <p style={{ fontSize: 13 }}>
+              {fr ? 'Aucun message pour le moment.' : 'No messages yet.'}
+            </p>
+            <p style={{ fontSize: 12, marginTop: 4, color: 'var(--text-faint)' }}>
+              {published
+                ? (fr ? 'Partagez le lien de votre app — les envois de formulaires apparaîtront ici.' : 'Share your app link — form submissions will show up here.')
+                : (fr ? "Publiez d'abord votre app pour recevoir des messages." : 'Publish your app first to start receiving messages.')}
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {submissions.map(s => (
+              <div key={s.id} style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtTime(s.createdAt)}</span>
+                  <button onClick={() => del(s.id)} title={fr ? 'Supprimer' : 'Delete'}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 2 }}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {Object.entries(s.fields || {}).map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', gap: 8, fontSize: 13, lineHeight: 1.5 }}>
+                      <span style={{ color: 'var(--text-muted)', minWidth: 90, flexShrink: 0, overflowWrap: 'anywhere' }}>{k}</span>
+                      <span style={{ color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function StatusDot({ status }: { status: 'ok' | 'degraded' | 'down' | 'checking' }) {
   if (status === 'checking') return <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />;
   if (status === 'ok')       return <CheckCircle2 className="w-4 h-4" style={{ color: '#4ade80' }} />;
@@ -104,7 +164,7 @@ export default function App() {
     const now = Date.now();
     if (now - lastPreviewAt.current > 1500) { lastPreviewAt.current = now; setPreviewCode(c); }
   };
-  const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [activeTab, setActiveTab] = useState<'preview' | 'code' | 'inbox'>('preview');
   const [selectedLang, setSelectedLang] = useState<{ code: LanguageCode; name: string; short?: string }>(LANGS[0]);
   // AI model picker — Claude (eval winner) default; remembered per browser.
   const [provider, setProviderState] = useState<Provider>(
@@ -434,6 +494,16 @@ export default function App() {
     const q = query(collection(db, 'projects', currentProject.id, 'messages'), orderBy('timestamp', 'asc'));
     return onSnapshot(q, snap => setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Message))),
       err => setGlobalError(`Messages Error: ${err.message}`));
+  }, [currentProject?.id]);
+
+  /* form submissions listener (owner inbox — written server-side by /api/submit) */
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  useEffect(() => {
+    if (!currentProject) { setSubmissions([]); return; }
+    const q = query(collection(db, 'projects', currentProject.id, 'submissions'), orderBy('createdAt', 'desc'), limit(200));
+    return onSnapshot(q,
+      snap => setSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission))),
+      () => {});
   }, [currentProject?.id]);
 
   /* fetch system status */
@@ -1510,6 +1580,17 @@ export default function App() {
                       style={activeTab === 'code' ? { background: 'rgba(59,130,246,0.14)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}>
                       <CodeIcon className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.code}</span>
                     </button>
+                    <button onClick={() => setActiveTab('inbox')}
+                      className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
+                      style={activeTab === 'inbox' ? { background: 'rgba(59,130,246,0.14)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}>
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'Boîte' : 'Inbox'}</span>
+                      {submissions.length > 0 && (
+                        <span style={{ minWidth: 16, height: 16, borderRadius: 8, background: P, color: '#fff', fontSize: 9, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                          {submissions.length > 99 ? '99+' : submissions.length}
+                        </span>
+                      )}
+                    </button>
                   </div>
                   {currentProject.featured ? (
                     <span className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
@@ -1541,7 +1622,9 @@ export default function App() {
                     {/* MOBILE: preview fills screen; chat is a bottom sheet toggled by chatHidden */}
                     <div className="flex-1 overflow-hidden w-full">
                       {activeTab === 'preview'
-                        ? <Preview code={previewCode ?? currentProject.code} />
+                        ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} />
+                        : activeTab === 'inbox'
+                        ? <InboxPanel submissions={submissions} fr={selectedLang.code === 'fr'} projectId={currentProject.id} published={currentProject.published} />
                         : <Suspense fallback={<LazyFallback />}><CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} /></Suspense>}
                     </div>
                     {/* dim backdrop when chat open */}
@@ -1615,7 +1698,9 @@ export default function App() {
                       <motion.div key="panel" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                         transition={{ type: 'spring', damping: 30, stiffness: 200 }} className="flex-1 overflow-hidden">
                         {activeTab === 'preview'
-                          ? <Preview code={previewCode ?? currentProject.code} />
+                          ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} />
+                          : activeTab === 'inbox'
+                          ? <InboxPanel submissions={submissions} fr={selectedLang.code === 'fr'} projectId={currentProject.id} published={currentProject.published} />
                           : <Suspense fallback={<LazyFallback />}><CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} /></Suspense>}
                       </motion.div>
                     </AnimatePresence>

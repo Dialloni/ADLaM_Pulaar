@@ -3,6 +3,14 @@ import { Globe, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PreviewProps {
   code: string;
+  /** Binds generated forms' /api/submit/__GANDO_PROJECT_ID__ placeholder so
+      they work in the preview, not just on the published page. */
+  projectId?: string;
+}
+
+function bindProjectId(html: string, projectId?: string): string {
+  if (!html || !projectId) return html;
+  return html.replaceAll('__GANDO_PROJECT_ID__', projectId);
 }
 
 // Small reporter injected into the previewed HTML. It posts the document's
@@ -41,10 +49,10 @@ function useIsMobile() {
 }
 
 // ── MOBILE: single iframe sized to its content; our wrapper does the scrolling. ──
-const MobilePreview: React.FC<PreviewProps> = ({ code }) => {
+const MobilePreview: React.FC<PreviewProps> = ({ code, projectId }) => {
   const [height, setHeight] = useState(2000);
   const [refreshKey, setRefreshKey] = useState(0);
-  const srcDoc = injectReporter(code);
+  const srcDoc = injectReporter(bindProjectId(code, projectId));
 
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
@@ -90,7 +98,8 @@ const MobilePreview: React.FC<PreviewProps> = ({ code }) => {
 // Double-buffered iframe: when `code` changes (e.g. streaming updates), the new HTML is
 // loaded into the hidden buffer; we only swap it to visible once it has fully rendered.
 // This eliminates the white "blink" you get from mutating a single iframe's srcDoc.
-export const Preview: React.FC<PreviewProps> = ({ code }) => {
+export const Preview: React.FC<PreviewProps> = ({ code: rawCode, projectId }) => {
+  const code = bindProjectId(rawCode, projectId);
   const isMobile = useIsMobile();
   const [refreshKey, setRefreshKey] = useState(0);
   const [top, setTop] = useState<'a' | 'b'>('a');

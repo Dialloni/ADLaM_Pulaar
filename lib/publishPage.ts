@@ -47,6 +47,7 @@ export async function loadPublishedApp(idOrSlug: string): Promise<string | null>
   }
   const d = snap.data();
   if (!snap.exists || d?.published !== true || typeof d.code !== 'string' || !d.code.trim()) return null;
-  const code = d.code as string;
+  // generated forms POST to /api/submit/__GANDO_PROJECT_ID__ — bind the real id
+  const code = (d.code as string).replaceAll('__GANDO_PROJECT_ID__', snap.id);
   return code.includes('</body>') ? code.replace('</body>', `${BADGE}</body>`) : code + BADGE;
 }

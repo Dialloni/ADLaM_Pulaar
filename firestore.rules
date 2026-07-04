@@ -40,6 +40,15 @@ service cloud.firestore {
         allow read, write: if request.auth != null
           && request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.userId;
       }
+
+      // ── Form submissions (subcollection) ──────────────────────────────────
+      // Written ONLY by the server (Admin SDK) via /api/submit/<id>.
+      // Owner reads and deletes; nobody creates or edits from the client.
+      match /submissions/{submissionId} {
+        allow read, delete: if request.auth != null
+          && request.auth.uid == get(/databases/$(database)/documents/projects/$(projectId)).data.userId;
+        allow create, update: if false;
+      }
     }
 
     // ── Chats ────────────────────────────────────────────────────────────────

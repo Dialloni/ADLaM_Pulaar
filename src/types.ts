@@ -36,6 +36,13 @@ export interface ChatThread {
   updatedAt: any;
 }
 
+export interface Submission {
+  id: string;
+  fields: Record<string, string>;
+  createdAt: any;
+  ua?: string;
+}
+
 export interface GenerationResult {
   code: string;
   explanation: string;
