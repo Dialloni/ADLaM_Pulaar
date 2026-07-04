@@ -21,7 +21,13 @@ export async function verifyIdToken(token: string) {
 
 export function adminDb() {
   initAdmin();
-  return getFirestore();
+  // The app uses a NAMED Firestore database (see src/firebase.ts) — the
+  // default getFirestore() silently targets '(default)', which is empty.
+  // Railway stores env values with literal quotes, hence the strip.
+  const dbId = (process.env.FIREBASE_FIRESTORE_DATABASE_ID
+    || process.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID
+    || '').trim().replace(/^"+|"+$/g, '');
+  return dbId && dbId !== '(default)' ? getFirestore(dbId) : getFirestore();
 }
 
 export function adminStorage() {
