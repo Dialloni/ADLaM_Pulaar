@@ -105,6 +105,10 @@ flowchart LR
 ### Build experience
 
 - 🌍 **African-language generation** — describe your app in Fulani (ADLaM), French, English, and more
+- 🌐 **Publish to a live URL** — one click puts your app at `/p/your-name` (custom link names, old links never break); served with a CSP sandbox so user code can't touch visitors' data
+- 📬 **Working forms + owner Inbox** — contact/order forms on published apps actually deliver; submissions land in an Inbox tab on the project (spam honeypot + daily caps built in)
+- 📷 **Your photos in your app** — attached images are downscaled in-browser, uploaded to Storage, and embedded in the generated site (up to 6 per message)
+- 🧭 **Real multi-page navigation** — generated apps use in-file hash routing: up to ~5 "pages", browser Back/Forward work, no dead links
 - ⚡ **Live streaming builds** — code streams into the editor as the model writes it; preview double-buffers with zero flicker
 - 🖥 **Resizable split workspace** — VS Code-style drag divider between chat and preview; snap-collapse either side, width remembered
 - 💬 **Iterative chat edits** — refine through conversation; incremental edits with version history + one-click revert
@@ -174,10 +178,14 @@ ADLaM_Pulaar/
 │   ├── generate.ts · edit.ts · chat.ts     # SSE streaming generation/edits/chat
 │   ├── transcribe.ts · speak.ts            # voice in / voice out
 │   ├── ocr.ts · translate.ts · status.ts
+│   ├── p/[id].ts                           # public page for published apps (/p/<slug|id>)
+│   └── submit/[id].ts                      # public form-submission endpoint
 ├── lib/
 │   ├── llm.ts                    # Provider layer — Claude default, Gemini fallback, Groq, BYOK
+│   ├── publishPage.ts            # Published-app serving: slug/id lookup, CSP sandbox, badge
+│   ├── submissions.ts            # Form submissions: validation, honeypot, daily caps
 │   ├── rateLimit.ts              # Per-user daily quotas (Firestore, fail-open)
-│   └── firebaseAdmin.ts          # Server-side token verification
+│   └── firebaseAdmin.ts          # Server-side token verification (named-DB aware)
 ├── scraper/                      # Telegram/web ADLaM harvester (Python, own Railway service)
 ├── scripts/                      # i18n dump/apply tooling, eval harness
 ├── public/
@@ -202,6 +210,8 @@ ADLaM_Pulaar/
 │   ├── lib/
 │   │   ├── greeting.ts           # Time-aware greetings (verified ADLaM phrases)
 │   │   ├── providers.ts          # Model/provider registry (single source of truth)
+│   │   ├── appImages.ts          # Photo embed: in-browser downscale + Storage upload
+│   │   ├── slug.ts               # Custom publish link names (transactional claim)
 │   │   ├── adlam.ts              # Latin→ADLaM name transliteration
 │   │   └── brand.ts · langs.ts · useTheme.ts · useIsMobile.ts · useVoiceInput.ts
 │   ├── services/geminiService.ts # SSE client for /api/*

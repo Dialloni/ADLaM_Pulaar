@@ -276,7 +276,7 @@ const ChatImpl: React.FC<ChatProps> = ({
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       if (file.type.startsWith('image/')) {
         if (imageCount >= MAX_APP_IMAGES) {
-          setAttachNote(languageCode === 'fr' ? `Maximum ${MAX_APP_IMAGES} images par message.` : `Up to ${MAX_APP_IMAGES} images per message.`);
+          setAttachNote(t.maxImagesNote.replace('{n}', String(MAX_APP_IMAGES)));
           return;
         }
         imageCount++;
@@ -427,7 +427,7 @@ const ChatImpl: React.FC<ChatProps> = ({
       {/* Header bar (skipped when the parent view provides its own) */}
       {!hideHeader && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, position: 'relative', zIndex: 10 }}>
-          <span style={{ fontFamily: 'Manrope, var(--adlam-ui), sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>Chat with Gando</span>
+          <span className={cn(languageCode === 'ff-adlm' && 'font-adlam')} style={{ fontFamily: 'Manrope, var(--adlam-ui), sans-serif', fontWeight: 800, fontSize: 12, color: 'var(--text-primary)' }}>{t.chatWithGando}</span>
         </div>
       )}
       {/* Background Glows */}
@@ -783,7 +783,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   void handleSendClick();
                 }
               }}
-              placeholder="Describe your app..."
+              placeholder={t.describeAppPlaceholder}
               className={languageCode === 'ff-adlm' ? 'font-adlam' : ''}
               style={{
                 width: '100%',

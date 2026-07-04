@@ -41,7 +41,7 @@ const LazyFallback = () => (
   </div>
 );
 import { cn } from './lib/utils';
-import { TRANSLATIONS, LanguageCode } from './translations';
+import { TRANSLATIONS, LanguageCode, type UIStrings } from './translations';
 import { LANGS } from './lib/langs';
 import { latinToAdlam } from './lib/adlam';
 import { pickGreeting, greetEmoji } from './lib/greeting';
@@ -65,8 +65,8 @@ const NAV_PAGES: NavPage[] = ['dashboard', 'projects', 'chats', 'assets', 'templ
 
 
 /* Owner inbox: form submissions from the published app (written server-side). */
-function InboxPanel({ submissions, fr, projectId, published }: {
-  submissions: Submission[]; fr: boolean; projectId: string; published?: boolean;
+function InboxPanel({ submissions, t, isAdlam, projectId, published }: {
+  submissions: Submission[]; t: UIStrings; isAdlam: boolean; projectId: string; published?: boolean;
 }) {
   const del = async (sid: string) => {
     try { await deleteDoc(doc(db, 'projects', projectId, 'submissions', sid)); } catch { /* row stays; retry */ }
@@ -77,23 +77,20 @@ function InboxPanel({ submissions, fr, projectId, published }: {
   return (
     <div className="h-full overflow-y-auto custom-scrollbar" style={{ background: 'var(--app-bg)', padding: '20px 24px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <h2 style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 18, color: 'var(--text-primary)', marginBottom: 4 }}>
-          {fr ? 'Messages de votre app' : 'Messages from your app'}
+        <h2 className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 900, fontSize: 18, color: 'var(--text-primary)', marginBottom: 4 }}>
+          {t.inboxTitle}
         </h2>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
-          {fr ? 'Chaque formulaire envoyé sur votre app publiée arrive ici.'
-              : 'Every form submitted on your published app lands here.'}
+        <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20 }}>
+          {t.inboxSubtitle}
         </p>
         {submissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '48px 16px', color: 'var(--text-muted)' }}>
             <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-30" />
-            <p style={{ fontSize: 13 }}>
-              {fr ? 'Aucun message pour le moment.' : 'No messages yet.'}
+            <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 13 }}>
+              {t.inboxEmptyTitle}
             </p>
-            <p style={{ fontSize: 12, marginTop: 4, color: 'var(--text-faint)' }}>
-              {published
-                ? (fr ? 'Partagez le lien de votre app — les envois de formulaires apparaîtront ici.' : 'Share your app link — form submissions will show up here.')
-                : (fr ? "Publiez d'abord votre app pour recevoir des messages." : 'Publish your app first to start receiving messages.')}
+            <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 12, marginTop: 4, color: 'var(--text-faint)' }}>
+              {published ? t.inboxEmptyPublishedHint : t.inboxEmptyUnpublishedHint}
             </p>
           </div>
         ) : (
@@ -102,7 +99,7 @@ function InboxPanel({ submissions, fr, projectId, published }: {
               <div key={s.id} style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{fmtTime(s.createdAt)}</span>
-                  <button onClick={() => del(s.id)} title={fr ? 'Supprimer' : 'Delete'}
+                  <button onClick={() => del(s.id)} title={t.deleteLabel}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', padding: 2 }}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -206,7 +203,7 @@ export default function App() {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       if (file.type.startsWith('image/')) {
         if (imageCount >= MAX_APP_IMAGES) {
-          setGlobalError(selectedLang.code === 'fr' ? `Maximum ${MAX_APP_IMAGES} images par message.` : `Up to ${MAX_APP_IMAGES} images per message.`);
+          setGlobalError(t.maxImagesNote.replace('{n}', String(MAX_APP_IMAGES)));
           return;
         }
         imageCount++;
@@ -920,9 +917,7 @@ export default function App() {
         prompt += embedImagesPrompt(uploaded);
       } catch (err) {
         console.error('image upload failed, continuing vision-only:', err);
-        setGlobalError(selectedLang.code === 'fr'
-          ? "Échec de l'envoi des images — l'app sera générée sans les intégrer."
-          : 'Image upload failed — building without embedding them.');
+        setGlobalError(t.imageUploadFailedNote);
       }
     }
     if (selectedLang.code === 'ff-adlm' && buildScript === 'unjoined') {
@@ -1504,22 +1499,20 @@ export default function App() {
                         className="flex items-center gap-1.5 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold transition-all"
                         style={{ background: '#22c55e1a', color: '#4ade80', border: '1px solid #22c55e33' }}>
                         <Globe2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'En ligne' : 'Live'}</span>
+                        <span className={cn('hidden sm:inline', isAdlam && 'font-adlam')}>{t.liveLabel}</span>
                       </button>
                     ) : (
                       <button onClick={() => publishOpen ? setPublishOpen(false) : openPublishPopover()}
                         className="flex items-center gap-1.5 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold transition-all border"
                         style={{ color: P, borderColor: `${P}33`, background: `${P}0c` }}>
                         <Globe2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'Publier' : 'Publish'}</span>
+                        <span className={cn('hidden sm:inline', isAdlam && 'font-adlam')}>{t.publishLabel}</span>
                       </button>
                     )}
                     {publishOpen && (
                       <div style={{ position: 'absolute', top: 44, right: 0, width: 320, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 14, padding: 14, zIndex: 60, boxShadow: '0 16px 48px rgba(0,0,0,0.45)' }}>
-                        <p style={{ fontSize: 11, fontWeight: 800, color: currentProject.published ? '#4ade80' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontFamily: MANROPE }}>
-                          {currentProject.published
-                            ? (selectedLang.code === 'fr' ? '● Votre app est en ligne' : '● Your app is live')
-                            : (selectedLang.code === 'fr' ? 'Choisissez le nom du lien' : 'Choose your link name')}
+                        <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 11, fontWeight: 800, color: currentProject.published ? '#4ade80' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontFamily: isAdlam ? undefined : MANROPE }}>
+                          {currentProject.published ? t.appLiveLabel : t.chooseLinkNameLabel}
                         </p>
                         {/* slug editor — /p/<name> */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--btn-bg)', border: `1px solid ${slugErr ? 'rgba(248,113,113,0.5)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 10px', marginBottom: 6 }}>
@@ -1534,35 +1527,35 @@ export default function App() {
                           {currentProject.published && (
                             <button onClick={() => copyPublishLink(currentProject)}
                               style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: linkCopied ? '#4ade80' : 'var(--text-muted)', flexShrink: 0, padding: 2 }}
-                              title={selectedLang.code === 'fr' ? 'Copier le lien' : 'Copy link'}>
+                              title={t.copyLinkLabel}>
                               {linkCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
                             </button>
                           )}
                         </div>
-                        <p style={{ fontSize: 11, minHeight: 16, marginBottom: 8, color: slugErr ? '#f87171' : 'var(--text-faint)' }}>
-                          {slugErr === 'taken' ? (selectedLang.code === 'fr' ? 'Ce nom est déjà pris — essayez-en un autre.' : 'That name is taken — try another.')
-                            : slugErr === 'invalid' ? (selectedLang.code === 'fr' ? '3–40 caractères : lettres minuscules, chiffres, tirets.' : '3–40 chars: lowercase letters, numbers, hyphens.')
-                            : slugErr === 'error' ? (selectedLang.code === 'fr' ? 'Échec — réessayez.' : 'Failed — try again.')
-                            : (selectedLang.code === 'fr' ? 'Minuscules, chiffres et tirets uniquement.' : 'Lowercase letters, numbers and hyphens only.')}
+                        <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 11, minHeight: 16, marginBottom: 8, color: slugErr ? '#f87171' : 'var(--text-faint)' }}>
+                          {slugErr === 'taken' ? t.linkNameTaken
+                            : slugErr === 'invalid' ? t.linkNameInvalid
+                            : slugErr === 'error' ? t.linkNameFailed
+                            : t.linkNameHint}
                         </p>
                         <div style={{ display: 'flex', gap: 8 }}>
                           {(!currentProject.published || slugInput.trim().toLowerCase() !== (currentProject.slug || '')) ? (
                             <button onClick={() => void doPublish()} disabled={slugBusy}
                               style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'var(--gradient-brand)', border: 'none', color: '#0a0a0a', fontSize: 12, fontWeight: 800, cursor: slugBusy ? 'wait' : 'pointer', fontFamily: MANROPE, opacity: slugBusy ? 0.7 : 1 }}>
-                              {slugBusy ? '…' : currentProject.published
-                                ? (selectedLang.code === 'fr' ? 'Renommer' : 'Save name')
-                                : (selectedLang.code === 'fr' ? 'Publier' : 'Publish')}
+                              {slugBusy ? '…' : currentProject.published ? t.saveNameLabel : t.publishLabel}
                             </button>
                           ) : (
                             <a href={publishUrl(currentProject)} target="_blank" rel="noreferrer"
-                              style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'var(--gradient-brand)', color: '#0a0a0a', fontSize: 12, fontWeight: 800, textDecoration: 'none', fontFamily: MANROPE }}>
-                              {selectedLang.code === 'fr' ? 'Ouvrir ↗' : 'Open ↗'}
+                              className={cn(isAdlam && 'font-adlam')}
+                              style={{ flex: 1, textAlign: 'center', padding: '8px 0', borderRadius: 10, background: 'var(--gradient-brand)', color: '#0a0a0a', fontSize: 12, fontWeight: 800, textDecoration: 'none', fontFamily: isAdlam ? undefined : MANROPE }}>
+                              {t.openLinkLabel}
                             </a>
                           )}
                           {currentProject.published && (
                             <button onClick={() => unpublish(currentProject)}
-                              style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'transparent', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: MANROPE }}>
-                              {selectedLang.code === 'fr' ? 'Dépublier' : 'Unpublish'}
+                              className={cn(isAdlam && 'font-adlam')}
+                              style={{ flex: 1, padding: '8px 0', borderRadius: 10, background: 'transparent', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: isAdlam ? undefined : MANROPE }}>
+                              {t.unpublishLabel}
                             </button>
                           )}
                         </div>
@@ -1584,7 +1577,7 @@ export default function App() {
                       className="flex items-center gap-2 px-2.5 md:px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
                       style={activeTab === 'inbox' ? { background: 'rgba(59,130,246,0.14)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}>
                       <MessageSquare className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{selectedLang.code === 'fr' ? 'Boîte' : 'Inbox'}</span>
+                      <span className={cn('hidden sm:inline', isAdlam && 'font-adlam')}>{t.inboxLabel}</span>
                       {submissions.length > 0 && (
                         <span style={{ minWidth: 16, height: 16, borderRadius: 8, background: P, color: '#fff', fontSize: 9, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
                           {submissions.length > 99 ? '99+' : submissions.length}
@@ -1624,7 +1617,7 @@ export default function App() {
                       {activeTab === 'preview'
                         ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} />
                         : activeTab === 'inbox'
-                        ? <InboxPanel submissions={submissions} fr={selectedLang.code === 'fr'} projectId={currentProject.id} published={currentProject.published} />
+                        ? <InboxPanel submissions={submissions} t={t} isAdlam={isAdlam} projectId={currentProject.id} published={currentProject.published} />
                         : <Suspense fallback={<LazyFallback />}><CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} /></Suspense>}
                     </div>
                     {/* dim backdrop when chat open */}
@@ -1700,7 +1693,7 @@ export default function App() {
                         {activeTab === 'preview'
                           ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} />
                           : activeTab === 'inbox'
-                          ? <InboxPanel submissions={submissions} fr={selectedLang.code === 'fr'} projectId={currentProject.id} published={currentProject.published} />
+                          ? <InboxPanel submissions={submissions} t={t} isAdlam={isAdlam} projectId={currentProject.id} published={currentProject.published} />
                           : <Suspense fallback={<LazyFallback />}><CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} /></Suspense>}
                       </motion.div>
                     </AnimatePresence>
@@ -1715,10 +1708,10 @@ export default function App() {
               <div className="h-14 flex items-center gap-3 px-4 md:px-6 border-b border-white/5 flex-shrink-0">
                 <button onClick={() => { setChatActive(false); setChatMessages([]); setCurrentChatId(null); setPage('chats'); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
-                  style={{ fontFamily: MANROPE }}>
-                  <ArrowLeft className="w-4 h-4" /> Back
+                  style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
+                  <ArrowLeft className="w-4 h-4" /> <span className={cn(isAdlam && 'font-adlam')}>{t.backLabel}</span>
                 </button>
-                <span style={{ fontFamily: MANROPE, fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>Chat with Gando</span>
+                <span className={cn(isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE, fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>{t.chatWithGando}</span>
               </div>
               <div className="flex flex-col flex-1 min-h-0">
                 <Chat messages={chatMessages} input={input} setInput={setInput} onSend={handleSend}
@@ -1742,13 +1735,13 @@ export default function App() {
                     {t.chatsLabel}
                   </h1>
                   <p className={cn('text-zinc-500 mt-1', isAdlam && 'font-adlam')}>
-                    {selectedLang.code === 'fr' ? 'Vos conversations avec Gando' : 'Your conversations with Gando'}
+                    {t.chatsPageSubtitle}
                   </p>
                 </div>
                 <button onClick={startNewChat}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95"
-                  style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: MANROPE, fontSize: 13 }}>
-                  <Plus className="w-4 h-4" /> {selectedLang.code === 'fr' ? 'Nouvelle discussion' : 'New chat'}
+                  className={cn('flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.02] active:scale-95', isAdlam && 'font-adlam')}
+                  style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--glow-primary-sm)', fontFamily: isAdlam ? undefined : MANROPE, fontSize: 13 }}>
+                  <Plus className="w-4 h-4" /> {t.newChatLabel}
                 </button>
               </div>
 
@@ -1757,14 +1750,14 @@ export default function App() {
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: `${P}15` }}>
                     <MessageSquare className="w-8 h-8" style={{ color: P }} />
                   </div>
-                  <p className="text-zinc-500 text-center">
-                    {selectedLang.code === 'fr' ? 'Aucune discussion pour le moment.' : 'No chats yet.'}<br />
-                    {selectedLang.code === 'fr' ? 'Démarrez-en une pour la retrouver ici.' : 'Start one and it will show up here.'}
+                  <p className={cn('text-zinc-500 text-center', isAdlam && 'font-adlam')}>
+                    {t.noChatsTitle}<br />
+                    {t.noChatsSubtitle}
                   </p>
                   <button onClick={startNewChat}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.02]"
-                    style={{ background: 'var(--gradient-brand)', fontFamily: MANROPE, fontSize: 13 }}>
-                    <Plus className="w-4 h-4" /> {selectedLang.code === 'fr' ? 'Nouvelle discussion' : 'New chat'}
+                    className={cn('flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-black transition-all hover:scale-[1.02]', isAdlam && 'font-adlam')}
+                    style={{ background: 'var(--gradient-brand)', fontFamily: isAdlam ? undefined : MANROPE, fontSize: 13 }}>
+                    <Plus className="w-4 h-4" /> {t.newChatLabel}
                   </button>
                 </div>
               ) : (
@@ -1783,7 +1776,7 @@ export default function App() {
                       </div>
                       <p className="text-sm font-bold text-white truncate group-hover:text-[#3b82f6] transition-colors pr-6" style={{ fontFamily: MANROPE }}>{c.title || 'Untitled chat'}</p>
                       <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{c.messages?.[c.messages.length - 1]?.content?.slice(0, 90) || '—'}</p>
-                      <p className="text-[10px] text-zinc-600 mt-3 uppercase tracking-widest" style={{ fontFamily: MANROPE }}>{c.messages?.length || 0} {selectedLang.code === 'fr' ? 'messages' : 'messages'}</p>
+                      <p className="text-[10px] text-zinc-600 mt-3 uppercase tracking-widest" style={{ fontFamily: MANROPE }}>{c.messages?.length || 0} messages</p>
                     </div>
                   ))}
                 </div>
@@ -1845,18 +1838,16 @@ export default function App() {
                     <Sparkles className="w-8 h-8" style={{ color: P }} />
                   </div>
                   <p className={cn('text-white font-black text-lg', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>
-                    {projectSearch ? 'No projects match your search'
+                    {projectSearch ? t.searchNoMatchTitle
                       : projects.length > 0 && projectFilter !== 'all'
-                      ? (selectedLang.code === 'fr' ? `Aucun projet « ${projectFilter} »` : `No ${projectFilter} projects`)
+                      ? t.filterEmptyTitle.replace('{filter}', projectFilter)
                       : t.noProjectsTitle}
                   </p>
-                  <p className="text-zinc-500 text-sm text-center max-w-xs">
-                    {projectSearch ? 'Try a different search term.'
+                  <p className={cn('text-zinc-500 text-sm text-center max-w-xs', isAdlam && 'font-adlam')}>
+                    {projectSearch ? t.searchNoMatchHint
                       : projects.length > 0 && projectFilter !== 'all'
-                      ? (projectFilter === 'live'
-                        ? (selectedLang.code === 'fr' ? 'Publiez un projet pour le voir ici.' : 'Publish a project and it will show up here.')
-                        : (selectedLang.code === 'fr' ? 'Changez de filtre pour voir vos projets.' : 'Switch filters to see your projects.'))
-                      : 'Describe an app in any language and Gando will build it for you.'}
+                      ? (projectFilter === 'live' ? t.filterEmptyLiveHint : t.filterEmptySwitchHint)
+                      : t.describeToBuildHint}
                   </p>
                   {!projectSearch && projects.length === 0 && (
                     <button onClick={() => { setPage('dashboard'); setCurrentProject(null); }}
@@ -1885,9 +1876,7 @@ export default function App() {
                               const c = st === 'live' ? { bg: '#22c55e1a', fg: '#4ade80' }
                                 : st === 'building' ? { bg: '#eab3081a', fg: '#fbbf24' }
                                 : { bg: 'rgba(255,255,255,0.06)', fg: 'var(--text-muted)' };
-                              const label = selectedLang.code === 'fr'
-                                ? (st === 'live' ? 'en ligne' : st === 'building' ? 'en cours' : 'brouillon')
-                                : st;
+                              const label = st === 'live' ? t.statusChipLive : st === 'building' ? t.statusChipBuilding : t.statusChipDraft;
                               return (
                                 <span className="text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-full self-center" style={{ background: c.bg, color: c.fg }}>
                                   {label}
@@ -1990,15 +1979,16 @@ export default function App() {
                           {tl.useTemplate}
                         </button>
                         <button onClick={() => openFullPreview(cc.code)}
+                          className={cn(isAdlam && 'font-adlam')}
                           style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer' }}>
-                          Open full preview ↗
+                          {t.openFullPreviewLabel}
                         </button>
                       </div>
                       {cleanPrompt(cc.description) && (
                         <>
                           {/* original prompt (the language it was built in) */}
                           <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', marginBottom: 12 }}>
-                            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Original prompt</p>
+                            <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>{t.originalPromptLabel}</p>
                             <p style={{ fontSize: 12, color: '#a1a1aa', fontFamily: 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.6, overflowWrap: 'anywhere' }}>{cleanPrompt(cc.description)}</p>
                           </div>
                           {/* translation into the selected language */}
@@ -2107,8 +2097,9 @@ export default function App() {
                         {selectedTemplate.previewUrl && (
                           <button
                             onClick={() => window.open(selectedTemplate.previewUrl!, '_blank')}
+                            className={cn(isAdlam && 'font-adlam')}
                             style={{ width: '100%', padding: '12px', borderRadius: 12, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, var(--adlam-ui), sans-serif', cursor: 'pointer' }}>
-                            Open full preview ↗
+                            {t.openFullPreviewLabel}
                           </button>
                         )}
                       </div>
@@ -2228,13 +2219,13 @@ export default function App() {
                 <h1 className={cn('text-4xl font-black text-white tracking-tighter mb-2', isAdlam && 'font-adlam')}
                   style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.languageAssetsLabel}</h1>
                 <p className={cn('text-zinc-500', isAdlam && 'font-adlam')} style={{ fontSize: 14, fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>
-                  Supported languages in Gando AI — switch your active language below.
+                  {t.assetsPageSubtitle}
                 </p>
               </div>
 
               {/* ── ACTIVE LANGUAGES ── */}
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4" style={{ fontFamily: MANROPE }}>AVAILABLE NOW</p>
+                <p className={cn('text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.availableNowLabel}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {LANGS.map(lang => {
                     const active = selectedLang.code === lang.code;
@@ -2258,7 +2249,7 @@ export default function App() {
                               <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{m.script}</p>
                             </div>
                             {active && (
-                              <span style={{ padding: '2px 10px', borderRadius: 9999, background: `${P}20`, color: P, fontSize: 10, fontWeight: 800, fontFamily: MANROPE, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>Active</span>
+                              <span className={cn(isAdlam && 'font-adlam')} style={{ padding: '2px 10px', borderRadius: 9999, background: `${P}20`, color: P, fontSize: 10, fontWeight: 800, fontFamily: isAdlam ? undefined : MANROPE, textTransform: 'uppercase', letterSpacing: '0.1em', flexShrink: 0 }}>{t.activeLabel}</span>
                             )}
                           </div>
 
@@ -2272,11 +2263,11 @@ export default function App() {
                           {/* stats row */}
                           <div className="flex gap-4 mb-4">
                             <div>
-                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Speakers</p>
+                              <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{t.speakersLabel}</p>
                               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', fontFamily: MANROPE }}>{m.speakers}</p>
                             </div>
                             <div>
-                              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Region</p>
+                              <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{t.regionLabel}</p>
                               <p style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', lineHeight: 1.4 }}>{m.region}</p>
                             </div>
                           </div>
@@ -2285,8 +2276,10 @@ export default function App() {
                             onClick={() => setSelectedLang(lang)}
                             disabled={active}
                             className="w-full py-2.5 rounded-xl font-black text-sm transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:scale-100 disabled:cursor-default"
-                            style={{ background: active ? 'var(--btn-bg)' : 'var(--gradient-brand)', color: active ? 'var(--text-primary)' : '#000', fontFamily: MANROPE, boxShadow: active ? 'none' : 'var(--glow-primary-sm)' }}>
-                            {active ? 'Currently Active' : `Switch to ${lang.code === 'ff-adlm' ? 'ADLaM' : lang.name}`}
+                            style={{ background: active ? 'var(--btn-bg)' : 'var(--gradient-brand)', color: active ? 'var(--text-primary)' : '#000', fontFamily: isAdlam ? undefined : MANROPE, boxShadow: active ? 'none' : 'var(--glow-primary-sm)' }}>
+                            <span className={cn(isAdlam && 'font-adlam')}>
+                              {active ? t.currentlyActiveLabel : t.switchToLabel.replace('{name}', lang.code === 'ff-adlm' ? 'ADLaM' : lang.name)}
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -2297,7 +2290,7 @@ export default function App() {
 
               {/* ── COMING SOON ── */}
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4" style={{ fontFamily: MANROPE }}>COMING SOON</p>
+                <p className={cn('text-[10px] font-black uppercase tracking-widest text-zinc-600 mb-4', isAdlam && 'font-adlam')} style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{t.comingSoonLabel}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                   {[
                     { name: 'Wolof',    region: 'Senegal',    flag: '🇸🇳' },
@@ -2312,7 +2305,7 @@ export default function App() {
                       <p style={{ fontSize: 22, marginBottom: 6 }}>{flag}</p>
                       <p style={{ fontFamily: MANROPE, fontWeight: 900, fontSize: 13, color: 'var(--text-primary)', marginBottom: 2 }}>{name}</p>
                       <p style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontSize: 10, color: '#52525b' }}>{region}</p>
-                      <span style={{ marginTop: 8, display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'var(--btn-bg)', border: '1px solid var(--border)', fontSize: 9, fontWeight: 700, color: '#52525b', fontFamily: MANROPE, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Soon</span>
+                      <span className={cn(isAdlam && 'font-adlam')} style={{ marginTop: 8, display: 'inline-block', padding: '2px 8px', borderRadius: 9999, background: 'var(--btn-bg)', border: '1px solid var(--border)', fontSize: 9, fontWeight: 700, color: '#52525b', fontFamily: isAdlam ? undefined : MANROPE, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{t.soonLabel}</span>
                     </div>
                   ))}
                 </div>
@@ -2482,7 +2475,7 @@ export default function App() {
                     <a href="mailto:gandoadlam25@gmail.com"
                       className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:border-white/20"
                       style={{ background: 'var(--btn-bg)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontFamily: MANROPE, textDecoration: 'none' }}>
-                      <AlertTriangle className="w-3.5 h-3.5" /> {selectedLang.code === 'fr' ? 'Contacter le support' : 'Contact Support'}
+                      <AlertTriangle className="w-3.5 h-3.5" /> <span className={cn(isAdlam && 'font-adlam')}>{t.contactSupportLabel}</span>
                     </a>
                   </div>
                 </div>
@@ -2619,15 +2612,15 @@ export default function App() {
                   <div>
                     {/* the model the user actually builds with — not the health-probe model */}
                     <p className="text-white font-bold text-sm">{PROVIDER_LABEL[provider]}</p>
-                    <p className="text-zinc-500 text-xs mt-0.5">
-                      {selectedLang.code === 'fr' ? 'Votre modèle de génération' : 'Your selected build model'}
+                    <p className={cn('text-zinc-500 text-xs mt-0.5', isAdlam && 'font-adlam')}>
+                      {t.yourBuildModelLabel}
                     </p>
                   </div>
                   <span className="text-xs font-black px-3 py-1 rounded-full" style={{ background: `${P}15`, color: P }}>Active</span>
                 </div>
                 {sysStatus.model !== '—' && (
-                  <p className="text-zinc-600 text-[11px] mt-3">
-                    {selectedLang.code === 'fr' ? 'Sonde de disponibilité' : 'Health probe'}: {sysStatus.model}
+                  <p className={cn('text-zinc-600 text-[11px] mt-3', isAdlam && 'font-adlam')}>
+                    {t.healthProbeLabel}: {sysStatus.model}
                   </p>
                 )}
               </div>
@@ -2745,7 +2738,7 @@ export default function App() {
                       onInput={handleHeroInput}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const ctx = buildDashContext(); const imgs = buildDashImages(); setDashAttachments([]); handleSend(ctx || undefined, imgs.length ? imgs : undefined); } }}
                       placeholder={
-                        mode === 'chat' ? 'Ask Gando anything…' :
+                        mode === 'chat' ? t.askGandoPlaceholder :
                         importMode === 'github' ? 'Paste a GitHub repository URL to clone…' :
                         importMode === 'figma'  ? 'Paste a Figma design link to build from…' :
                         !input ? (twText + (twCursor ? '|' : ' ')) : t.inputPlaceholder
@@ -2865,9 +2858,9 @@ export default function App() {
                   {/* suggestion chips — prompt mode only */}
                   {importMode === 'describe' && (
                     <div className="flex flex-wrap gap-2.5 justify-center mt-6">
-                      {['E-commerce store', 'Portfolio site', 'Restaurant menu', 'Event landing page'].map(ex => (
+                      {[t.chipEcommerce, t.chipPortfolio, t.chipRestaurant, t.chipEvent].map(ex => (
                         <button key={ex} onClick={() => { setInput(ex); heroTextareaRef.current?.focus(); }}
-                          className="px-4 py-2 rounded-full text-sm font-bold text-zinc-400 hover:text-white transition-all hover:border-white/20"
+                          className={cn('px-4 py-2 rounded-full text-sm font-bold text-zinc-400 hover:text-white transition-all hover:border-white/20', isAdlam && 'font-adlam')}
                           style={{ background: 'var(--btn-bg)', border: '1px solid var(--border)' }}>
                           {ex}
                         </button>

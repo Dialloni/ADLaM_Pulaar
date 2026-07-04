@@ -1,0 +1,226 @@
+{
+  "chipEcommerce": {
+    "english": "E-commerce store",
+    "adlam": ""
+  },
+  "chipPortfolio": {
+    "english": "Portfolio site",
+    "adlam": ""
+  },
+  "chipRestaurant": {
+    "english": "Restaurant menu",
+    "adlam": ""
+  },
+  "chipEvent": {
+    "english": "Event landing page",
+    "adlam": ""
+  },
+  "chatsPageSubtitle": {
+    "english": "Your conversations with Gando",
+    "adlam": ""
+  },
+  "newChatLabel": {
+    "english": "New chat",
+    "adlam": ""
+  },
+  "noChatsTitle": {
+    "english": "No chats yet.",
+    "adlam": ""
+  },
+  "noChatsSubtitle": {
+    "english": "Start one and it will show up here.",
+    "adlam": ""
+  },
+  "chatWithGando": {
+    "english": "Chat with Gando",
+    "adlam": ""
+  },
+  "backLabel": {
+    "english": "Back",
+    "adlam": ""
+  },
+  "askGandoPlaceholder": {
+    "english": "Ask Gando anything…",
+    "adlam": ""
+  },
+  "describeAppPlaceholder": {
+    "english": "Describe your app...",
+    "adlam": ""
+  },
+  "searchNoMatchTitle": {
+    "english": "No projects match your search",
+    "adlam": ""
+  },
+  "searchNoMatchHint": {
+    "english": "Try a different search term.",
+    "adlam": ""
+  },
+  "describeToBuildHint": {
+    "english": "Describe an app in any language and Gando will build it for you.",
+    "adlam": ""
+  },
+  "filterEmptyTitle": {
+    "english": "No {filter} projects",
+    "adlam": ""
+  },
+  "filterEmptyLiveHint": {
+    "english": "Publish a project and it will show up here.",
+    "adlam": ""
+  },
+  "filterEmptySwitchHint": {
+    "english": "Switch filters to see your projects.",
+    "adlam": ""
+  },
+  "openFullPreviewLabel": {
+    "english": "Open full preview ↗",
+    "adlam": ""
+  },
+  "originalPromptLabel": {
+    "english": "Original prompt",
+    "adlam": ""
+  },
+  "assetsPageSubtitle": {
+    "english": "Supported languages in Gando AI — switch your active language below.",
+    "adlam": ""
+  },
+  "availableNowLabel": {
+    "english": "Available now",
+    "adlam": ""
+  },
+  "comingSoonLabel": {
+    "english": "Coming soon",
+    "adlam": ""
+  },
+  "activeLabel": {
+    "english": "Active",
+    "adlam": ""
+  },
+  "currentlyActiveLabel": {
+    "english": "Currently Active",
+    "adlam": ""
+  },
+  "switchToLabel": {
+    "english": "Switch to {name}",
+    "adlam": ""
+  },
+  "speakersLabel": {
+    "english": "Speakers",
+    "adlam": ""
+  },
+  "regionLabel": {
+    "english": "Region",
+    "adlam": ""
+  },
+  "soonLabel": {
+    "english": "Soon",
+    "adlam": ""
+  },
+  "publishLabel": {
+    "english": "Publish",
+    "adlam": ""
+  },
+  "liveLabel": {
+    "english": "Live",
+    "adlam": ""
+  },
+  "appLiveLabel": {
+    "english": "● Your app is live",
+    "adlam": ""
+  },
+  "chooseLinkNameLabel": {
+    "english": "Choose your link name",
+    "adlam": ""
+  },
+  "linkNameHint": {
+    "english": "Lowercase letters, numbers and hyphens only.",
+    "adlam": ""
+  },
+  "linkNameTaken": {
+    "english": "That name is taken — try another.",
+    "adlam": ""
+  },
+  "linkNameInvalid": {
+    "english": "3–40 chars: lowercase letters, numbers, hyphens.",
+    "adlam": ""
+  },
+  "linkNameFailed": {
+    "english": "Failed — try again.",
+    "adlam": ""
+  },
+  "openLinkLabel": {
+    "english": "Open ↗",
+    "adlam": ""
+  },
+  "unpublishLabel": {
+    "english": "Unpublish",
+    "adlam": ""
+  },
+  "saveNameLabel": {
+    "english": "Save name",
+    "adlam": ""
+  },
+  "copyLinkLabel": {
+    "english": "Copy link",
+    "adlam": ""
+  },
+  "inboxLabel": {
+    "english": "Inbox",
+    "adlam": ""
+  },
+  "inboxTitle": {
+    "english": "Messages from your app",
+    "adlam": ""
+  },
+  "inboxSubtitle": {
+    "english": "Every form submitted on your published app lands here.",
+    "adlam": ""
+  },
+  "inboxEmptyTitle": {
+    "english": "No messages yet.",
+    "adlam": ""
+  },
+  "inboxEmptyPublishedHint": {
+    "english": "Share your app link — form submissions will show up here.",
+    "adlam": ""
+  },
+  "inboxEmptyUnpublishedHint": {
+    "english": "Publish your app first to start receiving messages.",
+    "adlam": ""
+  },
+  "deleteLabel": {
+    "english": "Delete",
+    "adlam": ""
+  },
+  "statusChipLive": {
+    "english": "live",
+    "adlam": ""
+  },
+  "statusChipBuilding": {
+    "english": "building",
+    "adlam": ""
+  },
+  "statusChipDraft": {
+    "english": "draft",
+    "adlam": ""
+  },
+  "maxImagesNote": {
+    "english": "Up to {n} images per message.",
+    "adlam": ""
+  },
+  "imageUploadFailedNote": {
+    "english": "Image upload failed — building without embedding them.",
+    "adlam": ""
+  },
+  "yourBuildModelLabel": {
+    "english": "Your selected build model",
+    "adlam": ""
+  },
+  "healthProbeLabel": {
+    "english": "Health probe",
+    "adlam": ""
+  },
+  "contactSupportLabel": {
+    "english": "Contact Support",
+    "adlam": ""
+  }
+}

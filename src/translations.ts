@@ -182,6 +182,66 @@ export interface UIStrings {
   suggestionLearningPrompt: string;
   suggestionBusiness: string;
   suggestionBusinessPrompt: string;
+
+  /* ── i18n sweep 2026-07-04: chips, chats page, publish, inbox, assets ──
+     ff-adlm values are ENGLISH PLACEHOLDERS pending Abubakar's native
+     translation pass (docs/i18n worklist) — never fabricate ADLaM. */
+  chipEcommerce: string;
+  chipPortfolio: string;
+  chipRestaurant: string;
+  chipEvent: string;
+  chatsPageSubtitle: string;
+  newChatLabel: string;
+  noChatsTitle: string;
+  noChatsSubtitle: string;
+  chatWithGando: string;
+  backLabel: string;
+  askGandoPlaceholder: string;
+  describeAppPlaceholder: string;
+  searchNoMatchTitle: string;
+  searchNoMatchHint: string;
+  describeToBuildHint: string;
+  filterEmptyTitle: string;      // {filter}
+  filterEmptyLiveHint: string;
+  filterEmptySwitchHint: string;
+  openFullPreviewLabel: string;
+  originalPromptLabel: string;
+  assetsPageSubtitle: string;
+  availableNowLabel: string;
+  comingSoonLabel: string;
+  activeLabel: string;
+  currentlyActiveLabel: string;
+  switchToLabel: string;         // {name}
+  speakersLabel: string;
+  regionLabel: string;
+  soonLabel: string;
+  publishLabel: string;
+  liveLabel: string;
+  appLiveLabel: string;
+  chooseLinkNameLabel: string;
+  linkNameHint: string;
+  linkNameTaken: string;
+  linkNameInvalid: string;
+  linkNameFailed: string;
+  openLinkLabel: string;
+  unpublishLabel: string;
+  saveNameLabel: string;
+  copyLinkLabel: string;
+  inboxLabel: string;
+  inboxTitle: string;
+  inboxSubtitle: string;
+  inboxEmptyTitle: string;
+  inboxEmptyPublishedHint: string;
+  inboxEmptyUnpublishedHint: string;
+  deleteLabel: string;
+  statusChipLive: string;
+  statusChipBuilding: string;
+  statusChipDraft: string;
+  maxImagesNote: string;         // {n}
+  imageUploadFailedNote: string;
+  yourBuildModelLabel: string;
+  healthProbeLabel: string;
+  contactSupportLabel: string;
 }
 
 export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
@@ -355,6 +415,66 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     suggestionLearningPrompt: "…𞤳𞤫𞤧𞤫 𞤯𞤫𞤲𞤯𞤫 𞤶𞤢𞤲𞤺𞤭𞤲𞤣𞤫 𞤢𞤨𞥆 𞤃𞤮𞤷𞥆𞤭𞤲𞤣𞤫",
     suggestionBusiness: "𞤐𞤶𞤫𞥅𞤴𞤺𞤵",
     suggestionBusinessPrompt: "…𞤸𞤢𞤲𞥆𞤣𞤫𞥅𞤪𞤭 𞤲𞤶𞤫𞥅𞤴𞤺𞤵 𞤶𞤢𞥄𞤪𞤮𞥅𞤪𞤫 𞤃𞤢𞤸𞤵𞤣𞤫",
+
+    /* ⚠ i18n sweep 2026-07-04 — ENGLISH PLACEHOLDERS ONLY.
+       Pending Abubakar's native ADLaM pass (docs/i18n/adlam-worklist-2026-07-04.json).
+       Rule: never fabricate ADLaM — placeholders match what users saw before. */
+    chipEcommerce: "E-commerce store",
+    chipPortfolio: "Portfolio site",
+    chipRestaurant: "Restaurant menu",
+    chipEvent: "Event landing page",
+    chatsPageSubtitle: "Your conversations with Gando",
+    newChatLabel: "New chat",
+    noChatsTitle: "No chats yet.",
+    noChatsSubtitle: "Start one and it will show up here.",
+    chatWithGando: "Chat with Gando",
+    backLabel: "Back",
+    askGandoPlaceholder: "Ask Gando anything…",
+    describeAppPlaceholder: "Describe your app...",
+    searchNoMatchTitle: "No projects match your search",
+    searchNoMatchHint: "Try a different search term.",
+    describeToBuildHint: "Describe an app in any language and Gando will build it for you.",
+    filterEmptyTitle: "No {filter} projects",
+    filterEmptyLiveHint: "Publish a project and it will show up here.",
+    filterEmptySwitchHint: "Switch filters to see your projects.",
+    openFullPreviewLabel: "Open full preview ↗",
+    originalPromptLabel: "Original prompt",
+    assetsPageSubtitle: "Supported languages in Gando AI — switch your active language below.",
+    availableNowLabel: "Available now",
+    comingSoonLabel: "Coming soon",
+    activeLabel: "Active",
+    currentlyActiveLabel: "Currently Active",
+    switchToLabel: "Switch to {name}",
+    speakersLabel: "Speakers",
+    regionLabel: "Region",
+    soonLabel: "Soon",
+    publishLabel: "Publish",
+    liveLabel: "Live",
+    appLiveLabel: "● Your app is live",
+    chooseLinkNameLabel: "Choose your link name",
+    linkNameHint: "Lowercase letters, numbers and hyphens only.",
+    linkNameTaken: "That name is taken — try another.",
+    linkNameInvalid: "3–40 chars: lowercase letters, numbers, hyphens.",
+    linkNameFailed: "Failed — try again.",
+    openLinkLabel: "Open ↗",
+    unpublishLabel: "Unpublish",
+    saveNameLabel: "Save name",
+    copyLinkLabel: "Copy link",
+    inboxLabel: "Inbox",
+    inboxTitle: "Messages from your app",
+    inboxSubtitle: "Every form submitted on your published app lands here.",
+    inboxEmptyTitle: "No messages yet.",
+    inboxEmptyPublishedHint: "Share your app link — form submissions will show up here.",
+    inboxEmptyUnpublishedHint: "Publish your app first to start receiving messages.",
+    deleteLabel: "Delete",
+    statusChipLive: "live",
+    statusChipBuilding: "building",
+    statusChipDraft: "draft",
+    maxImagesNote: "Up to {n} images per message.",
+    imageUploadFailedNote: "Image upload failed — building without embedding them.",
+    yourBuildModelLabel: "Your selected build model",
+    healthProbeLabel: "Health probe",
+    contactSupportLabel: "Contact Support",
   },
   fr: {
     appName: "Gando",
@@ -533,6 +653,64 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     suggestionLearningPrompt: "Créez une application éducative pour apprendre de nouvelles langues.",
     suggestionBusiness: "Entreprise",
     suggestionBusinessPrompt: "Créez une page de destination professionnelle pour votre entreprise.",
+
+    /* i18n sweep 2026-07-04 */
+    chipEcommerce: "Boutique en ligne",
+    chipPortfolio: "Site portfolio",
+    chipRestaurant: "Menu de restaurant",
+    chipEvent: "Page d'événement",
+    chatsPageSubtitle: "Vos conversations avec Gando",
+    newChatLabel: "Nouvelle discussion",
+    noChatsTitle: "Aucune discussion pour le moment.",
+    noChatsSubtitle: "Démarrez-en une pour la retrouver ici.",
+    chatWithGando: "Discuter avec Gando",
+    backLabel: "Retour",
+    askGandoPlaceholder: "Demandez tout à Gando…",
+    describeAppPlaceholder: "Décrivez votre application...",
+    searchNoMatchTitle: "Aucun projet ne correspond à votre recherche",
+    searchNoMatchHint: "Essayez un autre terme.",
+    describeToBuildHint: "Décrivez une application dans n'importe quelle langue et Gando la construira.",
+    filterEmptyTitle: "Aucun projet « {filter} »",
+    filterEmptyLiveHint: "Publiez un projet pour le voir ici.",
+    filterEmptySwitchHint: "Changez de filtre pour voir vos projets.",
+    openFullPreviewLabel: "Ouvrir l'aperçu complet ↗",
+    originalPromptLabel: "Prompt d'origine",
+    assetsPageSubtitle: "Langues prises en charge dans Gando AI — changez de langue ci-dessous.",
+    availableNowLabel: "Disponible maintenant",
+    comingSoonLabel: "Bientôt disponible",
+    activeLabel: "Active",
+    currentlyActiveLabel: "Langue active",
+    switchToLabel: "Passer à {name}",
+    speakersLabel: "Locuteurs",
+    regionLabel: "Région",
+    soonLabel: "Bientôt",
+    publishLabel: "Publier",
+    liveLabel: "En ligne",
+    appLiveLabel: "● Votre app est en ligne",
+    chooseLinkNameLabel: "Choisissez le nom du lien",
+    linkNameHint: "Minuscules, chiffres et tirets uniquement.",
+    linkNameTaken: "Ce nom est déjà pris — essayez-en un autre.",
+    linkNameInvalid: "3–40 caractères : lettres minuscules, chiffres, tirets.",
+    linkNameFailed: "Échec — réessayez.",
+    openLinkLabel: "Ouvrir ↗",
+    unpublishLabel: "Dépublier",
+    saveNameLabel: "Renommer",
+    copyLinkLabel: "Copier le lien",
+    inboxLabel: "Boîte",
+    inboxTitle: "Messages de votre app",
+    inboxSubtitle: "Chaque formulaire envoyé sur votre app publiée arrive ici.",
+    inboxEmptyTitle: "Aucun message pour le moment.",
+    inboxEmptyPublishedHint: "Partagez le lien de votre app — les envois de formulaires apparaîtront ici.",
+    inboxEmptyUnpublishedHint: "Publiez d'abord votre app pour recevoir des messages.",
+    deleteLabel: "Supprimer",
+    statusChipLive: "en ligne",
+    statusChipBuilding: "en cours",
+    statusChipDraft: "brouillon",
+    maxImagesNote: "Maximum {n} images par message.",
+    imageUploadFailedNote: "Échec de l'envoi des images — l'app sera générée sans les intégrer.",
+    yourBuildModelLabel: "Votre modèle de génération",
+    healthProbeLabel: "Sonde de disponibilité",
+    contactSupportLabel: "Contacter le support",
   },
 
   /* ═══════════════════════════════════════
@@ -715,5 +893,63 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     suggestionLearningPrompt: "Create an educational app for learning new languages.",
     suggestionBusiness: "Business",
     suggestionBusinessPrompt: "Make a professional business landing page.",
+
+    /* i18n sweep 2026-07-04 */
+    chipEcommerce: "E-commerce store",
+    chipPortfolio: "Portfolio site",
+    chipRestaurant: "Restaurant menu",
+    chipEvent: "Event landing page",
+    chatsPageSubtitle: "Your conversations with Gando",
+    newChatLabel: "New chat",
+    noChatsTitle: "No chats yet.",
+    noChatsSubtitle: "Start one and it will show up here.",
+    chatWithGando: "Chat with Gando",
+    backLabel: "Back",
+    askGandoPlaceholder: "Ask Gando anything…",
+    describeAppPlaceholder: "Describe your app...",
+    searchNoMatchTitle: "No projects match your search",
+    searchNoMatchHint: "Try a different search term.",
+    describeToBuildHint: "Describe an app in any language and Gando will build it for you.",
+    filterEmptyTitle: "No {filter} projects",
+    filterEmptyLiveHint: "Publish a project and it will show up here.",
+    filterEmptySwitchHint: "Switch filters to see your projects.",
+    openFullPreviewLabel: "Open full preview ↗",
+    originalPromptLabel: "Original prompt",
+    assetsPageSubtitle: "Supported languages in Gando AI — switch your active language below.",
+    availableNowLabel: "Available now",
+    comingSoonLabel: "Coming soon",
+    activeLabel: "Active",
+    currentlyActiveLabel: "Currently Active",
+    switchToLabel: "Switch to {name}",
+    speakersLabel: "Speakers",
+    regionLabel: "Region",
+    soonLabel: "Soon",
+    publishLabel: "Publish",
+    liveLabel: "Live",
+    appLiveLabel: "● Your app is live",
+    chooseLinkNameLabel: "Choose your link name",
+    linkNameHint: "Lowercase letters, numbers and hyphens only.",
+    linkNameTaken: "That name is taken — try another.",
+    linkNameInvalid: "3–40 chars: lowercase letters, numbers, hyphens.",
+    linkNameFailed: "Failed — try again.",
+    openLinkLabel: "Open ↗",
+    unpublishLabel: "Unpublish",
+    saveNameLabel: "Save name",
+    copyLinkLabel: "Copy link",
+    inboxLabel: "Inbox",
+    inboxTitle: "Messages from your app",
+    inboxSubtitle: "Every form submitted on your published app lands here.",
+    inboxEmptyTitle: "No messages yet.",
+    inboxEmptyPublishedHint: "Share your app link — form submissions will show up here.",
+    inboxEmptyUnpublishedHint: "Publish your app first to start receiving messages.",
+    deleteLabel: "Delete",
+    statusChipLive: "live",
+    statusChipBuilding: "building",
+    statusChipDraft: "draft",
+    maxImagesNote: "Up to {n} images per message.",
+    imageUploadFailedNote: "Image upload failed — building without embedding them.",
+    yourBuildModelLabel: "Your selected build model",
+    healthProbeLabel: "Health probe",
+    contactSupportLabel: "Contact Support",
   }
 };
