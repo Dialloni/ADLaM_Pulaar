@@ -46,6 +46,7 @@ import { LANGS } from './lib/langs';
 import { latinToAdlam } from './lib/adlam';
 import { pickGreeting, greetEmoji } from './lib/greeting';
 import { P, S, T, MANROPE } from './lib/brand';
+import { downscaleDataUrl, uploadAppImages, embedImagesPrompt, MAX_APP_IMAGES } from './lib/appImages';
 import { useIsMobile } from './lib/useIsMobile';
 import { PROVIDER_LABEL, PROVIDER_COLOR, MODEL_OPTIONS, BYOK_PROVIDERS, BYOK_STORAGE_KEY, loadByokKeys } from './lib/providers';
 import { TEMPLATE_I18N, TEMPLATES_META } from './data/templates';
@@ -139,12 +140,24 @@ export default function App() {
   const [dashAttachments, setDashAttachments] = useState<DashAttachment[]>([]);
   const dashFileInputRef = useRef<HTMLInputElement>(null);
   const handleDashFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let imageCount = dashAttachments.filter(a => a.kind === 'image').length;
     Array.from(e.target.files ?? []).forEach(file => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       if (file.type.startsWith('image/')) {
+        if (imageCount >= MAX_APP_IMAGES) {
+          setGlobalError(selectedLang.code === 'fr' ? `Maximum ${MAX_APP_IMAGES} images par message.` : `Up to ${MAX_APP_IMAGES} images per message.`);
+          return;
+        }
+        imageCount++;
         const url = URL.createObjectURL(file);
         const reader = new FileReader();
-        reader.onload = () => setDashAttachments(prev => [...prev, { id, name: file.name, kind: 'image', content: reader.result as string, previewUrl: url }]);
+        reader.onload = () => {
+          // downscale on attach: small vision payload, small Storage upload,
+          // fast pages for whoever visits the built site
+          downscaleDataUrl(reader.result as string)
+            .catch(() => reader.result as string)
+            .then(small => setDashAttachments(prev => [...prev, { id, name: file.name, kind: 'image', content: small, previewUrl: url }]));
+        };
         reader.readAsDataURL(file);
       } else {
         file.text().then(text => setDashAttachments(prev => [...prev, { id, name: file.name, kind: 'text', content: text }]));
@@ -152,9 +165,17 @@ export default function App() {
     });
     e.target.value = '';
   };
-  const buildDashContext = () => dashAttachments.map(a =>
-    a.kind === 'image' ? `[Image: ${a.name}]` : `[File: ${a.name}]\n${a.content.slice(0, 4000)}`
+  // Text files inline as context; images travel separately as real vision input.
+  const buildDashContext = () => dashAttachments.filter(a => a.kind === 'text').map(a =>
+    `[File: ${a.name}]\n${a.content.slice(0, 4000)}`
   ).join('\n\n');
+  const buildDashImages = (): ImageInput[] => dashAttachments
+    .filter(a => a.kind === 'image')
+    .map(a => ({
+      data: a.content.split(',')[1] ?? a.content,
+      mediaType: a.content.startsWith('data:') ? a.content.split(';')[0].slice(5) : 'image/png',
+      name: a.name,
+    }));
   const dashVoice = useVoiceInput(input, setInput, selectedLang.name, selectedLang.code);
   // Build vs Chat mode. Build = generate/edit an app. Chat = just talk to the AI.
   const [mode, setModeState] = useState<'build' | 'chat'>(
@@ -816,6 +837,23 @@ export default function App() {
       ? `Build a pixel-perfect web UI matching this Figma design: ${input}`
       : input;
     let prompt = extraContext ? `${extraContext}\n\n${basePrompt}` : basePrompt;
+    // Attached photos get uploaded to Storage and their URLs handed to the
+    // model to EMBED in the app (they're also sent as vision so it knows what
+    // each shows). Upload failure degrades to vision-only — never blocks the build.
+    if (images?.length) {
+      try {
+        const uploaded = await uploadAppImages(user.uid, images.map((im, i) => ({
+          name: im.name || `photo-${i + 1}.jpg`,
+          dataUrl: `data:${im.mediaType};base64,${im.data}`,
+        })));
+        prompt += embedImagesPrompt(uploaded);
+      } catch (err) {
+        console.error('image upload failed, continuing vision-only:', err);
+        setGlobalError(selectedLang.code === 'fr'
+          ? "Échec de l'envoi des images — l'app sera générée sans les intégrer."
+          : 'Image upload failed — building without embedding them.');
+      }
+    }
     if (selectedLang.code === 'ff-adlm' && buildScript === 'unjoined') {
       prompt += `\n\nADLaM font requirement: render ALL ADLaM text with the "Noto Sans Adlam Unjoined" Google Font (letters NOT connected — easier for new readers). Include <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Adlam+Unjoined:wght@400;700&display=swap" rel="stylesheet"> and use font-family: 'Noto Sans Adlam Unjoined', sans-serif. Do NOT use the joined "Noto Sans Adlam" font.`;
     }
@@ -2466,7 +2504,7 @@ export default function App() {
                       value={input}
                       onChange={e => setInput(e.target.value)}
                       onInput={handleHeroInput}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const ctx = buildDashContext(); setDashAttachments([]); handleSend(ctx || undefined); } }}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const ctx = buildDashContext(); const imgs = buildDashImages(); setDashAttachments([]); handleSend(ctx || undefined, imgs.length ? imgs : undefined); } }}
                       placeholder={
                         mode === 'chat' ? 'Ask Gando anything…' :
                         importMode === 'github' ? 'Paste a GitHub repository URL to clone…' :
@@ -2567,7 +2605,7 @@ export default function App() {
                             {dashVoice.isTranscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : dashVoice.isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                           </button>
                         )}
-                        <button onClick={() => { const ctx = buildDashContext(); setDashAttachments([]); handleSend(ctx || undefined); }} disabled={isGenerating || (!input.trim() && dashAttachments.length === 0)}
+                        <button onClick={() => { const ctx = buildDashContext(); const imgs = buildDashImages(); setDashAttachments([]); handleSend(ctx || undefined, imgs.length ? imgs : undefined); }} disabled={isGenerating || (!input.trim() && dashAttachments.length === 0)}
                           title={mode === 'chat' ? 'Ask Gando' : 'Generate'}
                           style={{
                             width: 38, height: 38, borderRadius: 12, flexShrink: 0, border: 'none',

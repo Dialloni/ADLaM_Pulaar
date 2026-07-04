@@ -94,7 +94,8 @@ export type Provider = FreeProvider | `byok-${ByokProvider}`;
 export interface Byok { provider: ByokProvider; apiKey: string; }
 
 // A user-attached image for vision. `data` is RAW base64 (no data-URL prefix).
-export interface ImageInput { data: string; mediaType: string }
+// `name` is client-side only (labels the embed-URL prompt); server ignores it.
+export interface ImageInput { data: string; mediaType: string; name?: string }
 
 // When the selected provider is a BYOK one, resolve {provider, apiKey} from the
 // saved keys so the request can carry the user's own key. Returns undefined for

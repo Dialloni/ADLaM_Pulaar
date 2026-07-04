@@ -10,6 +10,7 @@ import { ModeSwitch } from './ModeSwitch';
 import { type Provider, speakText } from '../services/geminiService';
 import { PROVIDER_COLOR, PROVIDER_LABEL, MODEL_OPTIONS } from '../lib/providers';
 import { collection, addDoc, serverTimestamp, db, auth } from '../firebase';
+import { downscaleDataUrl, MAX_APP_IMAGES } from '../lib/appImages';
 
 type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
 
@@ -18,7 +19,7 @@ interface ChatProps {
   messages: Message[];
   input: string;
   setInput: (val: string) => void;
-  onSend: (extraContext?: string, images?: { data: string; mediaType: string }[]) => void;
+  onSend: (extraContext?: string, images?: { data: string; mediaType: string; name?: string }[]) => void;
   isGenerating: boolean;
   generationStatus: string;
   generationSteps?: string[];
@@ -268,13 +269,26 @@ const ChatImpl: React.FC<ChatProps> = ({
   const [isSending, setIsSending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [attachNote, setAttachNote] = useState<string | null>(null);
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let imageCount = attachments.filter(a => a.kind === 'image').length;
     Array.from(e.target.files ?? []).forEach(file => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       if (file.type.startsWith('image/')) {
+        if (imageCount >= MAX_APP_IMAGES) {
+          setAttachNote(languageCode === 'fr' ? `Maximum ${MAX_APP_IMAGES} images par message.` : `Up to ${MAX_APP_IMAGES} images per message.`);
+          return;
+        }
+        imageCount++;
         const url = URL.createObjectURL(file);
         const reader = new FileReader();
-        reader.onload = () => setAttachments(prev => [...prev, { id, name: file.name, kind: 'image', content: reader.result as string, previewUrl: url }]);
+        reader.onload = () => {
+          // downscale BEFORE storing: smaller vision payload now, smaller
+          // Storage upload later, fast pages for visitors of the built site
+          downscaleDataUrl(reader.result as string)
+            .catch(() => reader.result as string)
+            .then(small => setAttachments(prev => [...prev, { id, name: file.name, kind: 'image', content: small, previewUrl: url }]));
+        };
         reader.readAsDataURL(file);
       } else {
         file.text().then(text => setAttachments(prev => [...prev, { id, name: file.name, kind: 'text', content: text }]));
@@ -291,17 +305,18 @@ const ChatImpl: React.FC<ChatProps> = ({
       // Images are sent as real VISION input (the model sees them) — no OCR.
       // Text files are still inlined as context.
       const parts: string[] = [];
-      const images: { data: string; mediaType: string }[] = [];
+      const images: { data: string; mediaType: string; name?: string }[] = [];
       for (const att of attachments) {
         if (att.kind === 'image') {
           const base64 = att.content.split(',')[1] ?? att.content;
           const mime = att.content.startsWith('data:') ? att.content.split(';')[0].slice(5) : 'image/png';
-          images.push({ data: base64, mediaType: mime });
+          images.push({ data: base64, mediaType: mime, name: att.name });
         } else {
           parts.push(`[File: ${att.name}]\n${att.content.slice(0, 4000)}`);
         }
       }
       setAttachments([]);
+      setAttachNote(null);
       onSend(parts.join('\n\n') || undefined, images.length ? images : undefined);
     } finally { setIsSending(false); }
   };
@@ -788,6 +803,12 @@ const ChatImpl: React.FC<ChatProps> = ({
               }}
             />
 
+            {attachNote && (
+              <div style={{ fontSize: 11, color: '#fbbf24', padding: '2px 4px' }}>
+                {attachNote}
+                <button onClick={() => setAttachNote(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 6 }}>×</button>
+              </div>
+            )}
             {attachments.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {attachments.map(att => (
