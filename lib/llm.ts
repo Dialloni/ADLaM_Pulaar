@@ -94,6 +94,15 @@ Code rules:
 - Use Tailwind via CDN: <script src="https://cdn.tailwindcss.com"></script>
 - No external backend, no Firebase, no API keys, no npm modules.
 
+Navigation & multi-page apps — CRITICAL (the app is ONE file; there are no other files):
+- NEVER link to another file or path (about.html, /contact, page2.html, …). Those pages do not exist — clicking shows a blank dead end.
+- NEVER use placeholder links: no href="#", no dead buttons. Every clickable element must do something real.
+- To give the app multiple "pages" (up to ~5: e.g. home / menu / about / contact): put each page in its own <section data-page="home"> etc., and use a tiny hash router:
+  nav links: <a href="#/menu">...</a>
+  router: on load and on 'hashchange', show ONLY the section whose data-page matches location.hash.slice(2) (default "home"), hide the others, and scroll to top. This makes the browser Back/Forward buttons work between pages.
+- Highlight the active nav link so users know where they are.
+- External links (WhatsApp, phone, email, maps) use real URLs: https://wa.me/<number>, tel:, mailto: — with target="_blank" rel="noopener" for web links.
+
 Forms (contact / order / booking / feedback) — make them REAL:
 - Every form must actually submit to the Gando submissions API. On submit (preventDefault):
   fetch('/api/submit/__GANDO_PROJECT_ID__', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: { /* one entry per form input, named meaningfully */ }, _gotcha: document.querySelector('[name=_gotcha]')?.value || '' }) })
