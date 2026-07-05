@@ -1532,7 +1532,14 @@ export default function App() {
                       </button>
                     )}
                     {publishOpen && (
-                      <div style={{ position: 'absolute', top: 44, right: 0, width: 320, background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 14, padding: 14, zIndex: 60, boxShadow: '0 16px 48px rgba(0,0,0,0.45)' }}>
+                      <div style={{
+                        /* desktop: anchored under the button; mobile: fixed sheet spanning
+                           the screen — right-anchored 320px ran off the left edge of phones */
+                        ...(isMobile
+                          ? { position: 'fixed' as const, top: 60, left: 12, right: 12, width: 'auto' }
+                          : { position: 'absolute' as const, top: 44, right: 0, width: 320 }),
+                        background: 'var(--card-elevated)', border: '1px solid var(--border)', borderRadius: 14, padding: 14, zIndex: 200, boxShadow: '0 16px 48px rgba(0,0,0,0.45)',
+                      }}>
                         <p className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 11, fontWeight: 800, color: currentProject.published ? '#4ade80' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8, fontFamily: isAdlam ? undefined : MANROPE }}>
                           {currentProject.published ? t.appLiveLabel : t.chooseLinkNameLabel}
                         </p>
