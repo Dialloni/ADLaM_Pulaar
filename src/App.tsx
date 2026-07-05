@@ -1975,11 +1975,11 @@ export default function App() {
                         <span style={{ fontSize: 12, color: 'var(--text-primary)', fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{cc.name}</span>
                       </div>
                       <div className="flex-1 relative" style={{ background: 'var(--app-bg)' }}>
-                        {/* community code is user-submitted — never allow-same-origin on srcDoc
-                            (would run with the app's origin: localStorage BYOK keys, auth tokens).
-                            injectReporter carries the hash-link interceptor: without it, clicking
-                            a #/page link navigates the sandboxed frame away → blank screen. */}
-                        <iframe srcDoc={injectReporter(cc.code)} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-forms allow-modals allow-popups" />
+                        {/* Full Preview component: sandboxed (user-submitted code — never
+                            allow-same-origin), hash-link interceptor, and the Safari
+                            parent-scroll workaround. A raw iframe here broke scrolling
+                            on Safari and link clicks everywhere. */}
+                        <Preview code={cc.code} />
                       </div>
                     </div>
                     {/* RIGHT (mobile: BELOW): info + actions */}

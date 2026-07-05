@@ -111,6 +111,13 @@ export function injectReporter(html: string): string {
   return html + RESIZE_REPORTER;
 }
 
+/* Safari (WebKit) is unreliable at wheel/trackpad-scrolling content INSIDE a
+   sandboxed iframe — same engine quirk that forced the mobile parent-scroll
+   workaround. Desktop Safari gets the same treatment. */
+const IS_SAFARI = typeof navigator !== 'undefined'
+  && /safari/i.test(navigator.userAgent)
+  && !/chrome|chromium|crios|edg|fxios|android/i.test(navigator.userAgent);
+
 function useIsMobile() {
   const [m, setM] = useState(
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
@@ -218,7 +225,9 @@ export const Preview: React.FC<PreviewProps> = ({ code: rawCode, projectId, onFi
     pointerEvents: top === which ? 'auto' : 'none',
   });
 
-  if (isMobile) return <MobilePreview code={code} onFixError={onFixError} errorLabel={errorLabel} fixLabel={fixLabel} />;
+  // Safari can't scroll inside the sandboxed frame — use the parent-scroll
+  // variant there too (content-sized iframe, our own element scrolls).
+  if (isMobile || IS_SAFARI) return <MobilePreview code={code} onFixError={onFixError} errorLabel={errorLabel} fixLabel={fixLabel} />;
 
   return (
     <div className="w-full h-full flex flex-col bg-[#0e0e0e] p-4 md:p-6 lg:p-8">
