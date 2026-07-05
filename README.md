@@ -100,6 +100,8 @@ flowchart LR
 
 ---
 
+> 🤝 **Want to help?** Native Pulaar speakers, ADLaM text data, ML and frontend hands, compute sponsors — see the [Roadmap & How You Can Help](docs/ROADMAP.md).
+
 ## Features
 
 ### Build experience
@@ -111,6 +113,8 @@ flowchart LR
 - 🧭 **Real multi-page navigation** — generated apps use in-file hash routing: up to ~5 "pages", browser Back/Forward work, no dead links
 - ⚡ **Live streaming builds** — code streams into the editor as the model writes it; preview double-buffers with zero flicker
 - 🖥 **Resizable split workspace** — VS Code-style drag divider between chat and preview; snap-collapse either side, width remembered
+- ✂️ **Surgical edits** — small changes apply as SEARCH/REPLACE patches (~10× fewer tokens, seconds not minutes); a malformed model response changes nothing rather than corrupting your app
+- 🩹 **Self-healing preview** — runtime errors and blank screens surface as a one-tap **Fix it** chip; the exact error goes to the model with a minimal-fix instruction
 - 💬 **Iterative chat edits** — refine through conversation; incremental edits with version history + one-click revert
 - 🖼 **Vision input** — attach an image (sketch, screenshot, photo) and the model *sees* it — sketch-to-app
 - 🎙 **Voice in, voice out** — record your prompt (Whisper transcription, ADLaM-aware) and hear replies (TTS with ADLaM→Latin transliteration)
@@ -132,7 +136,8 @@ flowchart LR
 - 🔗 **Real URLs** — hash router: back button works, refresh restores your view, `#/project/id` links are shareable
 - 🖼 **Live project thumbnails** — dashboard cards render each app's actual HTML, scaled down
 - 🌙 **Light / dark themes** — time-of-day auto with manual override, resolved before first paint (no flash)
-- 📱 **Dynamic tab title + real 𞤘 favicon** — the browser tab shows what you're working on; favicon is the actual ADLaM capital Ga extracted from the font
+- 📱 **Dynamic tab title + real 𞤘 favicon** — the browser tab shows what you're working on; favicon is the actual ADLaM capital Ga (SVG + PNG/ICO fallbacks so Safari shows it too)
+- 🧭 **Safari-proof previews** — WebKit can't scroll inside sandboxed iframes, and srcdoc hash links navigate the frame away; both worked around so previews scroll and navigate on every browser
 - 💬 **WhatsApp-ready link cards** — OG/Twitter meta tags with a branded preview image
 
 ### Platform
