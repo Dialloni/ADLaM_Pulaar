@@ -942,6 +942,28 @@ export default function App() {
     }
   };
 
+  // Self-healing: the preview iframe reports runtime errors; "Fix it" feeds the
+  // exact error into the edit flow. The user never has to read the stack trace.
+  const runFix = async (errorText: string) => {
+    if (!currentProject || isGenerating) return;
+    setIsGenerating(true);
+    setStreamingCode(null);
+    setPreviewCode(null);
+    setGenerationSteps([]);
+    setActiveTab('code');
+    lastPreviewAt.current = 0;
+    abortRef.current = new AbortController();
+    const prompt = `The app has a runtime JavaScript error. Fix it with the MINIMAL change needed — do not redesign or restructure anything else.\n\nError:\n${errorText}`;
+    try {
+      await updateExistingProject(prompt, abortRef.current.signal);
+    } catch (err) {
+      setGlobalError(err instanceof Error ? err.message : 'Fix failed.');
+    } finally {
+      setIsGenerating(false); setStreamingCode(null); setPreviewCode(null); setGenerationSteps([]); abortRef.current = null;
+      setActiveTab('preview');
+    }
+  };
+
   const handleRevert = async (snapshot: string) => {
     if (!currentProject || snapshot === currentProject.code) return;
     setCurrentProject(p => p ? { ...p, code: snapshot } : null);
@@ -1615,7 +1637,7 @@ export default function App() {
                     {/* MOBILE: preview fills screen; chat is a bottom sheet toggled by chatHidden */}
                     <div className="flex-1 overflow-hidden w-full">
                       {activeTab === 'preview'
-                        ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} />
+                        ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} onFixError={runFix} errorLabel={t.appErrorChip} fixLabel={t.fixItLabel} />
                         : activeTab === 'inbox'
                         ? <InboxPanel submissions={submissions} t={t} isAdlam={isAdlam} projectId={currentProject.id} published={currentProject.published} />
                         : <Suspense fallback={<LazyFallback />}><CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} /></Suspense>}
@@ -1691,7 +1713,7 @@ export default function App() {
                       <motion.div key="panel" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                         transition={{ type: 'spring', damping: 30, stiffness: 200 }} className="flex-1 overflow-hidden">
                         {activeTab === 'preview'
-                          ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} />
+                          ? <Preview code={previewCode ?? currentProject.code} projectId={currentProject.id} onFixError={runFix} errorLabel={t.appErrorChip} fixLabel={t.fixItLabel} />
                           : activeTab === 'inbox'
                           ? <InboxPanel submissions={submissions} t={t} isAdlam={isAdlam} projectId={currentProject.id} published={currentProject.published} />
                           : <Suspense fallback={<LazyFallback />}><CodeEditor code={streamingCode ?? currentProject.code} onChange={handleCodeChange} t={t} languageCode={selectedLang.code} /></Suspense>}

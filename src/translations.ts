@@ -242,6 +242,8 @@ export interface UIStrings {
   yourBuildModelLabel: string;
   healthProbeLabel: string;
   contactSupportLabel: string;
+  appErrorChip: string;
+  fixItLabel: string;
 }
 
 export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
@@ -475,6 +477,8 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     yourBuildModelLabel: "Your selected build model",
     healthProbeLabel: "Health probe",
     contactSupportLabel: "Contact Support",
+    appErrorChip: "Something broke",
+    fixItLabel: "Fix it",
   },
   fr: {
     appName: "Gando",
@@ -711,6 +715,8 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     yourBuildModelLabel: "Votre modèle de génération",
     healthProbeLabel: "Sonde de disponibilité",
     contactSupportLabel: "Contacter le support",
+    appErrorChip: "Un problème est survenu",
+    fixItLabel: "Réparer",
   },
 
   /* ═══════════════════════════════════════
@@ -951,5 +957,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     yourBuildModelLabel: "Your selected build model",
     healthProbeLabel: "Health probe",
     contactSupportLabel: "Contact Support",
+    appErrorChip: "Something broke",
+    fixItLabel: "Fix it",
   }
 };
