@@ -102,7 +102,10 @@ const RESIZE_REPORTER = `
   },800);});
 })();</scr`+`ipt>`;
 
-function injectReporter(html: string): string {
+/** Exported: any srcDoc iframe showing app code needs this — it carries the
+    hash-link click interceptor (srcdoc anchors resolve against the parent URL
+    and blank the frame) plus the error/height reporters. */
+export function injectReporter(html: string): string {
   if (!html) return html;
   if (html.includes('</body>')) return html.replace('</body>', RESIZE_REPORTER + '</body>');
   return html + RESIZE_REPORTER;

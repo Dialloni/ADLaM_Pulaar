@@ -21,7 +21,7 @@ import {
 import { Project, Message, ChatThread, Submission } from './types';
 import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider, type ImageInput } from './services/geminiService';
 import { Chat } from './components/Chat';
-import { Preview } from './components/Preview';
+import { Preview, injectReporter } from './components/Preview';
 import { LanguageSelector } from './components/LanguageSelector';
 import { useVoiceInput } from './lib/useVoiceInput';
 import { ModeSwitch } from './components/ModeSwitch';
@@ -1976,8 +1976,10 @@ export default function App() {
                       </div>
                       <div className="flex-1 relative" style={{ background: 'var(--app-bg)' }}>
                         {/* community code is user-submitted — never allow-same-origin on srcDoc
-                            (would run with the app's origin: localStorage BYOK keys, auth tokens) */}
-                        <iframe srcDoc={cc.code} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-forms allow-modals allow-popups" />
+                            (would run with the app's origin: localStorage BYOK keys, auth tokens).
+                            injectReporter carries the hash-link interceptor: without it, clicking
+                            a #/page link navigates the sandboxed frame away → blank screen. */}
+                        <iframe srcDoc={injectReporter(cc.code)} title={cc.name} className="w-full h-full border-none" sandbox="allow-scripts allow-forms allow-modals allow-popups" />
                       </div>
                     </div>
                     {/* RIGHT (mobile: BELOW): info + actions */}
