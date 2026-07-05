@@ -21,7 +21,13 @@
     <meta name="twitter:description" content="Describe an app in Pulaar (ADLaM), French or English and watch it come alive. No code needed." />
     <meta name="twitter:image" content="https://gando-ai.up.railway.app/assets/og.png" />
 
+    <!-- SVG for Chrome/Firefox; PNG fallbacks because Safari ignores SVG favicons
+         (it fell back to a stale cached icon). apple-touch-icon for iOS home screen. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <!-- Resolve theme before first paint (mirrors src/lib/useTheme.ts) to avoid a dark/light flash -->
     <script>
       (function () {
