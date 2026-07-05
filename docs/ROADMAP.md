@@ -61,7 +61,9 @@ The real fix for ADLaM quality — grammar has to live in the weights:
 - Honest framing: a proof-of-concept specialist, not a frontier-model replacement. **Data is the bottleneck** — see #1.
 - RAG only as translation-memory for fixed strings (it anchors phrasing; it does not teach grammar)
 
-### 4. Later
+### 4. Later — toward the ADLaM everything-app
+- **ADLaM answers/search** — search the web, fetch, summarize, and translate results into ADLaM so Pulaar speakers can research and learn in their own script (depends on #1/#3: translation quality must come first)
+- First-class translation mode (any text → verified-quality ADLaM)
 - Pulaar STT/TTS fine-tuned on collected recordings (needs ~1k–3k verified clips)
 - Custom domains for published apps; GitHub export
 - More African languages (Wolof, Hausa, Swahili, Yoruba, Bambara…) — the architecture is language-agnostic; each one needs native reviewers
