@@ -93,6 +93,7 @@ Code rules:
 - One self-contained HTML file. Include <!DOCTYPE html>.
 - Use Tailwind via CDN: <script src="https://cdn.tailwindcss.com"></script>
 - No external backend, no Firebase, no API keys, no npm modules.
+- Readable code: clear section comments (<!-- ===== NAVBAR ===== -->, // ── router ──), consistent 2-space indentation, descriptive names, CSS grouped in one <style>, all JS in one <script> at the end. A curious beginner should be able to follow the file top to bottom.
 
 Navigation & multi-page apps — CRITICAL (the app is ONE file; there are no other files):
 - NEVER link to another file or path (about.html, /contact, page2.html, …). Those pages do not exist — clicking shows a blank dead end.
@@ -119,7 +120,7 @@ const OUTPUT_PROTOCOL = `OUTPUT FORMAT — follow EXACTLY:
 - Then output the COMPLETE HTML file, starting with <!DOCTYPE html> and ending with </html>. No markdown fences.
 - Then output a line containing exactly: ${META_DELIM}
 - Then output a single JSON object: {"language":"<detected language>","name":"<short name>","explanation":"<3-5 sentence explanation>"}
-- Output nothing after the JSON.`;
+- ABSOLUTELY NO other text: no analysis, no commentary before or after — stray prose ends up rendered inside the user's app.`;
 
 const STATUS_PREFIX = 'STATUS:';
 
@@ -137,12 +138,30 @@ function stripStatusLines(full: string): string {
 
 export const GENERATE_SYSTEM = `${BASE_RULES}\n\n${OUTPUT_PROTOCOL}`;
 
+// Edits use SEARCH/REPLACE blocks instead of re-emitting the whole file:
+// ~10x fewer output tokens, much faster, and no more mid-file truncation
+// breaking apps. Full rewrite stays available for total redesigns.
+const EDIT_PROTOCOL = `OUTPUT FORMAT for edits — follow EXACTLY:
+- FIRST output the build STEPS ("STATUS: ..." lines, one per requested change, in the app's language) as usual.
+- Then output one SEARCH/REPLACE block per change:
+<<<<<<< SEARCH
+(lines copied VERBATIM from Current Code — character-for-character, including whitespace)
+=======
+(the replacement lines)
+>>>>>>> REPLACE
+- The SEARCH text MUST be an exact copy from Current Code or the edit fails. Keep blocks small: the changed lines plus 1-3 surrounding lines so the match is unique. Multiple blocks allowed, in file order.
+- Full rewrite is FORBIDDEN unless the user EXPLICITLY asks to redesign/rebuild the whole app. Bug fixes, tweaks, additions, "X doesn't work" requests → SEARCH/REPLACE blocks ONLY, changing the minimum. Never restructure, rename, or "improve" things the user didn't mention.
+- In the rare explicit-redesign case: output the complete new HTML starting with <!DOCTYPE html> and ending with </html>.
+- Then output a line containing exactly: ${META_DELIM}
+- Then a single JSON object: {"language":"<detected language>","name":"<short name>","explanation":"<2-4 sentence explanation of what you changed>"}
+- ABSOLUTELY NO other text: no analysis, no reasoning, no commentary before, between, or after — the output is parsed by a machine and stray prose ends up rendered inside the user's app.`;
+
 export const EDIT_SYSTEM = `${BASE_RULES}
 
 Incremental edits:
-- If "Current Code" is provided, make MINIMAL changes. Preserve layout, colors, structure. Only change what the user asked for.
+- "Current Code" is the source of truth. Make MINIMAL changes. Preserve layout, colors, structure. Only change what the user asked for.
 
-${OUTPUT_PROTOCOL}`;
+${EDIT_PROTOCOL}`;
 
 export interface GenResult {
   language: string;
@@ -202,20 +221,101 @@ function buildUserContent(o: RunStreamOpts): string {
   return `${hint}User Prompt:\n${o.prompt}`;
 }
 
+/**
+ * Defensive cleanup: models occasionally leak narration around the HTML
+ * ("Let me fix...", stray STATUS lines, post-</html> commentary). Whatever
+ * ships to the user's project must be exactly one document — amputate
+ * anything before <!DOCTYPE and after </html>.
+ */
+function sanitizeHtml(code: string): string {
+  let c = code;
+  const start = c.search(/<!doctype html/i);
+  if (start > 0) c = c.slice(start);
+  const end = c.toLowerCase().lastIndexOf('</html>');
+  if (end !== -1) c = c.slice(0, end + '</html>'.length);
+  return c.trim();
+}
+
+function parseMeta(metaRaw: string): { language: string; name: string; explanation: string } {
+  try {
+    const m = JSON.parse(metaRaw.replace(/^```json\s*/i, '').replace(/```$/, '').trim());
+    return { language: m.language ?? '', name: m.name ?? '', explanation: m.explanation ?? '' };
+  } catch { return { language: '', name: '', explanation: '' }; }
+}
+
 /** Split accumulated model output into code + parsed metadata (status lines stripped). */
 function splitOutput(raw: string): GenResult {
   const full = stripStatusLines(raw);
   const idx = full.indexOf(META_DELIM);
-  const code = (idx === -1 ? full : full.slice(0, idx)).trim();
-  let language = '', name = '', explanation = '';
-  if (idx !== -1) {
-    const metaRaw = full.slice(idx + META_DELIM.length).trim();
-    try {
-      const m = JSON.parse(metaRaw.replace(/^```json\s*/i, '').replace(/```$/, '').trim());
-      language = m.language ?? ''; name = m.name ?? ''; explanation = m.explanation ?? '';
-    } catch { /* metadata best-effort */ }
+  const code = sanitizeHtml((idx === -1 ? full : full.slice(0, idx)).trim());
+  const meta = idx === -1
+    ? { language: '', name: '', explanation: '' }
+    : parseMeta(full.slice(idx + META_DELIM.length).trim());
+  return { code, ...meta };
+}
+
+const SR_BLOCK = /<{7} SEARCH\n([\s\S]*?)\n={7}\n([\s\S]*?)\n>{7} REPLACE/g;
+
+/**
+ * Apply SEARCH/REPLACE blocks to the current code. Exact match first, then a
+ * whitespace-tolerant retry (models sometimes normalize indentation). Any
+ * block that matches nothing aborts the edit — half-applied edits are worse
+ * than a clean retry.
+ */
+function applySearchReplace(current: string, diffText: string): string {
+  let out = current;
+  let applied = 0;
+  let m: RegExpExecArray | null;
+  SR_BLOCK.lastIndex = 0;
+  while ((m = SR_BLOCK.exec(diffText))) {
+    const [, search, replace] = m;
+    if (out.includes(search)) {
+      out = out.replace(search, replace);
+      applied++;
+      continue;
+    }
+    const fuzzy = new RegExp(
+      search
+        .split('\n')
+        .map(l => l.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .filter(l => l.length > 0)
+        .join('[ \\t]*\\n[ \\t]*'),
+    );
+    if (fuzzy.test(out)) {
+      out = out.replace(fuzzy, replace);
+      applied++;
+      continue;
+    }
+    throw new Error('The edit could not be applied cleanly — please try again.');
   }
-  return { code, name, language, explanation };
+  if (applied === 0) throw new Error('The edit could not be applied cleanly — please try again.');
+  return out;
+}
+
+/**
+ * Finalize an EDIT response. Diff mode (SEARCH/REPLACE blocks) patches the
+ * current code and emits the result as one final chunk; full mode falls back
+ * to the classic whole-file path. HARD RULE: never save garbage — a response
+ * that is neither valid blocks nor a complete HTML document FAILS LOUDLY
+ * instead of replacing the user's app with raw diff text or prose.
+ */
+function finishEdit(buf: string, currentCode: string, onCode: (chunk: string) => void): GenResult {
+  const stripped = stripStatusLines(buf).replace(/```[a-z]*\n?/gi, ''); // models fence output despite instructions
+  SR_BLOCK.lastIndex = 0;
+  const hasBlocks = SR_BLOCK.test(stripped);
+  const hasFullDoc = /<!doctype html/i.test(stripped);
+  if (!hasBlocks && !hasFullDoc) {
+    throw new Error('The edit response was malformed — nothing was changed. Please try again.');
+  }
+  if (!hasBlocks) return splitOutput(stripped); // explicit full rewrite (sanitized inside)
+  const idx = stripped.indexOf(META_DELIM);
+  const diffText = idx === -1 ? stripped : stripped.slice(0, idx);
+  const meta = idx === -1
+    ? { language: '', name: '', explanation: '' }
+    : parseMeta(stripped.slice(idx + META_DELIM.length).trim());
+  const patched = applySearchReplace(currentCode, diffText);
+  onCode(patched); // single final chunk → editor/preview update once, instantly
+  return { code: patched, ...meta };
 }
 
 /**
@@ -271,6 +371,9 @@ async function runClaude(
   let codeStart = 0;      // index in buf where code begins (after the status line)
   let codeEmitted = 0;    // chars of code already forwarded
   let inMeta = false;
+  // Edits may answer with SEARCH/REPLACE blocks — never stream those to the
+  // live editor (raw diff text is not HTML); they're applied at the end.
+  let mode: 'unknown' | 'full' | 'diff' = opts.kind === 'edit' ? 'unknown' : 'full';
 
   for await (const ev of stream) {
     if (ev.type !== 'content_block_delta' || ev.delta.type !== 'text_delta') continue;
@@ -294,7 +397,24 @@ async function runClaude(
       if (!statusDone) continue; // still mid status-list; wait for more
     }
 
+    if (mode === 'unknown') {
+      // strip a leading code fence before classifying — models fence diff output
+      const head = buf.slice(codeStart).trimStart().replace(/^`{3,}[a-z]*\s*/i, '');
+      if (head.length < 8) continue; // not enough to classify yet
+      mode = head.startsWith('<<<<<<<') ? 'diff' : 'full';
+    }
+    if (mode === 'diff') continue; // buffer silently; patched at the end
+
     if (inMeta) continue;
+    // The document ends at </html> — anything after (leaked narration) never streams.
+    const endTag = buf.toLowerCase().indexOf('</html>', codeStart);
+    if (endTag !== -1) {
+      const stop = endTag + '</html>'.length;
+      if (stop > codeEmitted) onCode(buf.slice(codeEmitted, stop));
+      codeEmitted = stop;
+      inMeta = true;
+      continue;
+    }
     const idx = buf.indexOf(META_DELIM, codeStart);
     if (idx === -1) {
       // Hold back the last (delim.length-1) chars so we never split the delimiter mid-chunk.
@@ -310,7 +430,7 @@ async function runClaude(
     }
   }
   await stream.finalMessage();
-  return splitOutput(buf);
+  return opts.kind === 'edit' ? finishEdit(buf, opts.currentCode ?? '', onCode) : splitOutput(buf);
 }
 
 // Works with any OpenAI-compatible /chat/completions endpoint: Groq (free), and
@@ -354,6 +474,7 @@ async function runOpenAICompatible(
   let codeStart = 0;
   let codeEmitted = 0;
   let inMeta = false;
+  let mode: 'unknown' | 'full' | 'diff' = opts.kind === 'edit' ? 'unknown' : 'full';
 
   const processToken = (token: string) => {
     buf += token;
@@ -370,7 +491,21 @@ async function runOpenAICompatible(
       }
       if (!statusDone) return;
     }
+    if (mode === 'unknown') {
+      const head = buf.slice(codeStart).trimStart().replace(/^`{3,}[a-z]*\s*/i, '');
+      if (head.length < 8) return;
+      mode = head.startsWith('<<<<<<<') ? 'diff' : 'full';
+    }
+    if (mode === 'diff') return; // applied at the end, never streamed raw
     if (inMeta) return;
+    const endTag = buf.toLowerCase().indexOf('</html>', codeStart);
+    if (endTag !== -1) {
+      const stop = endTag + '</html>'.length;
+      if (stop > codeEmitted) onCode(buf.slice(codeEmitted, stop));
+      codeEmitted = stop;
+      inMeta = true;
+      return;
+    }
     const idx = buf.indexOf(META_DELIM, codeStart);
     if (idx === -1) {
       const safe = buf.length - (META_DELIM.length - 1);
@@ -401,7 +536,7 @@ async function runOpenAICompatible(
     }
   }
 
-  return splitOutput(buf);
+  return opts.kind === 'edit' ? finishEdit(buf, opts.currentCode ?? '', onCode) : splitOutput(buf);
 }
 
 // Gemini fallback: non-streaming structured JSON, emitted as one code chunk.
