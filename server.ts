@@ -3,13 +3,13 @@ import { createServer as createViteServer } from 'vite';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
-import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
 import { verifyIdToken } from './lib/firebaseAdmin';
 import { runStream, translateText, chatStream } from './lib/llm';
 import { checkRateLimit, RATE_LIMIT_MESSAGE, type RateKind } from './lib/rateLimit';
 import { loadPublishedApp, NOT_FOUND_HTML, PUBLISH_CSP } from './lib/publishPage';
 import { storeSubmission } from './lib/submissions';
+import { adlamToLatin, latinToAdlam } from './lib/translit';
 
 dotenv.config();
 
@@ -398,8 +398,29 @@ Output ONLY the extracted text, nothing else.`;
     if (!audio || !mimeType) {
       return res.status(400).json({ error: 'audio and mimeType required' });
     }
-    if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
     const isAdlam = languageCode === 'ff-adlm';
+
+    // Pulaar: MMS ASR (trained on Fula speech) beats Gemini guessing. Latin out → ADLaM.
+    const voiceApi = (process.env.VOICE_API_URL || '').replace(/['"]/g, '').replace(/\/$/, '');
+    if (isAdlam && voiceApi) {
+      try {
+        const asrRes = await fetch(`${voiceApi}/asr`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio, mime: mimeType }),
+        });
+        if (asrRes.ok) {
+          const { text: latin } = await asrRes.json() as { text: string };
+          if (latin?.trim()) return res.json({ text: latinToAdlam(latin.trim()) });
+        } else {
+          console.error('voice service asr error:', asrRes.status, await asrRes.text().catch(() => ''));
+        }
+      } catch (err) {
+        console.error('voice service asr unreachable, falling back to Gemini:', err);
+      }
+    }
+
+    if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
     const prompt = isAdlam
       ? `Transcribe this spoken Pulaar (Fulani/Fulfulde) audio. You MUST output the transcription exclusively in ADLaM script (Unicode block U+1E900–U+1E95F). Do NOT use Latin letters, romanized Pulaar, or any other script. ADLaM is written right-to-left. If a word is unclear, approximate it in ADLaM characters. Return only the ADLaM transcription, nothing else.`
       : `Transcribe this audio exactly as spoken${language ? ` in ${language}` : ''}. Return only the transcribed text, no commentary.`;
@@ -433,44 +454,27 @@ Output ONLY the extracted text, nothing else.`;
       return res.json({ useBrowser: true, text: stripMd(text).slice(0, 800) });
     }
 
-    const hfToken = process.env.HUGGINGFACE_API_KEY;
-    if (!hfToken) return res.status(500).json({ error: 'HUGGINGFACE_API_KEY not configured' });
-
     try {
       const clean = stripMd(text).slice(0, 500);
-      let romanized = clean;
-      const anthropicKey = process.env.ANTHROPIC_API_KEY;
-      if (anthropicKey) {
-        const ant = new Anthropic({ apiKey: anthropicKey });
-        const msg = await ant.messages.create({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 512,
-          messages: [{ role: 'user', content: `Convert this ADLaM script text to romanized Pulaar (Latin letters only, phonetic). Return only the romanized text, nothing else.\n\n${clean}` }],
-        });
-        const block = msg.content[0];
-        if (block.type === 'text') romanized = block.text.trim();
-      }
+      // Deterministic script conversion (lib/translit.ts) — MMS models only read Latin.
+      const romanized = adlamToLatin(clean);
 
-      const hfRes = await fetch(`https://api-inference.huggingface.co/models/facebook/mms-tts-fuv`, {
+      // Self-hosted MMS voice service (scraper/voice_api.py). No service → browser TTS.
+      const voiceApi = (process.env.VOICE_API_URL || '').replace(/['"]/g, '').replace(/\/$/, '');
+      if (!voiceApi) return res.json({ useBrowser: true, text: romanized });
+
+      const rate = Math.min(1.5, Math.max(0.5, Number(req.body?.rate) || Number(process.env.TTS_SPEAKING_RATE) || 0.8));
+      const ttsRes = await fetch(`${voiceApi}/tts`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${hfToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputs: romanized }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: romanized, rate }),
       });
-
-      if (hfRes.status === 404 || hfRes.status === 400) {
+      if (!ttsRes.ok) {
+        console.error('voice service tts error:', ttsRes.status, await ttsRes.text().catch(() => ''));
         return res.json({ useBrowser: true, text: romanized });
       }
-      if (hfRes.status === 503) {
-        const data = await hfRes.json() as { estimated_time?: number };
-        return res.status(503).json({ error: 'Model loading', retryAfter: Math.ceil(data.estimated_time ?? 20) });
-      }
-      if (!hfRes.ok) {
-        return res.json({ useBrowser: true, text: romanized });
-      }
-
-      const buf = await hfRes.arrayBuffer();
-      const ct = hfRes.headers.get('content-type') || 'audio/flac';
-      res.setHeader('Content-Type', ct);
+      const buf = await ttsRes.arrayBuffer();
+      res.setHeader('Content-Type', ttsRes.headers.get('content-type') || 'audio/wav');
       res.setHeader('Content-Length', buf.byteLength);
       res.send(Buffer.from(buf));
     } catch (err) {
