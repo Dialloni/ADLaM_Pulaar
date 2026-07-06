@@ -201,10 +201,11 @@ export async function speakText(
   text: string,
   languageCode: string
 ): Promise<{ audioUrl?: string; useBrowser?: boolean; text?: string }> {
+  const rate = Number(localStorage.getItem('gando-tts-rate')) || 0.8;
   const res = await fetch('/api/speak', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify({ text, languageCode }),
+    body: JSON.stringify({ text, languageCode, rate }),
   });
   const contentType = res.headers.get('content-type') ?? '';
   if (contentType.includes('audio')) {

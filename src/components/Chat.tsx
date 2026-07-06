@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { useVoiceInput } from '../lib/useVoiceInput';
 import { ModeSwitch } from './ModeSwitch';
 import { type Provider, speakText } from '../services/geminiService';
+import { normalizeAdlam } from '../../lib/translit';
 import { PROVIDER_COLOR, PROVIDER_LABEL, MODEL_OPTIONS } from '../lib/providers';
 import { collection, addDoc, serverTimestamp, db, auth } from '../firebase';
 import { downscaleDataUrl, MAX_APP_IMAGES } from '../lib/appImages';
@@ -127,9 +128,24 @@ interface MessageActionsProps {
   onRate?: (rating: 'up' | 'down') => void;
 }
 
+const TTS_RATES = [
+  { rate: 0.8, label: '0.8×', name: 'Medium' },
+  { rate: 0.7, label: '0.7×', name: 'Slow' },
+  { rate: 1.0, label: '1×', name: 'Fast' },
+] as const;
+
 const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRegenerate, onRevert, isCurrentVersion, onSpeak, isSpeaking, isSpeakLoading, onRate }) => {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<'up' | 'down' | null>(null);
+  const [rateIdx, setRateIdx] = useState(() => {
+    const saved = Number(localStorage.getItem('gando-tts-rate'));
+    return Math.max(0, TTS_RATES.findIndex(r => r.rate === saved));
+  });
+  const cycleRate = () => {
+    const next = (rateIdx + 1) % TTS_RATES.length;
+    setRateIdx(next);
+    localStorage.setItem('gando-tts-rate', String(TTS_RATES[next].rate));
+  };
 
   const handleRate = (r: 'up' | 'down') => {
     const next = liked === r ? null : r;
@@ -174,6 +190,15 @@ const MessageActions: React.FC<MessageActionsProps> = ({ message, onCopy, onRege
             : isSpeaking
             ? <VolumeX className="w-4 h-4" />
             : <Volume2 className="w-4 h-4" />}
+        </button>
+      )}
+      {message.role === 'assistant' && onSpeak && (
+        <button
+          onClick={cycleRate}
+          className="px-1.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all text-[10px] font-bold tabular-nums"
+          title={`Speech speed: ${TTS_RATES[rateIdx].name} — click to change`}
+        >
+          {TTS_RATES[rateIdx].label}
         </button>
       )}
       {message.role === 'assistant' && onRegenerate && (
@@ -674,7 +699,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                             }}>
                             {m.role === 'assistant' ? (
                               <div className="prose prose-invert max-w-none">
-                                <ReactMarkdown>{m.content}</ReactMarkdown>
+                                <ReactMarkdown>{normalizeAdlam(m.content)}</ReactMarkdown>
                               </div>
                             ) : (
                               <>
