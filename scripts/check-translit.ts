@@ -1,5 +1,5 @@
 // Runnable check for lib/translit.ts. Run: npx tsx scripts/check-translit.ts
-import { adlamToLatin, latinToAdlam } from '../lib/translit';
+import { adlamToLatin, latinToAdlam, normalizeAdlam } from '../lib/translit';
 import { strict as assert } from 'assert';
 
 // Real words, both directions.
@@ -50,5 +50,15 @@ assert.equal(
   adlamToLatin(latinToAdlam(all.toUpperCase().replace('KH', 'Kh').replace('GB', 'Gb').replace('KP', 'Kp').replace('SH', 'Sh'))).toLowerCase(),
   all,
 );
+
+// normalizeAdlam: LLM output repair — wrong mark on a letter → the only legal mark.
+assert.equal(normalizeAdlam('𞤥\u{1E944}'), '𞤥\u{1E946}');   // aa-mark on consonant m → gemination
+assert.equal(normalizeAdlam('𞤲\u{1E945}'), '𞤲\u{1E946}');   // ee-mark on consonant n → gemination
+assert.equal(normalizeAdlam('𞤫\u{1E944}'), '𞤫\u{1E945}');   // aa-mark on e → vowel lengthener
+assert.equal(normalizeAdlam('𞤢\u{1E945}'), '𞤢\u{1E944}');   // ee-mark on a → alif lengthener
+assert.equal(normalizeAdlam('𞤢\u{1E946}'), '𞤢\u{1E944}');   // gemination on a → alif lengthener
+assert.equal(normalizeAdlam('\u{1E944}x 𞤤\u{1E946}\u{1E946}'), 'x 𞤤\u{1E946}'); // orphan + doubled dropped
+assert.equal(normalizeAdlam('𞤆𞤵𞤤𞤢\u{1E944}𞤪 𞤧𞤫𞤤\u{1E946}𞤢'), '𞤆𞤵𞤤𞤢\u{1E944}𞤪 𞤧𞤫𞤤\u{1E946}𞤢'); // valid text untouched
+assert.equal(adlamToLatin('𞤥\u{1E944}𞤢'), 'mma'); // TTS path self-heals bad marks
 
 console.log('check-translit: all assertions passed');

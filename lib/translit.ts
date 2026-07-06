@@ -38,9 +38,40 @@ const DIGIT_BASE = 0x1e950;
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/**
+ * Enforce ADLaM orthography on model-generated text (LLMs glue the wrong marks on letters):
+ * lengthener/gemination marks are corrected to the only mark legal on the preceding letter
+ * (𞤢→𞥄, other vowels→𞥅, consonants→𞥆); orphaned or doubled marks are dropped.
+ * Word choice is untouched — this fixes spelling structure only.
+ */
+export function normalizeAdlam(text: string): string {
+  const FIXABLE = new Set([ALIF_LEN, VOWEL_LEN, GEMINATION]);
+  let out = '';
+  let prevLetter = 0; // code point of the ADLaM letter the next mark would attach to
+  let prevWasFixable = false;
+  for (const ch of text) {
+    const cp = ch.codePointAt(0)!;
+    if (FIXABLE.has(cp)) {
+      if (!prevLetter || prevWasFixable) continue; // orphan or duplicated mark
+      const base = prevLetter >= SMALL_BASE ? SMALL_BASE : CAP_BASE;
+      const latin = LATIN[prevLetter - base];
+      out += String.fromCodePoint(latin === 'a' ? ALIF_LEN : VOWELS.has(latin) ? VOWEL_LEN : GEMINATION);
+      prevWasFixable = true;
+      continue;
+    }
+    prevWasFixable = false;
+    const isLetter = (cp >= CAP_BASE && cp < CAP_BASE + LETTER_COUNT) || (cp >= SMALL_BASE && cp < SMALL_BASE + LETTER_COUNT);
+    const isOtherMark = cp >= HAMZA && cp <= NASALIZATION;
+    if (isLetter) prevLetter = cp;
+    else if (!isOtherMark) prevLetter = 0; // marks (hamza/nukta/nyondal) keep the letter context
+    out += ch;
+  }
+  return out;
+}
+
 /** ADLaM text → Latin (Pulaar orthography). Non-ADLaM characters pass through. */
 export function adlamToLatin(text: string): string {
-  const cps = [...text];
+  const cps = [...normalizeAdlam(text)];
   let out = '';
   let lastLatin = ''; // romanization of the most recent letter, for gemination
   for (let i = 0; i < cps.length; i++) {
