@@ -9,55 +9,55 @@
     "key": "loginWithGoogle",
     "english": "Continue with Google",
     "french": "Continuer avec Google",
-    "current_adlam": "𞤔𞤮𞤳𞥆𞤵 𞤫 𞤘𞤵𞥅𞤺𞤮𞤤"
+    "current_adlam": "𞤘𞤵𞥅𞤺𞤮𞤤 𞤫 𞤔𞤮𞤳𞥆𞤵"
   },
   {
     "key": "heroTitle",
     "english": "Build apps with Gando AI.",
     "french": "Créez des apps avec Gando AI.",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆𞤧 𞤫 𞤘𞤢𞤲𞤣𞤮."
+    "current_adlam": ".𞤘𞤢𞤲𞤣𞤮 𞤦𞤢𞤤𞥆𞤢𞤤 𞤫 𞤢𞤨𞥆𞤧 𞤃𞤢𞤸𞤵"
   },
   {
     "key": "heroSubtitle",
     "english": "The modern app builder for Africa. Describe your vision in your native tongue and watch it come to life.",
     "french": "Le constructeur d'applications moderne pour l'Afrique. Décrivez votre vision dans votre langue maternelle.",
-    "current_adlam": "𞤃𞤢𞤸𞤮𞥅𞤱𞤮 𞤢𞤨𞥆𞤧 𞤶𞤢𞤥𞤢𞥄𞤲𞤵 𞤲𞤺𞤢𞤥 𞤀𞤬𞤪𞤭𞤳𞤢. 𞤖𞤢𞥄𞤤𞤵 𞤳𞤮 𞤲𞤮𞤼𞥆𞤢𞥄 𞤯𞤫𞤲𞤯𞤢𞤤 𞤥𞤢𞥄𞤯𞤢."
+    "current_adlam": ".𞤤𞤢𞥄𞤼𞤮𞥅 𞤲𞤮 𞤯𞤵𞤥 𞤢𞤲𞤣𞤢𞥄𞤪𞤢 𞤢 𞤲𞤺𞤢𞤥 𞤥𞤢𞤥 𞤥𞤢𞥄𞤯𞤢 𞤯𞤫𞤲𞤯𞤢𞤤 𞤫 𞤲𞤮𞤼𞥆𞤢𞥄 𞤳𞤮 𞤅𞤭𞤬𞤢𞥄 .𞤀𞤬𞤪𞤭𞤳𞤢 𞤲𞤺𞤢𞤥 𞤶𞤢𞤥𞤢𞥄𞤲𞤵 𞤢𞤨𞥆𞤧 𞤏𞤢𞤸𞤮𞥅𞤱𞤮"
   },
   {
     "key": "loginEyebrow",
     "english": "GANDO · BUILT FOR AFRICA",
     "french": "GANDO · POUR L'AFRIQUE",
-    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 · 𞤲𞤺𞤢𞤥 𞤀𞤬𞤪𞤭𞤳𞤢"
+    "current_adlam": "𞤀𞤊𞤪𞤭𞤳𞤢 𞤐𞤘𞤢𞤃 · 𞤘𞤢𞤲𞤣𞤮"
   },
   {
     "key": "loginLine1",
     "english": "Build apps",
     "french": "Créez des apps",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆𞤧"
+    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆𞤵𞥅𞤶𞤭"
   },
   {
     "key": "loginLine2",
     "english": "in your",
     "french": "dans votre",
-    "current_adlam": "𞤫 𞤯𞤫𞤲𞤯𞤢𞤤"
+    "current_adlam": "𞤫"
   },
   {
     "key": "loginLine3",
     "english": "native tongue.",
     "french": "langue maternelle.",
-    "current_adlam": "𞤥𞤢𞥄𞤯𞤢 𞤥𞤢𞤥."
+    "current_adlam": "𞤯𞤫𞤥𞤺𞤢𞤤 𞤥𞤢𞥄"
   },
   {
     "key": "beta",
     "english": "Public Beta",
     "french": "Bêta Publique",
-    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤄𞤫𞤼𞤢"
+    "current_adlam": "𞤒𞤫𥅼𞤮 𞤘𞤢𞤲𞤣𞤮"
   },
   {
     "key": "errorAuth",
     "english": "Authentication failed. Please sign in again.",
     "french": "Erreur d'authentification. Veuillez vous reconnecter.",
-    "current_adlam": "𞤊𞤭𞤣𞥆𞤭𞥅𞤲𞤣𞤫 𞤲𞤮 𞤱𞤢𞤲𞤢𞥄. 𞤐𞤮𞤱𞥆𞤮 𞤫 𞤔𞤮𞤳𞥆𞤵."
+    "current_adlam": ".𞤳𞤢𞤯𞤭𞤼𞤵𞤲 𞤥𞤢𞤧𞤭𞤲 𞤫 𞤔𞤮𞤳𞥆𞤵 .𞤱𞤢𞤲𞤢𞥄 𞤲𞤮 𞤤𞤭𞤥𞤮𞥅𞤪𞤫 𞤊𞤭𞤣𞥆𞤭𞥅𞤲𞤣𞤫"
   },
   {
     "key": "dashboardNav",
@@ -75,13 +75,13 @@
     "key": "assetsNav",
     "english": "Assets",
     "french": "Ressources",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤢𞥄𞤶𞤭"
+    "current_adlam": "𞤔𞤢𞤱𞤣𞤭"
   },
   {
     "key": "searchPlaceholder",
     "english": "Search Gando…",
     "french": "Rechercher dans Gando…",
-    "current_adlam": "𞤕𞤫𞥅𞤰𞤭 𞤘𞤢𞤲𞤣𞤮..."
+    "current_adlam": "…𞤘𞤢𞤲𞤣𞤮 𞤫𞤲𞤣𞤫𞤪 𞤫 𞤊𞤭𞤤𞥆𞤮"
   },
   {
     "key": "myProjectsLabel",
@@ -93,13 +93,13 @@
     "key": "templatesNav",
     "english": "Templates",
     "french": "Modèles",
-    "current_adlam": "𞤃𞤮𞤣𞤫𞤤𞤭"
+    "current_adlam": "𞤐𞤭𞥅𞤧𞤢𞥄𞤯𞤭"
   },
   {
     "key": "languageAssetsLabel",
     "english": "Language Assets",
     "french": "Ressources Linguistiques",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤢𞥄𞤶𞤭"
+    "current_adlam": "𞤍𞤫𞤥𞤯𞤫 𞤔𞤢𞤱𞤣𞤭"
   },
   {
     "key": "settingsNav",
@@ -111,61 +111,61 @@
     "key": "teamHubLabel",
     "english": "Team Hub",
     "french": "Équipe",
-    "current_adlam": "𞤒𞤫𞤴𞥆𞤢𞤥"
+    "current_adlam": "𞤘𞤮𞤤𞥆𞤭𞤣𞤫 𞤔𞤵𞥅𞤯𞤫"
   },
   {
     "key": "newProject",
     "english": "New Project",
     "french": "Nouveau Projet",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫 𞤳𞤫𞤧𞤮"
+    "current_adlam": "𞤳𞤫𞤧𞤮 𞤆𞤮𞤪𞤮𞤶𞤫"
   },
   {
     "key": "documentationLabel",
     "english": "Documentation",
     "french": "Documentation",
-    "current_adlam": "𞤀𞤬𞤪𞤢𞤥𞤪𞤫"
+    "current_adlam": "𞤁𞤫𞤬𞤼𞤫𞤪𞤣𞤵"
   },
   {
     "key": "systemStatusLabel",
     "english": "System Status",
     "french": "État du Système",
-    "current_adlam": "𞤅𞤭𞤧𞤼𞤫𞤥 𞤅𞤢𞤻𞤮𞤪𞤫"
+    "current_adlam": "𞤅𞤭𞤧𞤼𞤫𞤥 𞤐𞤮𞤲𞥆𞤣𞤫"
   },
   {
     "key": "signOut",
     "english": "Sign Out",
     "french": "Déconnexion",
-    "current_adlam": "𞤒𞤢𞤤𞤼𞤵𞤯𞤮"
+    "current_adlam": "𞤒𞤢𞤤𞤼𞤵𞤯𞤫"
   },
   {
     "key": "projectsCreatedLabel",
     "english": "Projects Created",
     "french": "Projets Créés",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤐𞤢𞤥𞤥𞤭𞤯𞤭𞤯𞤢𞥄"
+    "current_adlam": "𞤃𞤢𞤸𞤢𞥄𞤯𞤭 𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭"
   },
   {
     "key": "profile",
     "english": "Profile",
     "french": "Profil",
-    "current_adlam": "𞤆𞤪𞤮𞤬𞤭𞤤"
+    "current_adlam": "𞤔𞤮𞤥 𞤐𞤮𞤲𞥆𞤣𞤫"
   },
   {
     "key": "viewProfile",
     "english": "View Profile",
     "french": "Voir le Profil",
-    "current_adlam": "𞤖𞤮𞤤𞤼𞤭 𞤆𞤪𞤮𞤬𞤭𞤤"
+    "current_adlam": "𞤐𞤮𞤲𞥆𞤣𞤫 𞤐𞤣𞤢𞥄𞤪"
   },
   {
     "key": "gandoViewTitle",
     "english": "Gando View",
     "french": "Vue Gando",
-    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤖𞤢𞤤𞤭𞤲𞤣𞤫"
+    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤖𞤮𞤤𞥆𞤭𞤪𞤣𞤫"
   },
   {
     "key": "gandoViewSubtitle",
     "english": "Build apps in your African language",
     "french": "Créez des applications dans votre langue africaine",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞤧𞤶𞤭 𞤫 𞤯𞤫𞤲𞤺𞤢𞤤𞤥𞤢𞥄"
+    "current_adlam": "𞤀𞤬𞤪𞤭𞤳𞤢𞤲 𞤯𞤫𞤲𞤯𞤢𞤤 𞤫 𞤢𞤨𞥆𞤧 𞤃𞤢𞤸𞤵𞤣𞤫"
   },
   {
     "key": "projectsLabel",
@@ -177,7 +177,7 @@
     "key": "appsBuiltLabel",
     "english": "Apps Built",
     "french": "Apps Créées",
-    "current_adlam": "𞤀𞤨𞥆𞤧 𞤃𞤢𞤸𞤢𞥄𞤯𞤭"
+    "current_adlam": "𞤃𞤮𞤷𞥆𞤭𞤲𞤢𞥄𞤯𞤭 𞤀𞤨𞥆𞤧"
   },
   {
     "key": "generateLabel",
@@ -189,37 +189,37 @@
     "key": "activeSiteBuildsLabel",
     "english": "Active Site Builds",
     "french": "Projets Actifs",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤑𞤭𞤸𞤯𞤵𞤯𞤭"
+    "current_adlam": "𞤒𞤢𞥄𞤪𞤢 𞤐𞤮 𞤃𞤢𞤸𞤵𞤣𞤫"
   },
   {
     "key": "viewAllLabel",
     "english": "View All",
     "french": "Voir Tout",
-    "current_adlam": "𞤖𞤮𞤤𞤼𞤭 𞤸𞤫𞤯𞤯𞤢𞤲"
+    "current_adlam": "𞤖𞤢𞤲𞥆𞤣𞤫 𞤑𞤮 𞤐𞤣𞤢𞥄𞤪"
   },
   {
     "key": "projectCompletionLabel",
     "english": "Project Completion",
     "french": "Avancement des Projets",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫 𞤏𞤢𞤼𞤵𞤣𞤫"
+    "current_adlam": "𞤏𞤢𞤼𞤵𞤣𞤫 𞤆𞤮𞤪𞤮𞤶𞤫"
   },
   {
     "key": "completionSubtitle",
     "english": "Overall progress across your Gando projects and linguistic builds.",
     "french": "Progression globale de vos projets Gando.",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤢𞤥 𞤫 𞤘𞤢𞤲𞤣𞤮."
+    "current_adlam": ".𞤥𞤢𞥄𞤯𞤢 𞤘𞤢𞤲𞤣𞤮 𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤲𞤣𞤫 𞤫 𞤴𞤫𞥅𞤧𞤮 𞤒𞤢𞥄𞤪𞤵𞤺𞤮𞤤"
   },
   {
     "key": "tokenUsageLabel",
     "english": "Tokens Used",
     "french": "Tokens Utilisés",
-    "current_adlam": "𞤚𞤮𞤳𞤫𞤲 𞤁𞤢𞤩𞤦𞤮𞤪𞤣𞤫"
+    "current_adlam": "𞤖𞤵𞥅𞤼𞤮𞤪𥆪𞤢𞥄𞤯𞤭 𞤚𞤢𞤤𞤳𞤵𞥅𞤪𞤭"
   },
   {
     "key": "tokenResetHint",
     "english": "Utilization is within healthy bounds.",
     "french": "Utilisation dans les limites normales.",
-    "current_adlam": "𞤚𞤮𞤳𞤫𞤲 𞤯𞤮𞥅𞤸𞤫𞥅𞤲 𞤯𞤵𞤥."
+    "current_adlam": ".𞤮𞤲𞤣𞤢𞤥 𞤲𞤣𞤫𞤪 𞤫 𞤲𞤮 𞤖𞤵𞥅𞤼𞤮𞤪𥆪𞤢𞥄𞤯𞤭"
   },
   {
     "key": "healthyLabel",
@@ -231,7 +231,7 @@
     "key": "appPerformanceLabel",
     "english": "App Performance",
     "french": "Performance",
-    "current_adlam": "𞤃𞤢𞤸𞤮𞥅𞤱𞤮 𞤀𞤨𞥆"
+    "current_adlam": "𞤀𞤨𞥆 𞤒𞤢𞥄𞤪𞤵𞤺𞤮𞤤"
   },
   {
     "key": "excellentLabel",
@@ -249,43 +249,43 @@
     "key": "uptimeLabel",
     "english": "Uptime",
     "french": "Disponibilité",
-    "current_adlam": "𞤒𞤨𞤼𞤭𞤥"
+    "current_adlam": "𞤒𞤫𞥅𞤲𞤯𞤭𞤲𞤣𞤫"
   },
   {
     "key": "runtimeLabel",
     "english": "Runtime",
     "french": "Runtime",
-    "current_adlam": "𞤚𞤢𞤩𞤤𞤮"
+    "current_adlam": "𞤘𞤮𞤤𞥆𞤫 𞤚𞤢𞤩𞤤𞤮"
   },
   {
     "key": "totalFlowLabel",
     "english": "Total Flow",
     "french": "Flux Total",
-    "current_adlam": "𞤸𞤫𞤯𞤯𞤢𞤲 𞤸𞤢𞤻𞤫𞥅𞤲𞤣𞤫"
+    "current_adlam": "𞤖𞤢𞤻𞤫𞥅𞤲𞤣𞤫 𞤒𞤢𞥄𞤪𞤵𞤣𞤫"
   },
   {
     "key": "appsGeneratedLabel",
     "english": "Apps Generated",
     "french": "Apps Générées",
-    "current_adlam": "𞤀𞤨𞥆𞤧 𞤃𞤢𞤸𞤢𞥄𞤯𞤭"
+    "current_adlam": "𞤃𞤢𞤸𞤄𞥄𞤯𞤭 𞤀𞤨𞥆𞤧"
   },
   {
     "key": "totalPromptsLabel",
     "english": "Total Prompts",
     "french": "Total Prompts",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤵 𞤸𞤫𞤯𞤯𞤢𞤲"
+    "current_adlam": "𞤖𞤢𞤻𞤫𞥅𞤲𞤣𞤫 𞤖𞤢𞥄𞤤𞤵𞥅𞤶𞤭"
   },
   {
     "key": "noProjectsTitle",
     "english": "No projects yet",
     "french": "Aucun projet",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤲𞤣𞤫𞥅"
+    "current_adlam": "𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤏𞤢𞤤𞤢𞥄 𞤼𞤢𞤱𞤮"
   },
   {
     "key": "noProjectsSubtitle",
     "english": "Describe your app above and hit Generate to start building.",
     "french": "Décrivez votre app ci-dessus et cliquez Générer.",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 𞤘𞤢𞤲𞤣𞤮 𞤫 𞤃𞤢𞤸𞤵."
+    "current_adlam": ".𞤃𞤢𞤸𞤵 𞤲𞤮𞤼𞥆𞤢 𞤢 𞤲𞤺𞤢𞤥 𞤣𞤮𞥅 𞤯𞤮𞥅 𞤥𞤢𞥄𞤯𞤢 𞤢𞤨𞥆 𞤅𞤭𞤬𞤢𞥄"
   },
   {
     "key": "projectsPageTitle",
@@ -297,31 +297,31 @@
     "key": "projectsPageSubtitle",
     "english": "All your projects generated by Gando AI",
     "french": "Tous vos projets générés par Gando AI",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤣𞤮 𞤲𞤢𞤥𞤥𞤭𞤯𞤭"
+    "current_adlam": "𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 𞤦𞤢𞤤𞥆𞤢𞤤 𞤫 𞤥𞤢𞤸𞤢𞥄𞤯𞤭 𞤥𞤢𞥄𞤯𞤢 𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤑𞤮"
   },
   {
     "key": "searchProjectsPlaceholder",
     "english": "Search projects…",
     "french": "Rechercher un projet…",
-    "current_adlam": "𞤕𞤫𞥅𞤰𞤭 𞤆𞤮𞤪𞤮𞤶𞤫..."
+    "current_adlam": "…𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤊𞤭𞤤𞥆𞤮"
   },
   {
     "key": "deleteProjectLabel",
     "english": "Delete",
     "french": "Supprimer",
-    "current_adlam": "𞤊𞤵𞤦𞤢 𞤆𞤮𞤪𞤮𞤶𞤫"
+    "current_adlam": "𞤃𞤮𞤥𞤼𞤵"
   },
   {
     "key": "openProjectLabel",
     "english": "Open",
     "french": "Ouvrir",
-    "current_adlam": "𞤊𞤭𞤤𞤵 𞤆𞤮𞤪𞤮𞤶𞤫"
+    "current_adlam": "𞤌𞤣𞥆𞤵𞤼𞤵"
   },
   {
     "key": "shareLabel",
     "english": "Share",
     "french": "Partager",
-    "current_adlam": "𞤅𞤫𞤲𞤣𞤵𞤶𞤵"
+    "current_adlam": "𞤅𞤫𞤲𞤣𞤵"
   },
   {
     "key": "sharePendingLabel",
@@ -333,19 +333,19 @@
     "key": "shareLiveLabel",
     "english": "In gallery",
     "french": "Dans la galerie",
-    "current_adlam": "𞤉 𞤲𞤣𞤫𞤪 𞤘𞤢𞤤𞤫𞤪𞤭"
+    "current_adlam": "𞤫 𞤲𞤣𞤫𞤪 𞤺𞤢𞤤𞤭𞤪𞤫"
   },
   {
     "key": "shareConfirm",
     "english": "Share this project to the community gallery? An admin reviews it before it goes public, and other users may preview and remix it.",
     "french": "Partager ce projet dans la galerie communautaire ? Un admin le vérifie avant publication, et d'autres utilisateurs peuvent le prévisualiser et le remixer.",
-    "current_adlam": "𞤀𞤯𞤢 𞤴𞤭𞤯𞤭 𞤲𞤫𞤤𞤣𞤫 𞤆𞤮𞤪𞤮𞤶𞤫 𞤲𞤣𞤫 𞤫 𞤘𞤢𞤤𞤫𞤪𞤭 𞤪𞤫𞤲𞥆𞤣𞤮? 𞤀𞤣𞤥𞤭𞤲 𞤸𞤢 𞤸𞤮𞤤𞥆𞤭𞤲𞤢 𞤣𞤫."
+    "current_adlam": "𞤪𞤫𞤲𞥆𞤣𞤮? 𞤘𞤢𞤤𞤫𞤪𞤭 𞤲𞤣𞤫𞤪 𞤫 𞤯𞤮𞥅 𞤨𞤮𞤪𞤮𞤶𞤫 𞤲𞤫𞤤𞤣𞤵𞤣𞤫 𞤴𞤭𞤯𞤭 𞤀𞤯𞤢"
   },
   {
     "key": "communityTitle",
     "english": "From the community",
     "french": "De la communauté",
-    "current_adlam": "𞤋𞤱𞤣𞤫 𞤪𞤫𞤲𞥆𞤣𞤮"
+    "current_adlam": "𞤋𞤱𞤣𞤫 𞤫 𞤪𞤫𞤲𞥆𞤣𞤮"
   },
   {
     "key": "remixLabel",
@@ -357,19 +357,19 @@
     "key": "confirmDelete",
     "english": "Are you sure you want to delete this project?",
     "french": "Êtes-vous sûr de vouloir supprimer ce projet ?",
-    "current_adlam": "𞤀𞤯𞤢 𞤤𞤢𞥄𞤩𞤭 𞤢 𞤲𞤮𞤼𞥆𞤭𞥅 𞤥𞤮𞤥𞤼𞤵𞤣𞤫 𞤯𞤵𞤥?"
+    "current_adlam": "𞤯𞤮𞥅? 𞤨𞤮𞤪𞤮𞤶𞤫 𞤥𞤮𞤥𞤼𞤵𞤣𞤫 𞤴𞤭𞤯𞤭 𞤢 𞤤𞤢𞥄𞤩𞤭 𞤀𞤯𞤢"
   },
   {
     "key": "recentProjects",
     "english": "Recent Projects",
     "french": "Projets Récents",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤩𞤫𞤲𞥆𞤵𞤯𞤭"
+    "current_adlam": "𞤇𞤫𞤲𞥆𞤵𞤯𞤭 𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭"
   },
   {
     "key": "preview",
     "english": "Preview",
     "french": "Aperçu",
-    "current_adlam": "𞤖𞤮𞤤𞥆𞤭𞤪𞤣𞤫"
+    "current_adlam": "𞤖𞤮𞤤𞥆𞤭𞤣𞤫"
   },
   {
     "key": "code",
@@ -381,19 +381,19 @@
     "key": "download",
     "english": "Download",
     "french": "Télécharger",
-    "current_adlam": "𞤔𞤫𞤩𞥆𞤵"
+    "current_adlam": "𞤔𞤭𞤨𞥆𞤭𞤲𞤣𞤫"
   },
   {
     "key": "rename",
     "english": "Rename",
     "french": "Renommer",
-    "current_adlam": "𞤏𞤢𞤼𞥆𞤵 𞤭𞤲𞤣𞤫"
+    "current_adlam": "𞤋𞤲𞥆𞤵𞤼𞤵"
   },
   {
     "key": "deleteConfirm",
     "english": "Are you sure you want to delete this project?",
     "french": "Êtes-vous sûr de vouloir supprimer ce projet ?",
-    "current_adlam": "𞤀𞤯𞤢 𞤤𞤢𞥄𞤩𞤭 𞤢 𞤲𞤮𞤼𞥆𞤭𞥅 𞤥𞤮𞤥𞤼𞤵𞤣𞤫 𞤯𞤵𞤥?"
+    "current_adlam": "𞤯𞤮𞥅? 𞤨𞤮𞤪𞤮𞤶𞤫 𞤥𞤮𞤥𞤼𞤵𞤣𞤫 𞤴𞤭𞤯𞤭 𞤢 𞤤𞤢𞥄𞤩𞤭 𞤀𞤯𞤢"
   },
   {
     "key": "revertLabel",
@@ -405,37 +405,271 @@
     "key": "currentVersionLabel",
     "english": "Current",
     "french": "Version Actuelle",
-    "current_adlam": "𞤕𞤫𞥅𞤰𞤭𞤯𞤭 𞤸𞤢𞤲𞤳𞤭𞤣𞤫"
+    "current_adlam": "𞤖𞤢𞤲𞤳𞤭𞤲"
   },
   {
     "key": "chatWelcome",
     "english": "What will you build today?",
     "french": "Que vas-tu construire aujourd'hui ?",
-    "current_adlam": "𞤑𞤮 𞤸𞤮𞤲𞤯𞤵𞤥 𞤥𞤢𞤸𞤮𞤼𞤢𞥄 𞤸𞤢𞤲𞤣𞤫?"
+    "current_adlam": "𞤳𞤮 𞤸𞤮𞤲𞤯𞤵𞤲 𞤥𞤢𞤸𞤫𞤼𞤫𞤲 𞤸𞤢𞤲𞤣𞤫؟"
   },
   {
     "key": "chatSubtitle",
     "english": "Describe your vision in {language}. Gando AI handles the rest.",
     "french": "Décrivez votre vision en {language}. Gando AI s'occupe du reste.",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤵 𞤳𞤮 𞤲𞤮𞤼𞥆𞤢𞥄 𞤫 {language}. 𞤘𞤢𞤲𞤣𞤮 𞤲𞤮𞤼𞥆𞤢𞥄 𞤯𞤵𞤥."
+    "current_adlam": ".𞤸𞤫𞤯𞥆𞤭 𞤳𞤮 𞤶𞤮𞤺𞤭𞥅 𞤲𞤮 𞤘𞤢𞤲𞤣𞤮 .{language} 𞤲𞤣𞤫𞤪 𞤫 𞤲𞤮𞤼𞥆𞤢𞥄 𞤳𞤮 𞤅𞤭𞤬𞤢𞥄"
   },
   {
     "key": "chatPlaceholder",
     "english": "Describe your app in {language}...",
     "french": "Décrivez votre application en {language}...",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 {language}..."
+    "current_adlam": "…{language} 𞤲𞤣𞤫𞤪 𞤫 𞤥𞤢𞥄𞤯𞤢 𞤢𞤨𞥆 𞤅𞤭𞤬𞤢𞥄"
   },
   {
     "key": "aiDisclaimer",
     "english": "Gando AI can make mistakes. Check important info.",
     "french": "Gando AI peut faire des erreurs. Vérifiez les informations importantes.",
-    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤲𞤮 𞤥𞤢𞤱𞤲𞤭 𞤱𞤮𞤶𞥆𞤫. 𞤐𞤣𞤢𞥄𞤪 𞤳𞤮 𞤸𞤢𞥄𞤲𞤭."
+    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤫𞤢 𞤲𞤮 𞤱𞤢𞥄𞤱𞤭 𞤬𞤢𞤤𞤶𞤵𞤣𞤫. 𞤐𞤣𞤢𞥄𞤪 𞤳𞤮 𞤸𞤢𞥄𞤲𞤭."
   },
   {
     "key": "inputPlaceholder",
     "english": "Describe your app in English...",
     "french": "Décrivez votre application en Français...",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 𞤆𞤵𞤤𞤢𞥄𞤪..."
+    "current_adlam": "…𞤆𞤵𞤤𞤢𞥄𞤪 𞤲𞤣𞤫𞤪 𞤫 𞤥𞤢𞥄𞤯𞤢 𞤢𞤨𞥆 𞤅𞤭𞤬𞤢𞥄"
+  },
+  {
+    "key": "collectorLabel",
+    "english": "Collector",
+    "french": "Collecteur",
+    "current_adlam": "𞤃𞤮𞥅𞤬𞤼𞤮𞥅𞤱𞤮"
+  },
+  {
+    "key": "chatsLabel",
+    "english": "Chats",
+    "french": "Discussions",
+    "current_adlam": "𞤴𞤫𞤱𞤼𞤫𞤪𞤫𞥅𞤶𞤭"
+  },
+  {
+    "key": "recentsHeader",
+    "english": "RECENTS",
+    "french": "RÉCENTS",
+    "current_adlam": "𞤇𞤉𞤐𞥆𞤓𞤦𞤭"
+  },
+  {
+    "key": "settingsGeneralTab",
+    "english": "General",
+    "french": "Général",
+    "current_adlam": "𞤑𞤢𞥄𞤥𞤵"
+  },
+  {
+    "key": "settingsAccountTab",
+    "english": "Account",
+    "french": "Compte",
+    "current_adlam": "𞤂𞤭𞤥𞤮𞥅𞤪𞤫"
+  },
+  {
+    "key": "settingsPrivacyTab",
+    "english": "Privacy",
+    "french": "Confidentialité",
+    "current_adlam": "𞤅𞤵𞥅𞤯𞤢𞥄𞤪𞤫"
+  },
+  {
+    "key": "avatarLabel",
+    "english": "Avatar",
+    "french": "Avatar",
+    "current_adlam": "𞤴𞤫𞥅𞤧𞤮 𞤐𞤢𞤼𞤢𞤤"
+  },
+  {
+    "key": "avatarSubtitle",
+    "english": "Click to change your photo",
+    "french": "Cliquez pour changer votre photo",
+    "current_adlam": "𞤥𞤢𞥄𞤯𞤢 𞤐𞤢𞤼𞤢𞤤 𞤱𞤢𞤴𞤤𞤵𞤣𞤫 𞤲𞤺𞤢𞤥 𞤐𞤮𞤼𞥆𞤵"
+  },
+  {
+    "key": "fullNameLabel",
+    "english": "Full name",
+    "french": "Nom complet",
+    "current_adlam": "𞤋𞤲𞥆𞤣𞤫 𞤥𞤢𞥄 𞤲𞥋𞤣𞤫𞤲"
+  },
+  {
+    "key": "fullNameSubtitle",
+    "english": "First and last name",
+    "french": "Prénom et nom",
+    "current_adlam": "𞤋𞤲𞥆𞤣𞤫 𞤫 𞤴𞤫𞤼𞥆𞤮𞥅𞤪𞤫"
+  },
+  {
+    "key": "gandoNamingQuery",
+    "english": "What should Gando call you?",
+    "french": "Comment Gando devrait-il vous appeler ?",
+    "current_adlam": "𞤑𞤮 𞤸𞤮𞤲𞥆𞤮 𞤺𞤢𞤲𞤣𞤵 𞤲𞤮𞤣𞥆𞤢𞤼𞤢𞤥𞤢𞥄؟"
+  },
+  {
+    "key": "gandoNamingSubtitle",
+    "english": "Used in your greeting",
+    "french": "Utilisé dans votre salutation",
+    "current_adlam": "𞤑𞤮𞤳𞤢 𞤸𞤫𞤱𞤪𞤮𞥅𞤣𞤫 𞤯𞤵𞤲𞤯𞤮𞥅 𞤱𞤮𞤲𞤢𞤼𞤢"
+  },
+  {
+    "key": "workDescriptionQuery",
+    "english": "What best describes your work?",
+    "french": "Qu'est-ce qui décrit le mieux votre travail ?",
+    "current_adlam": "𞤥𞤢𞥄𞤯𞤢? 𞤺𞤮𞤤𞥆𞤢𞤤 𞤧𞤭𞤬𞤢𞥄𞤣𞤫 𞤩𞤵𞤪𞤭 𞤖𞤮𞤲𞤯𞤵𞤥"
+  },
+  {
+    "key": "appearanceLabel",
+    "english": "Appearance",
+    "french": "Apparence",
+    "current_adlam": "𞤐𞤣𞤄𥄃𞤪𞤭 𞤃𞤮𞥅𞤣𞤭"
+  },
+  {
+    "key": "appearanceSubtitle",
+    "english": "Light or dark theme",
+    "french": "Thème clair ou sombre",
+    "current_adlam": "𞤂𞤫𞥅𞤤𞤫𞤱𞤢𞤤 𞤥𞤢𞥄 𞤔𞤢𞤴𞤲𞤺𞤮𞤤"
+  },
+  {
+    "key": "roleStudent",
+    "english": "Student",
+    "french": "Étudiant",
+    "current_adlam": "𞤔𞤢𞤲𞤺𞤮𞥅𞤱𞤮"
+  },
+  {
+    "key": "roleEngineering",
+    "english": "Engineering",
+    "french": "Ingénierie",
+    "current_adlam": "𞤅𞤭𞤧𞤼𞤫𞤥 𞤚𞤢𞤬𥥆𞤮𞥅𞤱𞤮"
+  },
+  {
+    "key": "roleProductManagement",
+    "english": "Product management",
+    "french": "Gestion de produit",
+    "current_adlam": "𞤔𞤢𞤱𞤣𞤭 𞤔𞤮𞤥𥥆𞤭𞤲𞤺𞤮𞤤"
+  },
+  {
+    "key": "roleDesign",
+    "english": "Design",
+    "french": "Design",
+    "current_adlam": "𞤐𞤢𞤼𞤢𞤤 𞤅𞤢𞤻𞤮𞤪𞤫"
+  },
+  {
+    "key": "roleDataScience",
+    "english": "Data science",
+    "french": "Science des données",
+    "current_adlam": "𞤘𞤮𞤤𞥆𞤭𞤪𞤯𞤭 𞤘𞤢𞤲𞤣𞤢𞤤"
+  },
+  {
+    "key": "roleScience",
+    "english": "Science",
+    "french": "Science",
+    "current_adlam": "𞤘𞤢𞤲𞤣𞤢𞤤"
+  },
+  {
+    "key": "roleBusiness",
+    "english": "Business",
+    "french": "Entreprise",
+    "current_adlam": "𞤐𞤶𞤫𞥅𞤴𞤺𞤵"
+  },
+  {
+    "key": "roleMarketing",
+    "english": "Marketing",
+    "french": "Marketing",
+    "current_adlam": "𞤐𞤶𞤫𞥅𞤴𞤺𞤵 𞤖𞤮𞤤𞥆𞤭𞤼𞤵𞤣𞤫"
+  },
+  {
+    "key": "roleOperations",
+    "english": "Operations",
+    "french": "Opérations",
+    "current_adlam": "𞤘𞤮𞤤𞥆𞤫 𞤒𞤢𞥄𞤪𞤵𞤣𞤫"
+  },
+  {
+    "key": "roleEducation",
+    "english": "Education",
+    "french": "Éducation",
+    "current_adlam": "𞤔𞤢𞤲𞤺𞤭𞤲𞤣𞤫"
+  },
+  {
+    "key": "roleOther",
+    "english": "Other",
+    "french": "Autre",
+    "current_adlam": "𞤔𞤢𞤽𞤼𞤢𞥄𞤯𞤭"
+  },
+  {
+    "key": "logOutActionLabel",
+    "english": "Log out",
+    "french": "Se déconnecter",
+    "current_adlam": "𞤥𞤢𞤧𞤭𞤲 𞤫 𞤒𞤢𞤤𞤼𞤵"
+  },
+  {
+    "key": "logOutActionSubtitle",
+    "english": "Sign out of this device",
+    "french": "Se déconnecter de cet appareil",
+    "current_adlam": "𞤯𞤮𞥅 𞤥𞤢𞤧𞤭𞤲 𞤲𞤣𞤫𞤪 𞤫 𞤒𞤢𞤤𞤼𞤵𞤣𞤫"
+  },
+  {
+    "key": "deleteAccountActionLabel",
+    "english": "Delete account",
+    "french": "Supprimer le compte",
+    "current_adlam": "𞤂𞤭𞤥𞤮𞥅𞤪𞤫 𞤃𞤮𞤥𞤼𞤵"
+  },
+  {
+    "key": "deleteAccountActionSubtitle",
+    "english": "Permanently deletes your account, projects and chats. This cannot be undone — unless you create a new account.",
+    "french": "Supprime définitivement votre compte, vos projets et vos discussions. Cette action est irréversible.",
+    "current_adlam": ".𞤬𞤭𞤤𞤼𞤢𞥄𞤺𞤮𞤤 𞤱𞤢𞤤𞤄𞥄 𞤥𞤮𞤥𞤼𞤢𞥄𞤥𞤢 𞤇𞤫𞤲𞥆𞤵𞤯𞤮 .𞤶𞤫𞤱𞤼𞤫𞤪𞤫𞥅𞤶𞤭 𞤫 𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 ,𞤤𞤭𞤥𞤮𞥅𞤪𞤫 𞤥𞤢𞥄𞤯𞤢 𞤥𞤮𞤥𞤼𞤭𞤪𞤢𞤲 𞤤𞤢𞥄𞤦𞤭 𞤲𞤺𞤮𞥅𞤤 𞤃𞤮𞤥𞤼𞤵𞤣𞤫"
+  },
+  {
+    "key": "privacyBriefHeader",
+    "english": "We believe in transparent data practices. You control your data below.",
+    "french": "Nous croyons en des pratiques de données transparentes. Vous contrôlez vos données ci-dessous.",
+    "current_adlam": ".𞤤𞤫𞤧 𞤯𞤮𞥅 𞤯𞤵𞤥 𞤒𞤢𞥄𞤪𞤵𞤣𞤫 𞤱𞤢𞥄𞤱𞤭 𞤀𞤯𞤢 .𞤥𞤢𞥄𞤯𞤢 𞤺𞤮𞤤𞥆𞤭𞤪𞤯𞤭 𞤲𞤣𞤫𞤪 𞤫 𞤤𞤢𞥄𞤩𞤢𞤤 𞤶𞤮𞤺𞤭𞥅 𞤲𞤮 𞤃𞤭𞤲"
+  },
+  {
+    "key": "improveModelsLabel",
+    "english": "Help improve our models",
+    "french": "Aidez à améliorer nos modèles",
+    "current_adlam": "𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 𞤥𞤮𞤷𞥆𞤭𞤲𞤣𞤫 𞤏𞤢𞤤𥆪𞤵"
+  },
+  {
+    "key": "improveModelsSubtitle",
+    "english": "Allow your chats to be used to train and improve Gando. On by default.",
+    "french": "Autorisez l'utilisation de vos discussions pour entraîner Gando.",
+    "current_adlam": ".𞤘𞤢𞤲𞤣𞤮 𞤥𞤮𞤷𞥆𞤭𞤲𞤣𞤫 𞤫 𞤶𞤢𞤲𞤺𞤭𞤲𞤣𞤫 𞤲𞤺𞤢𞤥 𞤥𞤢𞥄𞤯𞤢 𞤶𞤫𞤱𞤼𞤫𞤪𞤫𞥅𞤶𞤭 𞤐𞤫𞤤𞤣𞤵"
+  },
+  {
+    "key": "preciseLocationLabel",
+    "english": "Precise location",
+    "french": "Localisation précise",
+    "current_adlam": "𞤂𞤢𞥄𞤩𞤵𞤲𞤣𞤫 𞤐𞤮𞤳𞥆𞤵𞥅𞤪𞤫"
+  },
+  {
+    "key": "preciseLocationSubtitle",
+    "english": "Optional. Coarse location (city) is already inferred from your connection.",
+    "french": "Optionnel. La localisation approximative est déjà déduite.",
+    "current_adlam": ".𞤲𞤫𞤼𞤱𞤮𞤪𞤳 𞤲𞤣𞤫𞤪 𞤫 𞤥𞤢𞥄𞤯𞤢 𞤺𞤢𞤤𞥆𞤵𞥅𞤪𞤫 𞤶𞤮𞤺𞤭𞥅 𞤲𞤮 𞤃𞤭𞤲 .𞤱𞤫𞥅𞤤𞤭 𞤐𞤮"
+  },
+  {
+    "key": "exportDataLabel",
+    "english": "Export data",
+    "french": "Exporter les données",
+    "current_adlam": "𞤺𞤮𞤤𞥆𞤭𞤪𞤯𞤭 𞤟𞤢𞥄𞤪𞤵"
+  },
+  {
+    "key": "exportDataSubtitle",
+    "english": "Download your projects and chats (JSON)",
+    "french": "Télécharger vos projets et discussions (JSON)",
+    "current_adlam": "(𞤔𞤅𞤌𞤐) 𞤶𞤫𞤱𞤼𞤫𞤪𞤫𞥅𞤶𞤭 𞤫 𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤔𞤭𞤨𞥆𞤭𞤲𞤣𞤫"
+  },
+  {
+    "key": "signIn",
+    "english": "Sign in",
+    "french": "Se connecter",
+    "current_adlam": "𞤐𞤢𞥄𞤼𞤵"
+  },
+  {
+    "key": "getStarted",
+    "english": "Get started",
+    "french": "Commencer",
+    "current_adlam": "𞤊𞤵𞤯𞥆𞤮"
   },
   {
     "key": "twPhrases[0]",
@@ -471,7 +705,7 @@
     "key": "generating",
     "english": "Gando is building...",
     "french": "Gando construit...",
-    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤲𞤮 𞤥𞤢𞤸𞤢..."
+    "current_adlam": "…𞤥𞤢𞤸𞤵𞤣𞤫"
   },
   {
     "key": "copy",
@@ -495,133 +729,133 @@
     "key": "tips",
     "english": "Tips",
     "french": "Conseils",
-    "current_adlam": "𞤀𞤥𞤦𞤼𞤫"
+    "current_adlam": "𞤄𞤢𞤤𞥆𞤢𞤤 𞤐𞤣𞤫𞤪"
   },
   {
     "key": "ecommerce",
     "english": "E-Commerce Store",
     "french": "Boutique en Ligne",
-    "current_adlam": "𞤜𞤲𞤲𞤦𞤮𞤱𞤢𞤩𞤧𞤭"
+    "current_adlam": "𞤐𞤫𞤼𞤱𞤮𞤪𞤳 𞤫 𞤁𞤵𞤳𞥆𞤢𞥄𞤲𞤭"
   },
   {
     "key": "ecommercePrompt",
     "english": "Create a modern African e-commerce store with product listings, shopping cart, and payment integration.",
     "french": "Créer une boutique africaine moderne avec catalogue produits et panier.",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤣𞤵𞤳𞤢 𞤤𞤢 𞤥𞤼𞤢𞤲𞤣𞤢𞤱𞤭 𞤢𞤬𞤪𞤭𞤳𞤢 𞤱𞤫𞥅𞤤𞤭 𞤲𞤫 𞤢𞤤𞥆𞤵𞤱𞤢𞤤 𞤨𞤭𞥅𞤤𞥆𞤫."
+    "current_adlam": "…𞤀𞤬𞤪𞤭𞤳𞤢 𞤲𞤺𞤢𞤥 𞤶𞤢𞤥𞤢𞥄𞤲𞤵 𞤣𞤵𞤳𞥆𞤢𞥄𞤲𞤭 𞤃𞤮𞤷𞥆𞤭𞤲𞤣𞤫"
   },
   {
     "key": "languageLearning",
     "english": "Language Learning",
     "french": "Apprentissage",
-    "current_adlam": "𞤔𞤢𞤲𞤺𞤵𞤺𞤮"
+    "current_adlam": "𞤍𞤫𞤥𞤯𞤫 𞤔𞤢𞤲𞤺𞤭𞤲𞤣𞤫"
   },
   {
     "key": "languageLearningPrompt",
     "english": "Build an interactive app for learning African languages with lessons and progress tracking.",
     "french": "Créer une app éducative pour apprendre les langues africaines.",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤶𞤢𞤲𞤺𞤵𞤺𞤮 𞤯𞤫𞤲𞤯𞤫 𞤳𞤫𞤧𞤫."
+    "current_adlam": "…𞤀𞤬𞤪𞤭𞤳𞤢 𞤯𞤫𞤲𞤯𞤫 𞤶𞤢𞤲𞤺𞤭𞤲𞤣𞤫 𞤢𞤨𞥆 𞤃𞤢𞤸𞤵𞤣𞤫"
   },
   {
     "key": "communityHub",
     "english": "Community Hub",
     "french": "Centre Communautaire",
-    "current_adlam": "𞤘𞤵𞤩𞥆𞤵"
+    "current_adlam": "𞤈𞤫𞤲𞥆𞤣𞤮 𞤚𞤢𞤩𞤤𞤮"
   },
   {
     "key": "communityHubPrompt",
     "english": "Design a community platform for connecting locals with forums and event listings.",
     "french": "Créer une plateforme communautaire avec forums et événements locaux.",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤨𞤤𞤢𞤼𞤬𞤮𞤪𞤥 𞤱𞤭𞤯𞤭 𞤲𞤢𞤥𞤡𞤵𞤯𞤭𞤩𞥆𞤫 𞤬𞤮𞤪𞤵𞤥𞤶𞤭, ���𞤶𞤭𞤸𞤢𞤤 𞤤𞤢𞤩𞤵𞥅𞤶𞤭 𞤫 𞤧𞤭𞤬𞤲𞤢𞥄𞤶𞤭."
+    "current_adlam": "…𞤴𞤭𞤥𞤩𞤫 𞤶𞤮𞤳𞥆𞤵𞤣𞤫 𞤲𞤺𞤢𞤥 𞤨𞤤𞤢𞤼𞤬𞤮𞤪𞤥 𞤅𞤢𞤻𞤮𞤪𞤫"
   },
   {
     "key": "you",
     "english": "You",
     "french": "Vous",
-    "current_adlam": "𞤀𞤠𞤔𞤖"
+    "current_adlam": "𞤀𞤲𞥆𞤢"
   },
   {
     "key": "gandoAI",
     "english": "Gando AI",
     "french": "Gando AI",
-    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤀𞤋"
+    "current_adlam": "𞤉𞤢 𞤘𞤢𞤲𞤣𞤮"
   },
   {
     "key": "docsPageTitle",
     "english": "Gando Documentation",
     "french": "Documentation Gando",
-    "current_adlam": "𞤀𞤬𞤪𞤢𞤥𞤪𞤫 𞤘𞤢𞤲𞤣𞤮"
+    "current_adlam": "𞤁𞤫𞤬𞤼𞤫𞤪𞤣𞤵 𞤘𞤢𞤲𞤣𞤮"
   },
   {
     "key": "docsPageSubtitle",
     "english": "Everything you need to know to build with Gando AI",
     "french": "Tout ce que vous devez savoir pour utiliser Gando AI",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 𞤘𞤢𞤲𞤣𞤮"
+    "current_adlam": "𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 𞤦𞤢𞤤𞥆𞤢𞤤 𞤫 𞤥𞤢𞤸𞤵𞤣𞤫 𞤲𞤺𞤢𞤥 𞤶𞤢𞤲𞤺𞤵 𞤢 𞤸𞤢𞤲𥥆𞤣𞤫 𞤑𞤮"
   },
   {
     "key": "docsSection1Title",
     "english": "Creating your first app",
     "french": "Créer votre première app",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢"
+    "current_adlam": "𞤳𞤫𞤧𞤮 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤃𞤮𞤷𞥆𞤭𞤲𞤣𞤫"
   },
   {
     "key": "docsSection1Body",
     "english": "Simply describe the app you want to create in your language. Gando AI understands English, French, Fulani (ADLaM), Swahili, Yoruba, Hausa, and many more African languages. Be specific: mention the app type, desired features, and target audience for best results.",
     "french": "Décrivez simplement l'app que vous souhaitez créer dans votre langue. Gando AI comprend le français, l'anglais, le fulani et bien d'autres langues africaines. Soyez précis : mentionnez le type d'app, les fonctionnalités souhaitées et le public cible.",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤵 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢 𞤫 𞤆𞤵𞤤𞤢𞥄𞤪 𞤫 𞤘𞤢𞤲𞤣𞤮. 𞤘𞤢𞤲𞤣𞤮 𞤲𞤮𞤼𞥆𞤢𞥄 𞤯𞤵𞤥 𞤫 𞤥𞤢𞤸𞤵 𞤢𞤨𞥆 𞤲𞤮𞥅."
+    "current_adlam": "…𞤸𞤢𞤻𞤫𞥅𞤲𞤣𞤫 𞤀𞤬𞤪𞤭𞤳𞤢 𞤯𞤫𞤲𞤯𞤫 𞤫 ,𞤊𞤪𞤢𞤲𞤧𞤭 ,𞤆𞤵𞤤𞤢𞥄𞤪 𞤶𞤢𞤲𞤺𞤢 𞤲𞤮 𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 .𞤥𞤢𞥄𞤯𞤢 𞤯𞤫𞤲𞤯𞤢𞤤 𞤲𞤣𞤫𞤪 𞤫 𞤥𞤢𞥄𞤯𞤢 𞤢𞤨𞥆 𞤅𞤭𞤬𞤢𞥄"
   },
   {
     "key": "docsSection2Title",
     "english": "Previewing and editing",
     "french": "Prévisualiser et modifier",
-    "current_adlam": "𞤖𞤮𞤤𞤭𞤪𞤣𞤫 𞤢𞤨𞥆"
+    "current_adlam": "𞤏𞤢𞤴𞤤𞤵𞤣𞤫 𞤫 𞤖𞤮𞤤𞥆𞤭𞤪𞤣𞤫"
   },
   {
     "key": "docsSection2Body",
     "english": "After generation, use the Preview tab to see your app live in a real browser. Switch to Code to inspect or manually edit the HTML/CSS/JS. Continue chatting to iterate — just say what you want changed and Gando will update only that part.",
     "french": "Après génération, utilisez l'onglet Aperçu pour voir votre app en temps réel. Basculez sur Code pour inspecter ou modifier le HTML/CSS/JS. Continuez la conversation pour itérer — dites simplement ce que vous voulez changer.",
-    "current_adlam": "𞤁𞤢𞤩𞤦𞤮𞤪𞤣𞤫 𞤖𞤮𞤤𞥆𞤭𞤪𞤣𞤫 𞤱𞤫𞤤𞤭 𞤲𞤮𞥅𞤭 𞤢𞤨𞥆 𞤥𞤢𞥄𞤯𞤢. 𞤋𞤲𞤢 𞤑𞤮𞥅𞤣 𞤱𞤫𞤤𞤭 𞤲𞤮𞥅𞤭 𞤱𞤫𞤩𞥆𞤵𞤯𞤭."
+    "current_adlam": "…𞤥𞤢𞥄𞤯𞤢 𞤢𞤨𞥆 𞤲𞤣𞤄𞥄𞤪𞤢 𞤢 𞤲𞤺𞤢𞤥 𞤖𞤮𞤤𞥆𞤭𞤪𞤣𞤫 𞤚𞤢𞤩𞤤𞤮 𞤸𞤵𞥅𞤼𞤮𞤪 ,𞤥𞤢𞤸𞤵𞤣𞤫 𞤩𞤢𞥄𞤱𞤮 𞤲𞤣𞤫𞤪"
   },
   {
     "key": "docsSection3Title",
     "english": "Managing your projects",
     "french": "Gérer vos projets",
-    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫 𞤏𞤢𞤼𞥆𞤵𞤣𞤫"
+    "current_adlam": "𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤒𞤢𞥄𞤪𞤵𞤺𞤮𞤤"
   },
   {
     "key": "docsSection3Body",
     "english": "All your projects are automatically saved. Open the Projects section to see your full library, search by name, open any project to continue building, or delete ones you no longer need. Click a project's title in the workspace to rename it.",
     "french": "Tous vos projets sont sauvegardés automatiquement dans la section Projets. Cliquez sur un projet pour le rouvrir, renommez-le en cliquant sur son titre, ou supprimez-le depuis la liste.",
-    "current_adlam": "𞤁𞤢𞤩𞤦𞤮𞤪𞤣𞤫 𞤨𞤮𞤪𞤮𞤶𞤫 𞤫 𞤶𞤵𞥅𞤯𞤫 𞤯𞤵𞤥. 𞤖𞤢𞥄𞤤𞤵 𞤱𞤮𞥅𞤪𞤢𞥄 𞤯𞤵𞤥 𞤳𞤮 𞤥𞤢𞤸𞤵 𞤢𞤨𞥆."
+    "current_adlam": "…𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤚𞤢𞤩𞤤𞤮 𞤌𞤯𥥆𞤵𞤼𞤵 .𞤥𞤢𞤧𞤭𞤲 𞤶𞤵𞥅𞤯𞤫 𞤫 𞤪𞤫𞤧𞤫𞥅 𞤲𞤮 𞤥𞤢𞥄𞤯𞤢 𞤨𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭 𞤑𞤮"
   },
   {
     "key": "statusPageTitle",
     "english": "System Status",
     "french": "État du Système",
-    "current_adlam": "𞤅𞤭𞤧𞤼𞤫𞤥 𞤅𞤢𞤻𞤮𞤪𞤫"
+    "current_adlam": "𞤅𞤭𞤧𞤼𞤫𞤥 𞤐𞤮𞤲𞥆𞤣𞤫"
   },
   {
     "key": "statusPageSubtitle",
     "english": "Real-time monitoring of Gando AI services",
     "french": "Surveillance en temps réel de Gando AI",
-    "current_adlam": "𞤅𞤢𞤻𞤮𞤪𞤫 𞤘𞤢𞤲𞤣𞤮 𞤸𞤢𞤲𞤳𞤭𞤣𞤫"
+    "current_adlam": "𞤶𞤮𞤲𞤭 𞤶𞤮𞤲𞤭 𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 𞤺𞤮𞤤𞥆𞤫 𞤐𞤣𞤢𞥄𞤪𞤼𞤵𞤺𞤮𞤤"
   },
   {
     "key": "statusServer",
     "english": "Server",
     "french": "Serveur",
-    "current_adlam": "𞤐𞤵𞤲𞤪𞤵"
+    "current_adlam": "𞤲𞤫𞤼𞤱𞤮𞤪𞤳 𞤥𞤢𞤧𞤭𞤲"
   },
   {
     "key": "statusAI",
     "english": "AI Model",
     "french": "Modèle IA",
-    "current_adlam": "𞤘𞤢𞤲𞤣𞤮 𞤀𞤋"
+    "current_adlam": "𞤫𞤢 𞤘𞤢𞤲𞤣𞤮 𞤚𞤢𞤩𞤤𞤮"
   },
   {
     "key": "statusFirebase",
     "english": "Database",
     "french": "Base de données",
-    "current_adlam": "𞤔𞤢𞤴𞤫𞤪𞤦𞤫𞤧"
+    "current_adlam": "𞤘𞤮𞤤𞥆𞤭𞤪𞤯𞤭 𞤔𞤢𞤴𞤫𞤪𞤦𞤫𞤧"
   },
   {
     "key": "statusOperational",
@@ -645,19 +879,19 @@
     "key": "statusChecking",
     "english": "Checking…",
     "french": "Vérification…",
-    "current_adlam": "𞤕𞤫𞥅𞤰𞤭𞤯𞤭..."
+    "current_adlam": "…𞤐𞤣𞤄𞥄𞤪𞤼𞤵𞤺𞤮𞤤"
   },
   {
     "key": "statusLastChecked",
     "english": "Last checked",
     "french": "Dernière vérification",
-    "current_adlam": "𞤕𞤫𞥅𞤰𞤢𞥄𞤯𞤭 𞤸𞤫𞤩𞥆𞤵𞤣𞤫"
+    "current_adlam": "𞤇𞤫𞤲𞥆𞤵𞤲𞤺𞤮𞤤 𞤐𞤣𞤄𞥄𞤪𞤼𞤵𞤺𞤮𞤤"
   },
   {
     "key": "statusModel",
     "english": "Model",
     "french": "Modèle",
-    "current_adlam": "𞤃𞤮𞤣𞤫𞤤"
+    "current_adlam": "𞤐𞤭𞥅𞤧𞤢𞥄𞤪𞤫"
   },
   {
     "key": "settings",
@@ -675,43 +909,43 @@
     "key": "share",
     "english": "Share",
     "french": "Partager",
-    "current_adlam": "𞤧𞤫𞤲𞤣𞤵𞤼𞤵"
+    "current_adlam": "𞤅𞤫𞤲𞤣𞤵"
   },
   {
     "key": "deploy",
     "english": "Deploy",
     "french": "Déployer",
-    "current_adlam": "𞤖𞤵𞥅𞤼𞤮𞤪"
+    "current_adlam": "𞤐𞤫𞤼𞤱𞤮𞤪𞤳 𞤫 𞤒𞤢𞥄𞤪𞤭𞤲𞤣𞤫"
   },
   {
     "key": "language",
     "english": "ENGLISH",
     "french": "FRANÇAIS",
-    "current_adlam": "𞤖𞤢𞥄𞤤𞤢𞥄𞤶𞤭 (𞤀𞤁𞤂𞤀𞤃)"
+    "current_adlam": "𞤀𞤁𞤂𞤀𞤃"
   },
   {
     "key": "advanced",
     "english": "Advanced",
     "french": "Avancé",
-    "current_adlam": "𞤒𞤫𞥅𞤧𞤮"
+    "current_adlam": "𞤚𞤫𞤩𞥆𞤫 𞤒𞤫𞥅𞤧𞤮"
   },
   {
     "key": "errorNetwork",
     "english": "Network error. Please try again later.",
     "french": "Erreur réseau. Veuillez réessayer.",
-    "current_adlam": "𞤑𞤮 𞤲𞤵𞤥𞤳𞤯𞤢𞤱𞤦𞤫𞤣𞤯𞤮. 𞤀𞤯𞤢 𞤦𞤫𞤙𞤶𞤭𞤩𞤧𞤴𞤧𞤭."
+    "current_adlam": ".𞤳𞤢𞤯𞤭𞤼𞤵𞤲 𞤔𞤮𞤳𞥆𞤵 .𞤲𞤫𞤼𞤱𞤮𞤪𞤳 𞤊𞤭𞤣𞥆𞤭𞥅𞤲𞤣𞤫"
   },
   {
     "key": "errorGeneration",
     "english": "Generation error. Try again with a different description.",
     "french": "Erreur de génération. Réessayez avec une description différente.",
-    "current_adlam": "𞤊𞤭𞤣𞥆𞤭𞥅𞤲𞤣𞤫. 𞤀𞤯𞤢 𞤢𞤺𞤢𞤼𞤢𞥄𞤪𞤭𞤲𞤣𞤫."
+    "current_adlam": ".𞤥𞤢𞥄𞤯𞤢 𞤸𞤢𞥄𞤤𞤵 𞤏𞤢𞤴𞤤𞤵 .𞤃𞤢𞤸𞤵𞤣𞤫 𞤊𞤭𞤣𞥆𞤭𞥅𞤲𞤣𞤫"
   },
   {
     "key": "successGenerated",
     "english": "App generated! Explore the code and preview.",
     "french": "App générée ! Explorez le code et l'aperçu.",
-    "current_adlam": "𞤀𞤨𞥆 𞤥𞤢𞤸𞤢𞥄𞤯𞤭! 𞤖𞤮𞤤𞥆𞤭𞤪 𞤑𞤮𞥅𞤣 𞤫 𞤖𞤮𞤤𞥆𞤭𞤪𞤣𞤫."
+    "current_adlam": ".𞤖𞤮𞤤𞥆𞤭𞤪𞤣𞤫 𞤫 𞤑𞤮𞥅𞤣 𞤐𞤣𞤄𞥄𞤪 !𞤤𞤢𞥄𞤩𞤭 𞤲𞤮 𞤥𞤢𞤸𞤢𞥄𞤥𞤢 𞤀𞤨𞥆"
   },
   {
     "key": "suggestionDashboard",
@@ -723,19 +957,19 @@
     "key": "suggestionDashboardPrompt",
     "english": "Build a modern analytics dashboard with charts.",
     "french": "Créez un tableau de bord analytique moderne avec des graphiques.",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤼𞤢𞤩𞤤𞤮 𞤶𞤢𞤥𞤢𞥄𞤲𞤵 𞤲𞤺𞤢𞤥 𞤢𞤲𞤢𞤤𞤭𞤧."
+    "current_adlam": "…𞤤𞤭𞤥𞤮𞥅𞤪𞤫 𞤲𞤺𞤢𞤥 𞤶𞤢𞤥𞤢𞥄𞤲𞤵 𞤼𞤢𞤩𞤤𞤮 𞤃𞤢𞤸𞤵𞤣𞤫"
   },
   {
     "key": "suggestionLearning",
     "english": "Learning",
     "french": "Apprentissage",
-    "current_adlam": "𞤔𞤢𞤲𞤺𞤵𞤺𞤮"
+    "current_adlam": "𞤔𞤢𞤲𞤺𞤭𞤲𞤣𞤫"
   },
   {
     "key": "suggestionLearningPrompt",
     "english": "Create an educational app for learning new languages.",
     "french": "Créez une application éducative pour apprendre de nouvelles langues.",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤢𞤨𞥆 𞤶𞤢𞤲𞤺𞤵𞤺𞤮 𞤯𞤫𞤲𞤯𞤫 𞤳𞤫𞤧𞤫."
+    "current_adlam": "…𞤳𞤫𞤧𞤫 𞤯𞤫𞤲𞤯𞤫 𞤶𞤢𞤲𞤺𞤭𞤲𞤣𞤫 𞤢𞤨𞥆 𞤃𞤮𞤷𞥆𞤭𞤲𞤣𞤫"
   },
   {
     "key": "suggestionBusiness",
@@ -747,6 +981,354 @@
     "key": "suggestionBusinessPrompt",
     "english": "Make a professional business landing page.",
     "french": "Créez une page de destination professionnelle pour votre entreprise.",
-    "current_adlam": "𞤃𞤢𞤸𞤵 𞤶𞤢𞥄𞤪𞤮𞥅𞤪𞤫 𞤱𞤫𞤦 𞤲𞤶𞤫𞥅𞤴𞤺𞤵 𞤸𞤢𞤲𞥆𞤣𞤫𞥅𞤪𞤭."
+    "current_adlam": "…𞤸𞤢𞤲𞥆𞤣𞤫𞥅𞤪𞤭 𞤲𞤶𞤫𞥅𞤴𞤺𞤵 𞤶𞤢𞥄𞤪𞤮𞥅𞤪𞤫 𞤃𞤢𞤸𞤵𞤣𞤫"
+  },
+  {
+    "key": "chipEcommerce",
+    "english": "E-commerce store",
+    "french": "Boutique en ligne",
+    "current_adlam": "E-commerce store"
+  },
+  {
+    "key": "chipPortfolio",
+    "english": "Portfolio site",
+    "french": "Site portfolio",
+    "current_adlam": "Portfolio site"
+  },
+  {
+    "key": "chipRestaurant",
+    "english": "Restaurant menu",
+    "french": "Menu de restaurant",
+    "current_adlam": "Restaurant menu"
+  },
+  {
+    "key": "chipEvent",
+    "english": "Event landing page",
+    "french": "Page d'événement",
+    "current_adlam": "Event landing page"
+  },
+  {
+    "key": "chatsPageSubtitle",
+    "english": "Your conversations with Gando",
+    "french": "Vos conversations avec Gando",
+    "current_adlam": "Your conversations with Gando"
+  },
+  {
+    "key": "newChatLabel",
+    "english": "New chat",
+    "french": "Nouvelle discussion",
+    "current_adlam": "New chat"
+  },
+  {
+    "key": "noChatsTitle",
+    "english": "No chats yet.",
+    "french": "Aucune discussion pour le moment.",
+    "current_adlam": "No chats yet."
+  },
+  {
+    "key": "noChatsSubtitle",
+    "english": "Start one and it will show up here.",
+    "french": "Démarrez-en une pour la retrouver ici.",
+    "current_adlam": "Start one and it will show up here."
+  },
+  {
+    "key": "chatWithGando",
+    "english": "Chat with Gando",
+    "french": "Discuter avec Gando",
+    "current_adlam": "Chat with Gando"
+  },
+  {
+    "key": "backLabel",
+    "english": "Back",
+    "french": "Retour",
+    "current_adlam": "Back"
+  },
+  {
+    "key": "askGandoPlaceholder",
+    "english": "Ask Gando anything…",
+    "french": "Demandez tout à Gando…",
+    "current_adlam": "Ask Gando anything…"
+  },
+  {
+    "key": "describeAppPlaceholder",
+    "english": "Describe your app...",
+    "french": "Décrivez votre application...",
+    "current_adlam": "Describe your app..."
+  },
+  {
+    "key": "searchNoMatchTitle",
+    "english": "No projects match your search",
+    "french": "Aucun projet ne correspond à votre recherche",
+    "current_adlam": "No projects match your search"
+  },
+  {
+    "key": "searchNoMatchHint",
+    "english": "Try a different search term.",
+    "french": "Essayez un autre terme.",
+    "current_adlam": "Try a different search term."
+  },
+  {
+    "key": "describeToBuildHint",
+    "english": "Describe an app in any language and Gando will build it for you.",
+    "french": "Décrivez une application dans n'importe quelle langue et Gando la construira.",
+    "current_adlam": "Describe an app in any language and Gando will build it for you."
+  },
+  {
+    "key": "filterEmptyTitle",
+    "english": "No {filter} projects",
+    "french": "Aucun projet « {filter} »",
+    "current_adlam": "No {filter} projects"
+  },
+  {
+    "key": "filterEmptyLiveHint",
+    "english": "Publish a project and it will show up here.",
+    "french": "Publiez un projet pour le voir ici.",
+    "current_adlam": "Publish a project and it will show up here."
+  },
+  {
+    "key": "filterEmptySwitchHint",
+    "english": "Switch filters to see your projects.",
+    "french": "Changez de filtre pour voir vos projets.",
+    "current_adlam": "Switch filters to see your projects."
+  },
+  {
+    "key": "openFullPreviewLabel",
+    "english": "Open full preview ↗",
+    "french": "Ouvrir l'aperçu complet ↗",
+    "current_adlam": "Open full preview ↗"
+  },
+  {
+    "key": "originalPromptLabel",
+    "english": "Original prompt",
+    "french": "Prompt d'origine",
+    "current_adlam": "Original prompt"
+  },
+  {
+    "key": "assetsPageSubtitle",
+    "english": "Supported languages in Gando AI — switch your active language below.",
+    "french": "Langues prises en charge dans Gando AI — changez de langue ci-dessous.",
+    "current_adlam": "Supported languages in Gando AI — switch your active language below."
+  },
+  {
+    "key": "availableNowLabel",
+    "english": "Available now",
+    "french": "Disponible maintenant",
+    "current_adlam": "Available now"
+  },
+  {
+    "key": "comingSoonLabel",
+    "english": "Coming soon",
+    "french": "Bientôt disponible",
+    "current_adlam": "Coming soon"
+  },
+  {
+    "key": "activeLabel",
+    "english": "Active",
+    "french": "Active",
+    "current_adlam": "Active"
+  },
+  {
+    "key": "currentlyActiveLabel",
+    "english": "Currently Active",
+    "french": "Langue active",
+    "current_adlam": "Currently Active"
+  },
+  {
+    "key": "switchToLabel",
+    "english": "Switch to {name}",
+    "french": "Passer à {name}",
+    "current_adlam": "Switch to {name}"
+  },
+  {
+    "key": "speakersLabel",
+    "english": "Speakers",
+    "french": "Locuteurs",
+    "current_adlam": "Speakers"
+  },
+  {
+    "key": "regionLabel",
+    "english": "Region",
+    "french": "Région",
+    "current_adlam": "Region"
+  },
+  {
+    "key": "soonLabel",
+    "english": "Soon",
+    "french": "Bientôt",
+    "current_adlam": "Soon"
+  },
+  {
+    "key": "publishLabel",
+    "english": "Publish",
+    "french": "Publier",
+    "current_adlam": "Publish"
+  },
+  {
+    "key": "liveLabel",
+    "english": "Live",
+    "french": "En ligne",
+    "current_adlam": "Live"
+  },
+  {
+    "key": "appLiveLabel",
+    "english": "● Your app is live",
+    "french": "● Votre app est en ligne",
+    "current_adlam": "● Your app is live"
+  },
+  {
+    "key": "chooseLinkNameLabel",
+    "english": "Choose your link name",
+    "french": "Choisissez le nom du lien",
+    "current_adlam": "Choose your link name"
+  },
+  {
+    "key": "linkNameHint",
+    "english": "Lowercase letters, numbers and hyphens only.",
+    "french": "Minuscules, chiffres et tirets uniquement.",
+    "current_adlam": "Lowercase letters, numbers and hyphens only."
+  },
+  {
+    "key": "linkNameTaken",
+    "english": "That name is taken — try another.",
+    "french": "Ce nom est déjà pris — essayez-en un autre.",
+    "current_adlam": "That name is taken — try another."
+  },
+  {
+    "key": "linkNameInvalid",
+    "english": "3–40 chars: lowercase letters, numbers, hyphens.",
+    "french": "3–40 caractères : lettres minuscules, chiffres, tirets.",
+    "current_adlam": "3–40 chars: lowercase letters, numbers, hyphens."
+  },
+  {
+    "key": "linkNameFailed",
+    "english": "Failed — try again.",
+    "french": "Échec — réessayez.",
+    "current_adlam": "Failed — try again."
+  },
+  {
+    "key": "openLinkLabel",
+    "english": "Open ↗",
+    "french": "Ouvrir ↗",
+    "current_adlam": "Open ↗"
+  },
+  {
+    "key": "unpublishLabel",
+    "english": "Unpublish",
+    "french": "Dépublier",
+    "current_adlam": "Unpublish"
+  },
+  {
+    "key": "saveNameLabel",
+    "english": "Save name",
+    "french": "Renommer",
+    "current_adlam": "Save name"
+  },
+  {
+    "key": "copyLinkLabel",
+    "english": "Copy link",
+    "french": "Copier le lien",
+    "current_adlam": "Copy link"
+  },
+  {
+    "key": "inboxLabel",
+    "english": "Inbox",
+    "french": "Boîte",
+    "current_adlam": "Inbox"
+  },
+  {
+    "key": "inboxTitle",
+    "english": "Messages from your app",
+    "french": "Messages de votre app",
+    "current_adlam": "Messages from your app"
+  },
+  {
+    "key": "inboxSubtitle",
+    "english": "Every form submitted on your published app lands here.",
+    "french": "Chaque formulaire envoyé sur votre app publiée arrive ici.",
+    "current_adlam": "Every form submitted on your published app lands here."
+  },
+  {
+    "key": "inboxEmptyTitle",
+    "english": "No messages yet.",
+    "french": "Aucun message pour le moment.",
+    "current_adlam": "No messages yet."
+  },
+  {
+    "key": "inboxEmptyPublishedHint",
+    "english": "Share your app link — form submissions will show up here.",
+    "french": "Partagez le lien de votre app — les envois de formulaires apparaîtront ici.",
+    "current_adlam": "Share your app link — form submissions will show up here."
+  },
+  {
+    "key": "inboxEmptyUnpublishedHint",
+    "english": "Publish your app first to start receiving messages.",
+    "french": "Publiez d'abord votre app pour recevoir des messages.",
+    "current_adlam": "Publish your app first to start receiving messages."
+  },
+  {
+    "key": "deleteLabel",
+    "english": "Delete",
+    "french": "Supprimer",
+    "current_adlam": "Delete"
+  },
+  {
+    "key": "statusChipLive",
+    "english": "live",
+    "french": "en ligne",
+    "current_adlam": "live"
+  },
+  {
+    "key": "statusChipBuilding",
+    "english": "building",
+    "french": "en cours",
+    "current_adlam": "building"
+  },
+  {
+    "key": "statusChipDraft",
+    "english": "draft",
+    "french": "brouillon",
+    "current_adlam": "draft"
+  },
+  {
+    "key": "maxImagesNote",
+    "english": "Up to {n} images per message.",
+    "french": "Maximum {n} images par message.",
+    "current_adlam": "Up to {n} images per message."
+  },
+  {
+    "key": "imageUploadFailedNote",
+    "english": "Image upload failed — building without embedding them.",
+    "french": "Échec de l'envoi des images — l'app sera générée sans les intégrer.",
+    "current_adlam": "Image upload failed — building without embedding them."
+  },
+  {
+    "key": "yourBuildModelLabel",
+    "english": "Your selected build model",
+    "french": "Votre modèle de génération",
+    "current_adlam": "Your selected build model"
+  },
+  {
+    "key": "healthProbeLabel",
+    "english": "Health probe",
+    "french": "Sonde de disponibilité",
+    "current_adlam": "Health probe"
+  },
+  {
+    "key": "contactSupportLabel",
+    "english": "Contact Support",
+    "french": "Contacter le support",
+    "current_adlam": "Contact Support"
+  },
+  {
+    "key": "appErrorChip",
+    "english": "Something broke",
+    "french": "Un problème est survenu",
+    "current_adlam": "Something broke"
+  },
+  {
+    "key": "fixItLabel",
+    "english": "Fix it",
+    "french": "Réparer",
+    "current_adlam": "Fix it"
   }
 ]
