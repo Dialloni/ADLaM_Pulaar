@@ -10,6 +10,8 @@ import { cn } from '../lib/utils';
 import type { User } from '../firebase';
 import type { Project } from '../types';
 import { AudioRecorder } from './AudioRecorder';
+import { ProjectThumb } from './ProjectThumb';
+import { adlamToLatin, latinToAdlam } from '../../lib/translit';
 // pdfjs (~400 KB) loads on first PDF use, not with the page
 async function getPdfjs() {
   const pdfjsLib = await import('pdfjs-dist');
@@ -19,7 +21,7 @@ async function getPdfjs() {
 
 type SubmissionStatus = 'pending' | 'verified' | 'rejected' | 'needs_adlam';
 type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
-type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community';
+type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community' | 'translit';
 type DictStatus = 'draft' | 'verified';
 
 interface DictTerm {
@@ -180,7 +182,9 @@ const ADMIN_I18N = {
     exportJsonl: 'Export JSONL',
     firestoreError: 'Firestore error:',
     statNeedsAdlam: 'Needs ADLaM', statPending: 'Pending', statVerified: 'Verified', statRejected: 'Rejected',
-    tabQueue: 'Review Queue', tabCommunity: 'Community', tabUpload: 'Upload PDFs', tabPaste: 'Paste Text', tabDictionary: 'Dictionary',
+    tabQueue: 'Review Queue', tabCommunity: 'Community', tabUpload: 'Upload PDFs', tabPaste: 'Paste Text', tabDictionary: 'Dictionary', tabTranslit: 'Transliterator',
+    translitHint: 'Type in either box — the other converts live. Rules follow the official Adlam book (Adlam_book/).',
+    translitLatin: 'Latin (Pulaar)', translitAdlam: 'ADLaM',
     communityHint: 'Projects shared by users. Approve to publish as a community template; reject to hide.',
     loading: 'Loading…', noProjects: 'No projects awaiting review.', owner: 'owner',
     approve: 'Approve', reject: 'Reject', confirm: 'Confirm', cancel: 'Cancel', save: 'Save', edit: '✏️ Edit',
@@ -226,7 +230,9 @@ const ADMIN_I18N = {
     exportJsonl: 'Exporter JSONL',
     firestoreError: 'Erreur Firestore :',
     statNeedsAdlam: 'ADLaM requis', statPending: 'En attente', statVerified: 'Vérifiés', statRejected: 'Rejetés',
-    tabQueue: 'File de révision', tabCommunity: 'Communauté', tabUpload: 'Importer des PDF', tabPaste: 'Coller du texte', tabDictionary: 'Dictionnaire',
+    tabQueue: 'File de révision', tabCommunity: 'Communauté', tabUpload: 'Importer des PDF', tabPaste: 'Coller du texte', tabDictionary: 'Dictionnaire', tabTranslit: 'Translittérateur',
+    translitHint: "Écrivez dans l'une des zones — l'autre se convertit en direct. Règles selon le livre officiel ADLaM (Adlam_book/).",
+    translitLatin: 'Latin (pulaar)', translitAdlam: 'ADLaM',
     communityHint: 'Projets partagés par les utilisateurs. Approuvez pour publier comme modèle communautaire ; rejetez pour masquer.',
     loading: 'Chargement…', noProjects: 'Aucun projet en attente de révision.', owner: 'propriétaire',
     approve: 'Approuver', reject: 'Rejeter', confirm: 'Confirmer', cancel: 'Annuler', save: 'Enregistrer', edit: '✏️ Modifier',
@@ -272,6 +278,10 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
   // ADLaM admin strings pending native review — falls back to English for now.
   const L = langCode === 'fr' ? ADMIN_I18N.fr : ADMIN_I18N.en;
   const [tab, setTab] = useState<Tab>('queue');
+
+  /* ── TRANSLITERATOR STATE ── */
+  const [trLatin, setTrLatin] = useState('');
+  const [trAdlam, setTrAdlam] = useState('');
 
   /* ── QUEUE STATE ── */
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -778,6 +788,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
           { id: 'upload', label: L.tabUpload },
           { id: 'paste', label: L.tabPaste },
           { id: 'dictionary', label: L.tabDictionary },
+          { id: 'translit', label: L.tabTranslit },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className="px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex-shrink-0"
@@ -791,6 +802,40 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
         ))}
       </div>
 
+      {/* ── TRANSLITERATOR TAB ── */}
+      {tab === 'translit' && (
+        <div className="space-y-4 max-w-3xl">
+          <p className="text-sm text-[var(--text-muted)]">{L.translitHint}</p>
+          <div className="rounded-2xl border border-[var(--border)] p-4 space-y-4" style={{ background: 'var(--card-bg)' }}>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-[var(--text-muted)] mb-1.5">{L.translitAdlam}</label>
+              <textarea
+                value={trAdlam}
+                onChange={e => { setTrAdlam(e.target.value); setTrLatin(adlamToLatin(e.target.value)); }}
+                rows={4}
+                dir="rtl"
+                spellCheck={false}
+                placeholder="𞤆𞤵𞤤𞤢𞥄𞤪…"
+                className="w-full rounded-xl px-4 py-3 text-xl outline-none resize-y"
+                style={{ background: 'var(--app-bg)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontFamily: 'var(--font-adlam)' }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wide text-[var(--text-muted)] mb-1.5">{L.translitLatin}</label>
+              <textarea
+                value={trLatin}
+                onChange={e => { setTrLatin(e.target.value); setTrAdlam(latinToAdlam(e.target.value)); }}
+                rows={4}
+                spellCheck={false}
+                placeholder="Pulaar e ɓamtaare…"
+                className="w-full rounded-xl px-4 py-3 text-base outline-none resize-y"
+                style={{ background: 'var(--app-bg)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── COMMUNITY TAB ── */}
       {tab === 'community' && (
         <div className="space-y-4">
@@ -803,10 +848,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {communityProjects.map(cp => (
                 <div key={cp.id} className="rounded-2xl border border-[var(--border)] overflow-hidden" style={{ background: 'var(--card-bg)' }}>
-                  <div className="relative overflow-hidden" style={{ height: 200, background: 'var(--app-bg)' }}>
-                    <iframe srcDoc={cp.code} title={cp.name} className="border-none pointer-events-none"
-                      style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
-                  </div>
+                  <ProjectThumb code={cp.code} height={200} />
                   <div className="p-4">
                     <h3 className="font-black text-[var(--text-primary)] text-sm mb-1 truncate">{cp.name}</h3>
                     <p className="text-[var(--text-muted)] text-xs line-clamp-2 mb-1">{cp.description}</p>
