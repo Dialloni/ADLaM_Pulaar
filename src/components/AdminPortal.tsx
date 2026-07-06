@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, setDoc,
+  collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, setDoc, getDocs, getCountFromServer,
   db, serverTimestamp, addDoc, storage, ref, uploadBytes, uploadBytesResumable, getDownloadURL,
   auth,
 } from '../firebase';
@@ -21,7 +21,7 @@ async function getPdfjs() {
 
 type SubmissionStatus = 'pending' | 'verified' | 'rejected' | 'needs_adlam';
 type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
-type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community' | 'translit';
+type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community' | 'translit' | 'voice';
 type DictStatus = 'draft' | 'verified';
 
 interface DictTerm {
@@ -185,6 +185,11 @@ const ADMIN_I18N = {
     tabQueue: 'Review Queue', tabCommunity: 'Community', tabUpload: 'Upload PDFs', tabPaste: 'Paste Text', tabDictionary: 'Dictionary', tabTranslit: 'Transliterator',
     translitHint: 'Type in either box — the other converts live. Rules follow the official Adlam book (Adlam_book/).',
     translitLatin: 'Latin (Pulaar)', translitAdlam: 'ADLaM',
+    tabVoice: 'Voice Data',
+    voiceHint: 'Every verified text read aloud = one training pair. Goal: 1,000 training-ready clips for the first Pulaar voice fine-tune.',
+    voiceReadyLabel: 'training-ready (verified + audio)', voiceAwaitingLabel: 'recorded, awaiting verification',
+    voiceListTitle: 'Training-ready clips', voiceExport: 'Export dataset (JSONL)',
+    voiceNone: 'No clips yet — record while verifying in the Review Queue.',
     communityHint: 'Projects shared by users. Approve to publish as a community template; reject to hide.',
     loading: 'Loading…', noProjects: 'No projects awaiting review.', owner: 'owner',
     approve: 'Approve', reject: 'Reject', confirm: 'Confirm', cancel: 'Cancel', save: 'Save', edit: '✏️ Edit',
@@ -233,6 +238,11 @@ const ADMIN_I18N = {
     tabQueue: 'File de révision', tabCommunity: 'Communauté', tabUpload: 'Importer des PDF', tabPaste: 'Coller du texte', tabDictionary: 'Dictionnaire', tabTranslit: 'Translittérateur',
     translitHint: "Écrivez dans l'une des zones — l'autre se convertit en direct. Règles selon le livre officiel ADLaM (Adlam_book/).",
     translitLatin: 'Latin (pulaar)', translitAdlam: 'ADLaM',
+    tabVoice: 'Données vocales',
+    voiceHint: "Chaque texte vérifié lu à voix haute = une paire d'entraînement. Objectif : 1 000 clips prêts pour le premier fine-tune vocal pulaar.",
+    voiceReadyLabel: 'prêts (vérifiés + audio)', voiceAwaitingLabel: 'enregistrés, en attente de vérification',
+    voiceListTitle: "Clips prêts pour l'entraînement", voiceExport: 'Exporter le dataset (JSONL)',
+    voiceNone: "Aucun clip pour l'instant — enregistrez en vérifiant dans la file de révision.",
     communityHint: 'Projets partagés par les utilisateurs. Approuvez pour publier comme modèle communautaire ; rejetez pour masquer.',
     loading: 'Chargement…', noProjects: 'Aucun projet en attente de révision.', owner: 'propriétaire',
     approve: 'Approuver', reject: 'Rejeter', confirm: 'Confirmer', cancel: 'Annuler', save: 'Enregistrer', edit: '✏️ Modifier',
@@ -282,6 +292,50 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
   /* ── TRANSLITERATOR STATE ── */
   const [trLatin, setTrLatin] = useState('');
   const [trAdlam, setTrAdlam] = useState('');
+
+  /* ── VOICE DATA STATE ── */
+  const VOICE_GOAL = 1000;
+  const [voiceCount, setVoiceCount] = useState<number | null>(null);
+  const [voiceClips, setVoiceClips] = useState<Submission[]>([]);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  useEffect(() => {
+    if (tab !== 'voice') return;
+    setVoiceLoading(true);
+    (async () => {
+      try {
+        // Count every recorded clip (instructor readings), then list the latest verified pairs.
+        const cnt = await getCountFromServer(query(collection(db, 'corpus_submissions'), where('pulaar_audio_url', '>', '')));
+        const snap = await getDocs(query(collection(db, 'corpus_submissions'), where('status', '==', 'verified'), limit(300)));
+        const clips = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Submission))
+          .filter(s => s.pulaar_audio_url || s.audio_url);
+        setVoiceCount(cnt.data().count);
+        setVoiceClips(clips);
+      } catch (e) {
+        console.error('voice data load error:', e);
+        setVoiceCount(0);
+      } finally {
+        setVoiceLoading(false);
+      }
+    })();
+  }, [tab]);
+  const exportVoiceDataset = () => {
+    // JSONL: one training pair per line; the fine-tune script downloads audio_url later.
+    const jsonl = voiceClips.map(s => JSON.stringify({
+      id: s.id,
+      audio_url: s.pulaar_audio_url || s.audio_url,
+      text_adlam: s.adlam_text || s.raw_text,
+      text_latin: adlamToLatin(s.adlam_text || s.raw_text),
+      domain: s.domain,
+      verified_by: s.verified_by,
+    })).join('\n');
+    const url = URL.createObjectURL(new Blob([jsonl], { type: 'application/jsonl' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gando-voice-dataset-${new Date().toISOString().slice(0, 10)}.jsonl`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   /* ── QUEUE STATE ── */
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -789,6 +843,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
           { id: 'paste', label: L.tabPaste },
           { id: 'dictionary', label: L.tabDictionary },
           { id: 'translit', label: L.tabTranslit },
+          { id: 'voice', label: L.tabVoice },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className="px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex-shrink-0"
@@ -832,6 +887,65 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
                 style={{ background: 'var(--app-bg)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── VOICE DATA TAB ── */}
+      {tab === 'voice' && (
+        <div className="space-y-5 max-w-3xl">
+          <p className="text-sm text-[var(--text-muted)]">{L.voiceHint}</p>
+          {voiceLoading && voiceCount === null ? (
+            <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm"><RefreshCw className="w-4 h-4 animate-spin" /> {L.loading}</div>
+          ) : (() => {
+            const ready = voiceClips.length;
+            const awaiting = Math.max(0, (voiceCount ?? 0) - voiceClips.filter(s => s.pulaar_audio_url).length);
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border p-5" style={{ background: 'var(--card-bg)', borderColor: '#22c55e44' }}>
+                  <div className="flex items-end gap-2 mb-1">
+                    <span className="text-4xl font-black tabular-nums" style={{ color: '#4ade80' }}>{ready}</span>
+                    <span className="text-sm font-bold text-[var(--text-muted)] pb-1.5">/ {VOICE_GOAL}</span>
+                  </div>
+                  <p className="text-xs font-bold text-[var(--text-muted)] mb-3">{L.voiceReadyLabel}</p>
+                  <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--btn-bg)', border: '1px solid var(--border-subtle)' }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (ready / VOICE_GOAL) * 100)}%`, background: 'linear-gradient(90deg, #3b82f6, #fd8b00)', minWidth: ready ? 6 : 0 }} />
+                  </div>
+                </div>
+                <div className="rounded-2xl border p-5" style={{ background: 'var(--card-bg)', borderColor: '#fd8b0044' }}>
+                  <div className="flex items-end gap-2 mb-1">
+                    <span className="text-4xl font-black tabular-nums" style={{ color: '#fd8b00' }}>{awaiting}</span>
+                  </div>
+                  <p className="text-xs font-bold text-[var(--text-muted)]">{L.voiceAwaitingLabel}</p>
+                </div>
+              </div>
+            );
+          })()}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-black uppercase tracking-wide text-[var(--text-muted)]">{L.voiceListTitle}</h3>
+              {voiceClips.length > 0 && (
+                <button onClick={exportVoiceDataset}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all"
+                  style={{ background: '#3b82f61a', color: '#3b82f6', border: '1px solid #3b82f633' }}>
+                  <Download className="w-3.5 h-3.5" /> {L.voiceExport}
+                </button>
+              )}
+            </div>
+            {voiceClips.length === 0 && !voiceLoading ? (
+              <div className="py-10 text-center text-[var(--text-faint)] text-sm">{L.voiceNone}</div>
+            ) : (
+              <div className="space-y-2">
+                {voiceClips.map(s => (
+                  <div key={s.id} className="rounded-xl border border-[var(--border-subtle)] p-3 flex flex-col sm:flex-row sm:items-center gap-3" style={{ background: 'var(--card-bg)' }}>
+                    <audio controls preload="none" src={s.pulaar_audio_url || s.audio_url || undefined} className="h-9 w-full sm:w-64 flex-shrink-0" />
+                    <p dir="rtl" className="flex-1 text-base text-[var(--text-primary)] leading-relaxed break-words" style={{ fontFamily: 'var(--font-adlam)' }}>
+                      {s.adlam_text || s.raw_text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
