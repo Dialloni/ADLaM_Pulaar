@@ -117,7 +117,7 @@ flowchart LR
 - 🩹 **Self-healing preview** — runtime errors and blank screens surface as a one-tap **Fix it** chip; the exact error goes to the model with a minimal-fix instruction
 - 💬 **Iterative chat edits** — refine through conversation; incremental edits with version history + one-click revert
 - 🖼 **Vision input** — attach an image (sketch, screenshot, photo) and the model *sees* it — sketch-to-app
-- 🎙 **Voice in, voice out** — record your prompt (Whisper transcription, ADLaM-aware) and hear replies (TTS with ADLaM→Latin transliteration)
+- 🎙 **Voice in, voice out — real Pulaar** — speak Pulaar and get ADLaM text (Meta MMS speech recognition, Fula-trained, Gemini fallback); hear replies in a Pulaar voice (MMS TTS) with a per-user speed control (1× / 0.8× / 0.7×). Both ride the rule-based ADLaM↔Latin transliterator (`lib/translit.ts`, rules from the official Adlam book) on a self-hosted voice service (free HF Space)
 - ⏹ **Stop mid-build** — cancel keeps partial work; stopped-before-code restores your prompt
 - 🔀 **Build / Chat modes** — app generation or pure conversation
 - 👍👎 **RLHF feedback** — thumbs ratings saved to Firestore for future fine-tuning
@@ -156,6 +156,8 @@ flowchart LR
 - 📖 **Dictionary** — verified term registry (ADLaM · Latin · French) with draft→verified flow and JSON export
 - 🌍 **Community moderation** — approve user-shared projects into the public template gallery
 - 📤 **JSONL export** — one-click download of the verified corpus for fine-tuning
+- 🔤 **Transliterator tab** — live two-way ADLaM↔Latin converter for native-speaker rule review (long vowels 𞥄/𞥅, gemination 𞥆, nyondal — per the official Adlam book)
+- 🎙 **Voice Data dashboard** — training-ready (verified + audio) vs awaiting-verification counts, progress bar to the 1,000-clip fine-tune goal, per-clip audio players, JSONL dataset export
 - 🤖 **Telegram harvester** — scheduled bot scrapes ADLaM text from groups and the web, dedups, and feeds the queue (separate Railway service)
 
 ---
@@ -345,6 +347,7 @@ npm run lint       # TypeScript type-check
 
 npx tsx scripts/dump-i18n.ts           # export translation worklist
 npx tsx scripts/apply-adlam.ts <file>  # apply verified ADLaM translations
+npx tsx scripts/check-translit.ts      # transliterator rule assertions
 ```
 
 ---
@@ -364,6 +367,10 @@ npx tsx scripts/apply-adlam.ts <file>  # apply verified ADLaM translations
 
 ### Shipped
 
+- [x] **Rule-based ADLaM↔Latin transliterator** (`lib/translit.ts`) — conventions from the official Adlam book; powers all voice features + admin test tab
+- [x] **ADLaM spelling normalizer** — model output auto-corrected so lengtheners only sit on vowels (𞥄 on 𞤢, 𞥅 on e/i/o/u) and gemination 𞥆 only on consonants
+- [x] **Real Pulaar voice** — Meta MMS TTS + speech recognition self-hosted on a free HF Space; speed control; browser/Gemini fallbacks
+- [x] **Voice Data dashboard** — training-pair counter (goal 1,000 clips), clip players, JSONL export; instructor verify+record flow feeds it
 - [x] Claude Sonnet 4.6 default (internal ADLaM eval winner) with Gemini fallback + Groq free tier
 - [x] Live streaming generation with split-screen build view
 - [x] Resizable chat/preview split pane with snap-collapse
