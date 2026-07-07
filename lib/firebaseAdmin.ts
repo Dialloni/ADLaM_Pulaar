@@ -34,3 +34,18 @@ export function adminStorage() {
   initAdmin();
   return getStorage().bucket();
 }
+
+// Mirrors isAdmin() in firestore.rules + AuthContext.tsx: the bootstrap owner
+// email, or any email with a doc in /admins. Used to exempt admins from quotas.
+const BOOTSTRAP_ADMIN = 'gandoadlam25@gmail.com';
+
+export async function isAdminEmail(email: string | undefined): Promise<boolean> {
+  if (!email) return false;
+  const e = email.toLowerCase();
+  if (e === BOOTSTRAP_ADMIN) return true;
+  try {
+    return (await adminDb().collection('admins').doc(e).get()).exists;
+  } catch {
+    return false;
+  }
+}

@@ -4,7 +4,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
-import { verifyIdToken } from './lib/firebaseAdmin';
+import { verifyIdToken, isAdminEmail } from './lib/firebaseAdmin';
 import { runStream, translateText, chatStream } from './lib/llm';
 import { checkRateLimit, RATE_LIMIT_MESSAGE, type RateKind } from './lib/rateLimit';
 import { loadPublishedApp, NOT_FOUND_HTML, PUBLISH_CSP } from './lib/publishPage';
@@ -153,13 +153,15 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    (req as AuthedRequest).uid = (await verifyIdToken(token)).uid;
+    const decoded = await verifyIdToken(token);
+    (req as AuthedRequest).uid = decoded.uid;
+    (req as AuthedRequest).email = decoded.email;
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
-type AuthedRequest = Request & { uid: string };
+type AuthedRequest = Request & { uid: string; email?: string };
 
 // Shared secret for the self-hosted voice Space (scraper/voice_api.py). The Space
 // only enforces it when VOICE_SHARED_SECRET is set on both sides.
@@ -168,10 +170,12 @@ function voiceSecretHeader(): Record<string, string> {
   return secret ? { 'x-voice-secret': secret } : {};
 }
 
-// Daily per-user quota on the routes that spend our LLM credits (BYOK exempt).
+// Daily per-user quota on the routes that spend our LLM credits. Exempt:
+// BYOK (user's own key) and admins (bootstrap email or /admins doc).
 function meter(kind: RateKind) {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (req.body?.byok?.apiKey) return next();
+    if (await isAdminEmail((req as AuthedRequest).email)) return next();
     const { ok } = await checkRateLimit((req as AuthedRequest).uid, kind);
     if (!ok) return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
     next();

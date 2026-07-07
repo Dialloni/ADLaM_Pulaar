@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyIdToken } from '../lib/firebaseAdmin';
+import { verifyIdToken, isAdminEmail } from '../lib/firebaseAdmin';
 import { chatStream } from '../lib/llm';
 import { checkRateLimit, RATE_LIMIT_MESSAGE } from '../lib/rateLimit';
 
@@ -12,16 +12,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const token = (req.headers.authorization ?? '').split('Bearer ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  let uid: string;
-  try { uid = (await verifyIdToken(token)).uid; } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
+  let uid: string; let email: string | undefined;
+  try { const d = await verifyIdToken(token); uid = d.uid; email = d.email; } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
 
   const { prompt, history, currentCode, preferredLanguage, provider, byok, images } = req.body ?? {};
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt is required' });
   }
 
-  // BYOK runs on the user's own key/quota — only meter requests we pay for.
-  if (!byok?.apiKey) {
+  // BYOK runs on the user's own key/quota; admins are exempt — only meter requests we pay for.
+  if (!byok?.apiKey && !(await isAdminEmail(email))) {
     const { ok } = await checkRateLimit(uid, 'chat');
     if (!ok) return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
   }
