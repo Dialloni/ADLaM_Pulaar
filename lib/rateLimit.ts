@@ -7,6 +7,12 @@ const DAILY_LIMITS = {
   generate: 30,
   edit: 100,
   chat: 150,
+  // Utility AI routes — all spend our Gemini/Anthropic credits, so cap them too.
+  decode: 100,
+  translate: 200,
+  ocr: 60,
+  transcribe: 120,
+  speak: 120,
 } as const;
 
 export type RateKind = keyof typeof DAILY_LIMITS;

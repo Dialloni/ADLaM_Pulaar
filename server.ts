@@ -312,7 +312,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/decode', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/decode', requireAuth, meter('decode'), async (req: Request, res: Response) => {
     const { text } = req.body ?? {};
     if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text required' });
     if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
@@ -341,7 +341,7 @@ ${text}`,
     }
   });
 
-  app.post('/api/translate', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/translate', requireAuth, meter('translate'), async (req: Request, res: Response) => {
     const { text, targetLanguage } = req.body ?? {};
     if (!text || typeof text !== 'string' || !targetLanguage || typeof targetLanguage !== 'string') {
       return res.status(400).json({ error: 'text and targetLanguage are required' });
@@ -355,7 +355,7 @@ ${text}`,
     }
   });
 
-  app.post('/api/ocr', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/ocr', requireAuth, meter('ocr'), async (req: Request, res: Response) => {
     const { imageBase64, mimeType = 'image/png' } = req.body ?? {};
     if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
     if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
@@ -393,7 +393,7 @@ Output ONLY the extracted text, nothing else.`;
     }
   });
 
-  app.post('/api/transcribe', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/transcribe', requireAuth, meter('transcribe'), async (req: Request, res: Response) => {
     const { audio, mimeType, language, languageCode } = req.body ?? {};
     if (!audio || !mimeType) {
       return res.status(400).json({ error: 'audio and mimeType required' });
@@ -441,7 +441,7 @@ Output ONLY the extracted text, nothing else.`;
     }
   });
 
-  app.post('/api/speak', requireAuth, async (req: Request, res: Response) => {
+  app.post('/api/speak', requireAuth, meter('speak'), async (req: Request, res: Response) => {
     const { text, languageCode } = req.body ?? {};
     if (!text) return res.status(400).json({ error: 'text required' });
 
