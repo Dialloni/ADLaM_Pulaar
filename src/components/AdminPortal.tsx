@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, setDoc, getDocs, getCountFromServer,
+  collection, query, where, orderBy, limit, onSnapshot, updateDoc, deleteDoc, doc, getDoc, setDoc, getDocs, getCountFromServer,
   db, serverTimestamp, addDoc, storage, ref, uploadBytes, uploadBytesResumable, getDownloadURL,
   auth,
 } from '../firebase';
 import adlamDictData from '../../adlam_dict.json';
-import { CheckCircle2, XCircle, Download, RefreshCw, Upload, FileText, X, BookMarked } from 'lucide-react';
+import { CheckCircle2, XCircle, Download, RefreshCw, Upload, FileText, X, BookMarked, Trash2, RotateCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { User } from '../firebase';
 import type { Project } from '../types';
@@ -116,25 +116,37 @@ async function extractPdfText(file: File): Promise<{ text: string; pages: number
   return { text: parts.join('\n'), pages: pdf.numPages };
 }
 
-// Render one PDF page to a JPEG base64 string (browser canvas).
-async function renderPageToJpeg(page: any, scale = 2): Promise<string> {
+// Render one PDF page to a lossless PNG base64 string (browser canvas).
+// PNG + higher scale keeps ADLaM's thin curved glyphs sharp — JPEG compression
+// smeared them and hurt OCR accuracy. Payload rides the 25MB /api/ocr limit.
+async function renderPageToPng(page: any, scale = 3): Promise<string> {
   const viewport = page.getViewport({ scale });
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   const ctx = canvas.getContext('2d')!;
   await page.render({ canvasContext: ctx, viewport }).promise;
-  // JPEG q0.9 keeps payload small (well under Vercel 4.5MB inbound limit)
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  const dataUrl = canvas.toDataURL('image/png');
   return dataUrl.split(',')[1];
 }
 
-async function ocrOneImage(base64: string, token: string): Promise<string> {
+// Read an uploaded image file straight to base64 (for direct JPG/PNG uploads).
+async function fileToBase64(file: File): Promise<string> {
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+  return dataUrl.split(',')[1];
+}
+
+async function ocrOneImage(base64: string, token: string, mimeType = 'image/png'): Promise<string> {
   for (let attempt = 0; attempt <= 4; attempt++) {
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg' }),
+      body: JSON.stringify({ imageBase64: base64, mimeType }),
     });
     // 429 rate limit and transient 5xx (Gemini INTERNAL/UNAVAILABLE) are both retryable.
     if ((res.status === 429 || res.status >= 500) && attempt < 4) {
@@ -188,8 +200,8 @@ async function ocrPdfWithGemini(
         const pageNum = pageNums[idx];
         try {
           const page = await pdf.getPage(pageNum);
-          const base64 = await renderPageToJpeg(page, 2);
-          texts[idx] = await ocrOneImage(base64, token);
+          const base64 = await renderPageToPng(page, 3);
+          texts[idx] = await ocrOneImage(base64, token, 'image/png');
         } catch (err) {
           // One flaky page shouldn't kill a whole book — skip it, keep the rest.
           failed++;
@@ -254,8 +266,8 @@ const ADMIN_I18N = {
     communityHint: 'Projects shared by users. Approve to publish as a community template; reject to hide.',
     loading: 'Loading…', noProjects: 'No projects awaiting review.', owner: 'owner',
     approve: 'Approve', reject: 'Reject', confirm: 'Confirm', cancel: 'Cancel', save: 'Save', edit: '✏️ Edit',
-    dropPdfs: 'Drop PDFs here or click to browse',
-    dropHint: 'Digital PDFs + scanned images — Gemini OCR runs automatically if no text is found',
+    dropPdfs: 'Drop PDFs or images here — or click to browse',
+    dropHint: 'PDF, JPG or PNG — Gemini OCR runs automatically (pages saved in 10-page chunks)',
     submitted: 'Submitted', failed: 'Failed', words: 'words', pages: 'pages',
     adlamText: 'ADLaM Text',
     pastePlaceholder: 'Paste ADLaM text here — from PDFs, WhatsApp, Telegram, books…',
@@ -279,6 +291,7 @@ const ADMIN_I18N = {
     noTerms: 'No terms yet.',
     adlamScriptPlaceholder: 'ADLaM script…', frTranslation: 'French translation', domainPlaceholder: 'domain',
     verify: 'Verify', unverify: 'Unverify',
+    del: 'Delete', deleteConfirm: 'Delete permanently? This cannot be undone.', deleteYes: 'Yes, delete', restore: 'Restore to queue',
     results: 'results', noSubmissions: 'No submissions',
     contributorAudio: 'Contributor audio', verifiedAudio: '✓ Verified Pulaar audio',
     adlamEquivalent: 'ADLaM equivalent',
@@ -321,8 +334,8 @@ const ADMIN_I18N = {
     communityHint: 'Projets partagés par les utilisateurs. Approuvez pour publier comme modèle communautaire ; rejetez pour masquer.',
     loading: 'Chargement…', noProjects: 'Aucun projet en attente de révision.', owner: 'propriétaire',
     approve: 'Approuver', reject: 'Rejeter', confirm: 'Confirmer', cancel: 'Annuler', save: 'Enregistrer', edit: '✏️ Modifier',
-    dropPdfs: 'Déposez des PDF ici ou cliquez pour parcourir',
-    dropHint: "PDF numériques + images scannées — l'OCR Gemini se lance automatiquement si aucun texte n'est trouvé",
+    dropPdfs: 'Déposez des PDF ou images ici — ou cliquez pour parcourir',
+    dropHint: "PDF, JPG ou PNG — l'OCR Gemini se lance automatiquement (pages enregistrées par lots de 10)",
     submitted: 'Envoyé', failed: 'Échec', words: 'mots', pages: 'pages',
     adlamText: 'Texte ADLaM',
     pastePlaceholder: 'Collez du texte ADLaM ici — depuis PDF, WhatsApp, Telegram, livres…',
@@ -346,6 +359,7 @@ const ADMIN_I18N = {
     noTerms: 'Aucun terme pour l’instant.',
     adlamScriptPlaceholder: 'Écriture ADLaM…', frTranslation: 'Traduction française', domainPlaceholder: 'domaine',
     verify: 'Vérifier', unverify: 'Invalider',
+    del: 'Supprimer', deleteConfirm: 'Supprimer définitivement ? Action irréversible.', deleteYes: 'Oui, supprimer', restore: 'Remettre en file',
     results: 'résultats', noSubmissions: 'Aucune soumission',
     contributorAudio: 'Audio du contributeur', verifiedAudio: '✓ Audio pulaar vérifié',
     adlamEquivalent: 'Équivalent ADLaM',
@@ -497,6 +511,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
   }, () => {/* keep defaults on error */}), []);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);   // rejected-item delete confirm
   const [editText, setEditText] = useState<string>('');
   const [editAudio, setEditAudio] = useState<Blob | null>(null);
   // Cap how many review cards render at once — prevents thousands of DOM nodes
@@ -716,6 +731,28 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
     refreshCounts();
   }
 
+  // Move a verified/rejected item back to the pending queue.
+  async function moveToPending(id: string) {
+    setActionLoading(id);
+    await updateDoc(doc(db, 'corpus_submissions', id), { status: 'pending' });
+    setActionLoading(null);
+    refreshCounts();
+  }
+
+  // Permanently delete a rejected item (two-step: click Delete → Confirm).
+  async function deleteSubmission(id: string) {
+    setActionLoading(id);
+    try {
+      await deleteDoc(doc(db, 'corpus_submissions', id));
+    } catch (err) {
+      setCorpusError('Delete failed: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setDeletingId(null);
+      setActionLoading(null);
+      refreshCounts();
+    }
+  }
+
   function exportJSONL() {
     const verified = submissions.filter(s => s.status === 'verified');
     const lines = verified.map(s => JSON.stringify({
@@ -869,13 +906,13 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
     }
   }
 
-  /* ── PDF UPLOAD ACTIONS ── */
+  /* ── PDF / IMAGE UPLOAD ACTIONS ── */
   async function processPdfs(files: File[]) {
-    const pdfs = files.filter(f => f.type === 'application/pdf');
-    if (!pdfs.length) return;
+    const uploads = files.filter(f => f.type === 'application/pdf' || f.type.startsWith('image/'));
+    if (!uploads.length) return;
     setProcessing(true);
 
-    for (const file of pdfs) {
+    for (const file of uploads) {
       const id = crypto.randomUUID();
       setResults(prev => [...prev, {
         fileName: file.name, text: '', adlam_ratio: 0,
@@ -894,6 +931,31 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
         const patchRow = (patch: Partial<PdfResult>) => setResults(prev => prev.map(r =>
           r.fileName === file.name ? { ...r, ...patch } : r
         ));
+
+        // Direct image upload (JPG/PNG): one image = one page, OCR straight away.
+        if (file.type.startsWith('image/')) {
+          patchRow({ status: 'ready', error: 'Running Gemini OCR…' });
+          const token = await auth.currentUser?.getIdToken();
+          if (!token) throw new Error('Not authenticated');
+          const base64 = await fileToBase64(file);
+          const text = await ocrOneImage(base64, token, file.type);
+          const cWords = text.trim().split(/\s+/).filter(Boolean).length;
+          const cRatio = adlamRatio(text);
+          if (cWords >= 3) {
+            await addDoc(collection(db, 'corpus_submissions'), {
+              source: 'pdf', raw_text: text, adlam_ratio: cRatio, word_count: cWords,
+              status: 'pending', domain: null, submitted_at: serverTimestamp(),
+              verified_by: null, verified_at: null,
+              source_meta: { file_name: file.name, ocr: true, low_adlam: cRatio < 0.1, image: true },
+              file_url,
+            });
+            patchRow({ status: 'done', text: text.slice(0, 300), adlam_ratio: cRatio, word_count: cWords, pages: 1, file_url, error: `Saved ${cWords} words.` });
+            refreshCounts();
+          } else {
+            patchRow({ status: 'error', error: 'Gemini returned almost no text. Image may be blank or unreadable.' });
+          }
+          continue;   // next file
+        }
 
         // 2. Extract digital text; decide whether OCR is needed.
         // Text-layer ADLaM almost always comes from broken pre-Unicode fonts →
@@ -1315,7 +1377,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
             <Upload className="w-8 h-8" style={{ color: dragOver ? P : '#52525b' }} />
             <p className="text-sm font-bold text-[var(--text-muted)]">{L.dropPdfs}</p>
             <p className="text-xs text-[var(--text-faint)]">{L.dropHint}</p>
-            <input ref={fileInputRef} type="file" accept=".pdf" multiple className="hidden"
+            <input ref={fileInputRef} type="file" accept=".pdf,image/*" multiple className="hidden"
               onChange={e => processPdfs(Array.from(e.target.files ?? []))} />
           </div>
 
@@ -1913,69 +1975,114 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
                     )}
                   </div>
 
-                  {(s.status === 'pending' || s.status === 'needs_adlam') && (
-                    <div className="px-5 pb-4 flex items-center gap-3 flex-wrap">
-                      {editingId === s.id ? (
-                        <>
-                          <button onClick={() => saveEdit(s.id, s.status)} disabled={actionLoading === s.id}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
-                            style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                            {actionLoading === s.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                            {s.status === 'needs_adlam' ? L.saveAdlamQueue : L.saveEdit}
-                          </button>
-                          <button onClick={() => { setEditingId(null); setEditText(''); setEditAudio(null); }}
-                            className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
-                            {L.cancel}
-                          </button>
-                        </>
-                      ) : approvingId === s.id ? (
-                        <>
-                          <select value={selectedDomain} onChange={e => setSelectedDomain(e.target.value)}
-                            className="text-xs rounded-lg px-3 py-2 font-bold"
-                            style={{ background: 'var(--card-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
-                            {adminCategories.map(c => <option key={c.slug} value={c.slug}>{categoryLabel(c, langCode)}</option>)}
-                          </select>
-                          <button onClick={() => approve(s.id)} disabled={actionLoading === s.id}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
-                            style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
-                            <CheckCircle2 className="w-3.5 h-3.5" /> {L.confirm}
-                          </button>
-                          <button onClick={() => setApprovingId(null)}
-                            className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
-                            {L.cancel}
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {s.status === 'needs_adlam' ? (
-                            <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? ''); setEditAudio(null); }}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
-                              style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                              {L.completeAdlam}
-                            </button>
-                          ) : (
-                            <>
-                              <button onClick={() => setApprovingId(s.id)}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
-                                style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
-                                <CheckCircle2 className="w-3.5 h-3.5" /> {L.approve}
-                              </button>
-                              <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? s.raw_text); setEditAudio(null); }}
+                  <div className="px-5 pb-4 flex items-center gap-3 flex-wrap">
+                    {editingId === s.id ? (
+                      <>
+                        <button onClick={() => saveEdit(s.id, s.status)} disabled={actionLoading === s.id}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                          style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                          {actionLoading === s.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
+                          {s.status === 'needs_adlam' ? L.saveAdlamQueue : L.saveEdit}
+                        </button>
+                        <button onClick={() => { setEditingId(null); setEditText(''); setEditAudio(null); }}
+                          className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
+                          {L.cancel}
+                        </button>
+                      </>
+                    ) : approvingId === s.id ? (
+                      <>
+                        <select value={selectedDomain} onChange={e => setSelectedDomain(e.target.value)}
+                          className="text-xs rounded-lg px-3 py-2 font-bold"
+                          style={{ background: 'var(--card-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
+                          {adminCategories.map(c => <option key={c.slug} value={c.slug}>{categoryLabel(c, langCode)}</option>)}
+                        </select>
+                        <button onClick={() => approve(s.id)} disabled={actionLoading === s.id}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                          style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
+                          <CheckCircle2 className="w-3.5 h-3.5" /> {L.confirm}
+                        </button>
+                        <button onClick={() => setApprovingId(null)}
+                          className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
+                          {L.cancel}
+                        </button>
+                      </>
+                    ) : deletingId === s.id ? (
+                      <>
+                        <span className="text-xs font-bold" style={{ color: '#f87171' }}>{L.deleteConfirm}</span>
+                        <button onClick={() => deleteSubmission(s.id)} disabled={actionLoading === s.id}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                          style={{ background: '#f87171', color: '#fff', border: '1px solid #f87171' }}>
+                          {actionLoading === s.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />} {L.deleteYes}
+                        </button>
+                        <button onClick={() => setDeletingId(null)}
+                          className="text-xs text-[var(--text-faint)] hover:text-[var(--text-primary)] transition-colors">
+                          {L.cancel}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {(s.status === 'pending' || s.status === 'needs_adlam') && (
+                          <>
+                            {s.status === 'needs_adlam' ? (
+                              <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? ''); setEditAudio(null); }}
                                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
                                 style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
-                                {L.edit}
+                                {L.completeAdlam}
                               </button>
-                            </>
-                          )}
-                          <button onClick={() => reject(s.id)} disabled={actionLoading === s.id}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
-                            style={{ background: '#f8717120', color: '#f87171', border: '1px solid #f8717140' }}>
-                            <XCircle className="w-3.5 h-3.5" /> {L.reject}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
+                            ) : (
+                              <>
+                                <button onClick={() => setApprovingId(s.id)}
+                                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                  style={{ background: '#4ade8020', color: '#4ade80', border: '1px solid #4ade8040' }}>
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> {L.approve}
+                                </button>
+                                <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? s.raw_text); setEditAudio(null); }}
+                                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                                  style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                                  {L.edit}
+                                </button>
+                              </>
+                            )}
+                            <button onClick={() => reject(s.id)} disabled={actionLoading === s.id}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                              style={{ background: '#f8717120', color: '#f87171', border: '1px solid #f8717140' }}>
+                              <XCircle className="w-3.5 h-3.5" /> {L.reject}
+                            </button>
+                          </>
+                        )}
+
+                        {s.status === 'verified' && (
+                          <>
+                            <button onClick={() => { setEditingId(s.id); setEditText(s.adlam_text ?? s.raw_text); setEditAudio(null); }}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                              style={{ background: '#bca2ff20', color: '#bca2ff', border: '1px solid #bca2ff40' }}>
+                              {L.edit}
+                            </button>
+                            <button onClick={() => moveToPending(s.id)} disabled={actionLoading === s.id}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                              style={{ background: 'var(--btn-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                              <RotateCcw className="w-3.5 h-3.5" /> {L.unverify}
+                            </button>
+                          </>
+                        )}
+
+                        {s.status === 'rejected' && (
+                          <>
+                            <button onClick={() => moveToPending(s.id)} disabled={actionLoading === s.id}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
+                              style={{ background: 'var(--btn-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+                              <RotateCcw className="w-3.5 h-3.5" /> {L.restore}
+                            </button>
+                            <button onClick={() => setDeletingId(s.id)}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
+                              style={{ background: '#f8717120', color: '#f87171', border: '1px solid #f8717140' }}>
+                              <Trash2 className="w-3.5 h-3.5" /> {L.del}
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
               {filtered.length > visibleCount && (
