@@ -5,7 +5,10 @@ import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 import { verifyIdToken, isAdminEmail } from './lib/firebaseAdmin';
+import { getRuntimeConfig } from './lib/runtimeConfig';
+import { recordTokens } from './lib/tokenUsage';
 import { runStream, translateText, chatStream } from './lib/llm';
+import type { TokenUsage } from './lib/llm';
 import { checkRateLimit, RATE_LIMIT_MESSAGE, type RateKind } from './lib/rateLimit';
 import { loadPublishedApp, NOT_FOUND_HTML, PUBLISH_CSP } from './lib/publishPage';
 import { storeSubmission } from './lib/submissions';
@@ -170,12 +173,24 @@ function voiceSecretHeader(): Record<string, string> {
   return secret ? { 'x-voice-secret': secret } : {};
 }
 
-// Daily per-user quota on the routes that spend our LLM credits. Exempt:
-// BYOK (user's own key) and admins (bootstrap email or /admins doc).
+// Daily per-user quota on the routes that spend our LLM credits. Two admin
+// runtime switches (config/runtime) override it: sharedKeyEnabled=false pauses
+// our keys (BYOK required); limitsEnabled=false lifts the caps for everyone.
+// Exempt from counting: BYOK (own key) and admins (bootstrap email / /admins).
+const SHARED_KEY_PAUSED_MESSAGE =
+  'Free trial is paused right now. Add your own API key (BYOK) to keep building.';
+
 function meter(kind: RateKind) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (req.body?.byok?.apiKey) return next();
+    const byok = !!req.body?.byok?.apiKey;
+    const cfg = await getRuntimeConfig();
+    // Our keys off + not BYOK → block everyone (this is the wallet kill switch).
+    if (!cfg.sharedKeyEnabled && !byok) {
+      return res.status(503).json({ error: SHARED_KEY_PAUSED_MESSAGE });
+    }
+    if (byok) return next();
     if (await isAdminEmail((req as AuthedRequest).email)) return next();
+    if (!cfg.limitsEnabled) return next(); // caps globally lifted
     const { ok } = await checkRateLimit((req as AuthedRequest).uid, kind);
     if (!ok) return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
     next();
@@ -268,6 +283,7 @@ async function startServer() {
         (chunk) => send({ type: 'code', chunk }),
         (text) => send({ type: 'status', text })
       );
+      if (!byok?.apiKey) await recordTokens((req as AuthedRequest).uid, 'generate', result.usage);
       send({ type: 'done', result });
       res.end();
     } catch (err) {
@@ -295,6 +311,7 @@ async function startServer() {
         (chunk) => send({ type: 'code', chunk }),
         (text) => send({ type: 'status', text })
       );
+      if (!byok?.apiKey) await recordTokens((req as AuthedRequest).uid, 'edit', result.usage);
       send({ type: 'done', result });
       res.end();
     } catch (err) {
@@ -314,11 +331,14 @@ async function startServer() {
     sseHeaders(res);
     const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
     try {
+      let usage: TokenUsage | undefined;
       const text = await chatStream(
         { prompt, history, currentCode, preferredLanguage, provider, byok, images },
-        (chunk) => send({ type: 'token', text: chunk })
+        (chunk) => send({ type: 'token', text: chunk }),
+        (u) => { usage = u; },
       );
-      send({ type: 'done', text });
+      if (!byok?.apiKey) await recordTokens((req as AuthedRequest).uid, 'chat', usage);
+      send({ type: 'done', text, usage });
       res.end();
     } catch (err) {
       console.error('chat error:', err);

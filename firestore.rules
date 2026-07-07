@@ -99,6 +99,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── Runtime config (admin kill switches: daily limits, shared API key) ───
+    // Server reads via Admin SDK (bypasses rules); this gates the admin portal.
+    match /config/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── Token usage totals (admin dashboard) — server-written via Admin SDK. ──
+    match /usage_tokens/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ── Health check (unauthenticated ping) ──────────────────────────────────
     match /test/connection {
       allow read: if true;

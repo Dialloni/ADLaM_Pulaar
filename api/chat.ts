@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyIdToken, isAdminEmail } from '../lib/firebaseAdmin';
 import { chatStream } from '../lib/llm';
+import type { TokenUsage } from '../lib/llm';
+import { recordTokens } from '../lib/tokenUsage';
 import { checkRateLimit, RATE_LIMIT_MESSAGE } from '../lib/rateLimit';
 
 // Streams a conversational answer (chat mode — no app generation) as SSE:
@@ -33,11 +35,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const send = (msg: unknown) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
 
   try {
+    let usage: TokenUsage | undefined;
     const text = await chatStream(
       { prompt, history, currentCode, preferredLanguage, provider, byok, images },
-      (chunk) => send({ type: 'token', text: chunk })
+      (chunk) => send({ type: 'token', text: chunk }),
+      (u) => { usage = u; },
     );
-    send({ type: 'done', text });
+    if (!byok?.apiKey) await recordTokens(uid, 'chat', usage);
+    send({ type: 'done', text, usage });
     res.end();
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

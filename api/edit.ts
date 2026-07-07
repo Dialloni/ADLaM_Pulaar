@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyIdToken, isAdminEmail } from '../lib/firebaseAdmin';
 import { runStream } from '../lib/llm';
+import { recordTokens } from '../lib/tokenUsage';
 import { checkRateLimit, RATE_LIMIT_MESSAGE } from '../lib/rateLimit';
 
 // Streams an incremental edit as Server-Sent Events (same protocol as /api/generate).
@@ -38,6 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       (chunk) => send({ type: 'code', chunk }),
       (text) => send({ type: 'status', text })
     );
+    if (!byok?.apiKey) await recordTokens(uid, 'edit', result.usage);
     send({ type: 'done', result });
     res.end();
   } catch (err) {
