@@ -190,8 +190,14 @@ async function startServer() {
     })
   );
 
-  // Big enough for a few base64 vision images (≤5 MB each × 1.33 overhead), small enough to blunt abuse.
-  app.use(express.json({ limit: '25mb' }));
+  // Body-size limits are per-route to blunt memory-exhaustion abuse: only the
+  // routes that legitimately carry base64 media (vision images, OCR scans, audio)
+  // get the big cap; every other route is capped tight at 1 MB. The first parser
+  // to consume the body wins — body-parser skips once req._body is set — so the
+  // 25 MB parser on media paths runs before the 1 MB default below.
+  const MEDIA_ROUTES = ['/api/generate', '/api/edit', '/api/chat', '/api/ocr', '/api/transcribe'];
+  app.use(MEDIA_ROUTES, express.json({ limit: '25mb' }));
+  app.use(express.json({ limit: '1mb' }));
 
   const startTime = Date.now();
 
