@@ -111,6 +111,29 @@ export function adlamToLatin(text: string): string {
   return out;
 }
 
+// Map full Pulaar-Latin orthography down to the alphabet the MMS TTS model
+// (facebook/mms-tts-ful) actually knows. Chars outside its vocab are silently
+// dropped by the model — so a common letter like ñ turns "ñaam" into "aam".
+// This runs ONLY on the TTS path (after adlamToLatin, before the model); it does
+// NOT touch display transliteration or ADLaM↔Latin reversibility.
+// MMS vocab: a b c d e f g h i j k l m n o p r s t u w y ŋ ƴ ɓ ɗ ' + digits/space.
+const VOICE_SUBS: [RegExp, string][] = [
+  [/ñ/g, 'ny'],          // 𞤻 nya — common; model has no ñ
+  [/[’‘‛´`]/g, "'"],      // hamza/glottal stop → the straight quote the model has
+  [/q/g, 'k'],           // uvular → velar (loans)
+  [/v/g, 'w'],           // labiodental → closest vocab sound (loans)
+  [/z/g, 'j'],           // voiced sibilant → closest vocab sound (loans)
+];
+const VOICE_VOCAB = new Set("abcdefghijklmnoprstuwyŋƴɓɗ'0123456789 ".split(''));
+
+export function toVoiceLatin(latin: string): string {
+  let s = latin.toLowerCase();
+  for (const [re, rep] of VOICE_SUBS) s = s.replace(re, rep);
+  // Drop anything still outside the model's alphabet (stray punctuation, etc.)
+  // so it can't confuse the tokenizer; keep spaces between words.
+  return [...s].filter(c => VOICE_VOCAB.has(c)).join('').replace(/\s+/g, ' ').trim();
+}
+
 // Latin lookup: longest match first (kh/gb/kp/sh before k/g/s).
 const TO_ADLAM = new Map<string, number>();
 LATIN.forEach((l, i) => TO_ADLAM.set(l, SMALL_BASE + i));

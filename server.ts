@@ -12,7 +12,7 @@ import type { TokenUsage } from './lib/llm';
 import { checkRateLimit, RATE_LIMIT_MESSAGE, type RateKind } from './lib/rateLimit';
 import { loadPublishedApp, NOT_FOUND_HTML, PUBLISH_CSP } from './lib/publishPage';
 import { storeSubmission } from './lib/submissions';
-import { adlamToLatin, latinToAdlam } from './lib/translit';
+import { adlamToLatin, latinToAdlam, toVoiceLatin } from './lib/translit';
 
 dotenv.config();
 
@@ -501,10 +501,12 @@ Output ONLY the extracted text, nothing else.`;
       if (!voiceApi) return res.json({ useBrowser: true, text: romanized });
 
       const rate = Math.min(1.5, Math.max(0.5, Number(req.body?.rate) || Number(process.env.TTS_SPEAKING_RATE) || 0.8));
+      // MMS has a tiny fixed alphabet — map ñ→ny, hamza→', etc. so letters aren't
+      // silently dropped (browser fallback below keeps the full orthography).
       const ttsRes = await fetch(`${voiceApi}/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...voiceSecretHeader() },
-        body: JSON.stringify({ text: romanized, rate }),
+        body: JSON.stringify({ text: toVoiceLatin(romanized), rate }),
       });
       if (!ttsRes.ok) {
         console.error('voice service tts error:', ttsRes.status, await ttsRes.text().catch(() => ''));
