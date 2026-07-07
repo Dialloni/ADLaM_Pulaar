@@ -1,4 +1,4 @@
-import { GenerationResult, Message } from '../types';
+import { GenerationResult, Message, TokenUsage } from '../types';
 import { auth } from '../firebase';
 
 export interface GenerationResponse extends GenerationResult {
@@ -157,6 +157,7 @@ export async function chatStream(
   provider?: Provider,
   byok?: Byok,
   images?: ImageInput[],
+  onUsage?: (u: TokenUsage) => void,
 ): Promise<string> {
   const trimmed = history.slice(-8).map((m) => ({ role: m.role, content: m.content }));
   const res = await fetch('/api/chat', {
@@ -186,9 +187,9 @@ export async function chatStream(
       const line = frame.split('\n').find((l) => l.startsWith('data:'));
       if (!line) continue;
       try {
-        const msg = JSON.parse(line.slice(5).trim()) as { type: string; text?: string; error?: string };
+        const msg = JSON.parse(line.slice(5).trim()) as { type: string; text?: string; error?: string; usage?: TokenUsage };
         if (msg.type === 'token' && msg.text) { answer += msg.text; onToken(answer); }
-        else if (msg.type === 'done' && typeof msg.text === 'string') { answer = msg.text || answer; }
+        else if (msg.type === 'done' && typeof msg.text === 'string') { answer = msg.text || answer; if (msg.usage) onUsage?.(msg.usage); }
         else if (msg.type === 'error') { streamError = msg.error || 'Chat failed'; }
       } catch { /* skip malformed frame */ }
     }

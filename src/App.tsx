@@ -18,7 +18,7 @@ import {
   handleFirestoreError, OperationType, auth,
   storage, ref, uploadBytes, getDownloadURL,
 } from './firebase';
-import { Project, Message, ChatThread, Submission } from './types';
+import { Project, Message, ChatThread, Submission, TokenUsage } from './types';
 import { generateProject, editProject, chatStream, resolveByok, type Provider, type ByokProvider, type ImageInput } from './services/geminiService';
 import { Chat } from './components/Chat';
 import { Preview, injectReporter } from './components/Preview';
@@ -148,6 +148,7 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [inputShake, setInputShake] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
+  const [lastUsage, setLastUsage] = useState<TokenUsage | null>(null); // tokens of the last build/chat
   const [generationSteps, setGenerationSteps] = useState<string[]>([]); // Claude-style build steps
   const appendStep = (text: string) => setGenerationSteps((s) => (s.includes(text) ? s : [...s, text]));
   const [streamingCode, setStreamingCode] = useState<string | null>(null);  // live text (code editor)
@@ -584,6 +585,7 @@ export default function App() {
     } catch { /* non-fatal — user message is best-effort */ }
 
     const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
+    if (result.usage) setLastUsage(result.usage);
 
     // Aborted before any code arrived — remove the empty placeholder, return to dashboard.
     if (!result.code) {
@@ -608,6 +610,7 @@ export default function App() {
     try {
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
       const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
+      if (result.usage) setLastUsage(result.usage);
       // Always save what was built — partial or complete.
       const savedCode = result.code || currentProject.code;
       await updateDoc(doc(db, 'projects', currentProject.id), { code: savedCode, updatedAt: serverTimestamp() });
@@ -855,6 +858,7 @@ export default function App() {
         provider,
         resolveByok(provider, byokKeys),
         pendingImagesRef.current,
+        (u) => setLastUsage(u),
       );
     } catch (err: any) {
       const m = err.message || 'Chat failed.';
@@ -1674,7 +1678,7 @@ export default function App() {
                           userPhoto={user.photoURL} userName={user.displayName || user.email}
                           mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert}
-                          onStop={handleStop} />
+                          onStop={handleStop} lastUsage={lastUsage} />
                       </div>
                     </motion.div>
                   </>
@@ -1696,7 +1700,7 @@ export default function App() {
                           userPhoto={user.photoURL} userName={user.displayName || user.email}
                           mode={mode} onModeChange={setMode}
                           currentCode={currentProject?.code} onRevert={handleRevert}
-                          onStop={handleStop} />
+                          onStop={handleStop} lastUsage={lastUsage} />
                       </div>
                     </motion.div>
                     {/* drag divider — the resize handle between chat and preview */}
@@ -1751,7 +1755,7 @@ export default function App() {
                   provider={provider} onProviderChange={setProvider}
                   byokModels={byokModelOptions} onManageKeys={() => setByokModalOpen(true)}
                           userPhoto={user.photoURL} userName={user.displayName || user.email}
-                  mode={mode} onModeChange={setMode} onStop={handleStop} hideHeader />
+                  mode={mode} onModeChange={setMode} onStop={handleStop} lastUsage={lastUsage} hideHeader />
               </div>
             </div>
 

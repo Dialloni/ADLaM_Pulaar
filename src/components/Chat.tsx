@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Send, Loader2, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Check, ChevronDown, MessageSquare, Square, Volume2, VolumeX } from 'lucide-react';
 import { GandoSpark } from './GandoSpark';
 import ReactMarkdown from 'react-markdown';
-import { Message } from '../types';
+import { Message, TokenUsage } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useVoiceInput } from '../lib/useVoiceInput';
@@ -41,6 +41,7 @@ interface ChatProps {
   currentCode?: string;
   onRevert?: (snapshot: string) => void;
   onStop?: () => void;
+  lastUsage?: TokenUsage | null; // token count of the last completed build/chat
   hideHeader?: boolean; // parent renders its own title bar (full-screen chat session)
 }
 
@@ -275,6 +276,7 @@ const ChatImpl: React.FC<ChatProps> = ({
   currentCode,
   onRevert,
   onStop,
+  lastUsage,
   hideHeader = false,
 }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -780,6 +782,17 @@ const ChatImpl: React.FC<ChatProps> = ({
                     </div>
                   </motion.div>
                 )}
+                {!isGenerating && lastUsage && (lastUsage.inTok + lastUsage.outTok > 0) && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="flex items-center gap-1.5 pl-11 -mt-1"
+                    title={`${lastUsage.model} · ${lastUsage.inTok.toLocaleString()} in / ${lastUsage.outTok.toLocaleString()} out`}>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ opacity: 0.7 }}>⚡</span>
+                      {(lastUsage.inTok + lastUsage.outTok).toLocaleString()} tokens
+                      <span style={{ opacity: 0.55 }}>({lastUsage.inTok.toLocaleString()} in / {lastUsage.outTok.toLocaleString()} out)</span>
+                    </span>
+                  </motion.div>
+                )}
               </div>
               </>
             )}
@@ -980,6 +993,7 @@ function chatPropsEqual(a: ChatProps, b: ChatProps) {
     a.input === b.input &&
     a.isGenerating === b.isGenerating &&
     a.generationStatus === b.generationStatus &&
+    a.lastUsage === b.lastUsage &&
     a.generationSteps === b.generationSteps &&
     a.selectedLanguage === b.selectedLanguage &&
     a.currentLanguage === b.currentLanguage &&

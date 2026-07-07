@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, setDoc, getDocs, getCountFromServer,
+  collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, setDoc, getDocs, getCountFromServer,
   db, serverTimestamp, addDoc, storage, ref, uploadBytes, uploadBytesResumable, getDownloadURL,
   auth,
 } from '../firebase';
@@ -21,7 +21,7 @@ async function getPdfjs() {
 
 type SubmissionStatus = 'pending' | 'verified' | 'rejected' | 'needs_adlam';
 type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
-type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community' | 'translit' | 'voice';
+type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community' | 'translit' | 'voice' | 'controls' | 'usage';
 type DictStatus = 'draft' | 'verified';
 
 interface DictTerm {
@@ -186,6 +186,20 @@ const ADMIN_I18N = {
     translitHint: 'Type in either box — the other converts live. Rules follow the official Adlam book (Adlam_book/).',
     translitLatin: 'Latin (Pulaar)', translitAdlam: 'ADLaM',
     tabVoice: 'Voice Data',
+    tabControls: 'Controls',
+    controlsHint: 'Live switches — changes take effect within ~20 seconds, no redeploy. Use with care: they affect every user right now.',
+    controlsLimitsTitle: 'Daily usage limits',
+    controlsLimitsDesc: 'ON: each user gets the normal free daily caps. OFF: limits lifted for everyone — good for a demo or open trial (watch the bill).',
+    controlsKeyTitle: 'Shared API key (our credits)',
+    controlsKeyDesc: 'ON: our key powers the free tier. OFF: our key is paused — users must add their own key (BYOK) to keep building. Instant wallet stop.',
+    controlsOn: 'ON', controlsOff: 'OFF',
+    controlsActive: 'active', controlsPaused: 'paused',
+    controlsKeyNote: 'Note: for now this stops ALL our keys (Claude, Gemini, Groq). Goal later: pause only the paid ones (Claude + Gemini) and leave the free tiers running.',
+    tabUsage: 'Usage',
+    usageHint: 'Token spend on our keys (BYOK excluded). Live from the backend — no need to check Anthropic or Google dashboards.',
+    usageToday: 'Today', usageTotal: 'Total tokens', usageIn: 'in', usageOut: 'out', usageCalls: 'calls',
+    usageByModel: 'By model (today)', usageByKind: 'By route (today)', usageTrend: 'Last 7 days', usageTopUsers: 'Top users today',
+    usageNone: 'No usage recorded yet today.', usageLoading: 'Loading usage…',
     voiceHint: 'Every verified text read aloud = one training pair. Goal: 1,000 training-ready clips for the first Pulaar voice fine-tune.',
     voiceReadyLabel: 'training-ready (verified + audio)', voiceAwaitingLabel: 'recorded, awaiting verification',
     voiceListTitle: 'Training-ready clips', voiceExport: 'Export dataset (JSONL)',
@@ -239,6 +253,20 @@ const ADMIN_I18N = {
     translitHint: "Écrivez dans l'une des zones — l'autre se convertit en direct. Règles selon le livre officiel ADLaM (Adlam_book/).",
     translitLatin: 'Latin (pulaar)', translitAdlam: 'ADLaM',
     tabVoice: 'Données vocales',
+    tabControls: 'Contrôles',
+    controlsHint: 'Interrupteurs en direct — effet en ~20 secondes, sans redéploiement. À utiliser avec prudence : ils affectent tous les utilisateurs immédiatement.',
+    controlsLimitsTitle: 'Limites journalières',
+    controlsLimitsDesc: "ON : chaque utilisateur garde les quotas gratuits habituels. OFF : limites levées pour tous — pratique pour une démo ou un essai ouvert (surveillez la facture).",
+    controlsKeyTitle: 'Clé API partagée (nos crédits)',
+    controlsKeyDesc: "ON : notre clé alimente la version gratuite. OFF : notre clé est suspendue — les utilisateurs doivent ajouter leur propre clé (BYOK). Arrêt immédiat des dépenses.",
+    controlsOn: 'ON', controlsOff: 'OFF',
+    controlsActive: 'actif', controlsPaused: 'suspendu',
+    controlsKeyNote: 'Note : pour l’instant, cela coupe TOUTES nos clés (Claude, Gemini, Groq). Objectif futur : ne suspendre que les payantes (Claude + Gemini) et laisser les gratuites actives.',
+    tabUsage: 'Utilisation',
+    usageHint: "Consommation de jetons sur nos clés (BYOK exclu). En direct depuis le backend — pas besoin de consulter les tableaux de bord Anthropic ou Google.",
+    usageToday: "Aujourd'hui", usageTotal: 'Jetons totaux', usageIn: 'entrée', usageOut: 'sortie', usageCalls: 'appels',
+    usageByModel: 'Par modèle (auj.)', usageByKind: 'Par route (auj.)', usageTrend: '7 derniers jours', usageTopUsers: "Top utilisateurs auj.",
+    usageNone: "Aucune utilisation enregistrée aujourd'hui.", usageLoading: 'Chargement…',
     voiceHint: "Chaque texte vérifié lu à voix haute = une paire d'entraînement. Objectif : 1 000 clips prêts pour le premier fine-tune vocal pulaar.",
     voiceReadyLabel: 'prêts (vérifiés + audio)', voiceAwaitingLabel: 'enregistrés, en attente de vérification',
     voiceListTitle: "Clips prêts pour l'entraînement", voiceExport: 'Exporter le dataset (JSONL)',
@@ -292,6 +320,53 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
   /* ── TRANSLITERATOR STATE ── */
   const [trLatin, setTrLatin] = useState('');
   const [trAdlam, setTrAdlam] = useState('');
+
+  /* ── RUNTIME CONTROLS STATE ── live config/runtime kill switches */
+  const [runtimeCfg, setRuntimeCfg] = useState({ limitsEnabled: true, sharedKeyEnabled: true });
+  const [cfgSaving, setCfgSaving] = useState<string | null>(null);
+  useEffect(() => onSnapshot(doc(db, 'config', 'runtime'), snap => {
+    const d = snap.data() ?? {};
+    setRuntimeCfg({ limitsEnabled: d.limitsEnabled !== false, sharedKeyEnabled: d.sharedKeyEnabled !== false });
+  }, err => console.error('runtime config subscribe error:', err)), []);
+  const setRuntimeFlag = async (key: 'limitsEnabled' | 'sharedKeyEnabled', value: boolean) => {
+    setCfgSaving(key);
+    try {
+      await setDoc(doc(db, 'config', 'runtime'), { [key]: value, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (e) {
+      console.error('runtime config write error:', e);
+    } finally {
+      setCfgSaving(null);
+    }
+  };
+
+  /* ── TOKEN USAGE STATE ── reads usage_tokens (server-written) */
+  type UsageDoc = { day?: string; uid?: string; inTok?: number; outTok?: number; total?: number; calls?: number; byModel?: Record<string, number>; byKind?: Record<string, number> };
+  const [usageTrend, setUsageTrend] = useState<UsageDoc[]>([]);
+  const [usageUsers, setUsageUsers] = useState<UsageDoc[]>([]);
+  const [usageLoading, setUsageLoading] = useState(false);
+  useEffect(() => {
+    if (tab !== 'usage') return;
+    setUsageLoading(true);
+    (async () => {
+      try {
+        const days = [...Array(7)].map((_, i) => {
+          const d = new Date(); d.setUTCDate(d.getUTCDate() - i);
+          return d.toISOString().slice(0, 10);
+        });
+        // 7-day global totals — one doc per day, id = the date (no uid suffix).
+        const trendSnaps = await Promise.all(days.map(dy => getDoc(doc(db, 'usage_tokens', dy))));
+        setUsageTrend(trendSnaps.map((s, i) => ({ day: days[i], ...(s.exists() ? s.data() as UsageDoc : {}) })));
+        // Today's per-user docs (id = `${day}_${uid}`), ranked by spend.
+        const usnap = await getDocs(query(collection(db, 'usage_tokens'), where('day', '==', days[0])));
+        setUsageUsers(usnap.docs.map(d => d.data() as UsageDoc)
+          .filter(x => x.uid).sort((a, b) => (b.total ?? 0) - (a.total ?? 0)).slice(0, 8));
+      } catch (e) {
+        console.error('usage load error:', e);
+      } finally {
+        setUsageLoading(false);
+      }
+    })();
+  }, [tab]);
 
   /* ── VOICE DATA STATE ── */
   const VOICE_GOAL = 1000;
@@ -844,6 +919,8 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
           { id: 'dictionary', label: L.tabDictionary },
           { id: 'translit', label: L.tabTranslit },
           { id: 'voice', label: L.tabVoice },
+          { id: 'usage', label: L.tabUsage },
+          { id: 'controls', label: L.tabControls },
         ] as const).map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className="px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex-shrink-0"
@@ -890,6 +967,130 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
           </div>
         </div>
       )}
+
+      {/* ── CONTROLS TAB ── runtime kill switches */}
+      {tab === 'controls' && (
+        <div className="space-y-4 max-w-3xl">
+          <p className="text-sm text-[var(--text-muted)]">{L.controlsHint}</p>
+          {([
+            { key: 'limitsEnabled' as const, on: runtimeCfg.limitsEnabled, title: L.controlsLimitsTitle, desc: L.controlsLimitsDesc },
+            { key: 'sharedKeyEnabled' as const, on: runtimeCfg.sharedKeyEnabled, title: L.controlsKeyTitle, desc: L.controlsKeyDesc },
+          ]).map(c => (
+            <div key={c.key} className="rounded-2xl border border-[var(--border)] p-5 flex items-start justify-between gap-4"
+              style={{ background: 'var(--card-bg)' }}>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black text-[var(--text-primary)]">{c.title}</h3>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: c.on ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                      color: c.on ? '#16a34a' : '#dc2626',
+                    }}>
+                    {c.on ? L.controlsActive : L.controlsPaused}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--text-muted)] mt-1.5">{c.desc}</p>
+                {c.key === 'sharedKeyEnabled' && (
+                  <p className="text-xs mt-2 px-2.5 py-1.5 rounded-lg"
+                    style={{ background: 'rgba(253,139,0,0.1)', color: 'var(--text-muted)', border: '1px solid rgba(253,139,0,0.25)' }}>
+                    {L.controlsKeyNote}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setRuntimeFlag(c.key, !c.on)}
+                disabled={cfgSaving === c.key}
+                aria-pressed={c.on}
+                className="relative flex-shrink-0 rounded-full transition-all disabled:opacity-50"
+                style={{
+                  width: 56, height: 30,
+                  background: c.on ? 'var(--brand, #3b82f6)' : 'var(--border)',
+                }}>
+                <span className="absolute top-1 rounded-full bg-white transition-all"
+                  style={{ width: 22, height: 22, left: c.on ? 30 : 4 }} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── USAGE TAB ── token spend from the backend */}
+      {tab === 'usage' && (() => {
+        const today = usageTrend[0] ?? {};
+        const maxDay = Math.max(1, ...usageTrend.map(d => d.total ?? 0));
+        const fmt = (n?: number) => (n ?? 0).toLocaleString();
+        const entries = (m?: Record<string, number>) => Object.entries(m ?? {}).sort((a, b) => b[1] - a[1]);
+        return (
+          <div className="space-y-5 max-w-3xl">
+            <p className="text-sm text-[var(--text-muted)]">{L.usageHint}</p>
+            {usageLoading ? (
+              <p className="text-sm text-[var(--text-muted)]">{L.usageLoading}</p>
+            ) : (today.total ?? 0) === 0 && usageTrend.every(d => (d.total ?? 0) === 0) ? (
+              <p className="text-sm text-[var(--text-muted)]">{L.usageNone}</p>
+            ) : (
+              <>
+                {/* Today headline */}
+                <div className="rounded-2xl border border-[var(--border)] p-5" style={{ background: 'var(--card-bg)' }}>
+                  <div className="text-xs font-black uppercase tracking-wide text-[var(--text-muted)] mb-1">{L.usageToday}</div>
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <span className="text-4xl font-black text-[var(--text-primary)]">{fmt(today.total)}</span>
+                    <span className="text-sm text-[var(--text-muted)] mb-1">{L.usageTotal}</span>
+                  </div>
+                  <div className="text-sm text-[var(--text-muted)] mt-1">
+                    {fmt(today.inTok)} {L.usageIn} · {fmt(today.outTok)} {L.usageOut} · {fmt(today.calls)} {L.usageCalls}
+                  </div>
+                </div>
+
+                {/* By model + by route */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {([[L.usageByModel, today.byModel], [L.usageByKind, today.byKind]] as const).map(([title, m], i) => (
+                    <div key={i} className="rounded-2xl border border-[var(--border)] p-4" style={{ background: 'var(--card-bg)' }}>
+                      <div className="text-xs font-black uppercase tracking-wide text-[var(--text-muted)] mb-2">{title}</div>
+                      {entries(m).length === 0 ? (
+                        <div className="text-sm text-[var(--text-muted)]">—</div>
+                      ) : entries(m).map(([k, v]) => (
+                        <div key={k} className="flex items-center justify-between text-sm py-0.5">
+                          <span className="text-[var(--text-primary)] truncate mr-2">{k}</span>
+                          <span className="text-[var(--text-muted)] flex-shrink-0">{fmt(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                {/* 7-day trend */}
+                <div className="rounded-2xl border border-[var(--border)] p-4" style={{ background: 'var(--card-bg)' }}>
+                  <div className="text-xs font-black uppercase tracking-wide text-[var(--text-muted)] mb-3">{L.usageTrend}</div>
+                  <div className="space-y-1.5">
+                    {usageTrend.map(d => (
+                      <div key={d.day} className="flex items-center gap-3 text-xs">
+                        <span className="text-[var(--text-muted)] w-20 flex-shrink-0">{d.day?.slice(5)}</span>
+                        <div className="flex-1 h-4 rounded" style={{ background: 'var(--app-bg)' }}>
+                          <div className="h-4 rounded" style={{ width: `${((d.total ?? 0) / maxDay) * 100}%`, background: 'var(--brand, #3b82f6)', minWidth: (d.total ?? 0) > 0 ? 4 : 0 }} />
+                        </div>
+                        <span className="text-[var(--text-muted)] w-20 text-right flex-shrink-0">{fmt(d.total)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Top users today */}
+                {usageUsers.length > 0 && (
+                  <div className="rounded-2xl border border-[var(--border)] p-4" style={{ background: 'var(--card-bg)' }}>
+                    <div className="text-xs font-black uppercase tracking-wide text-[var(--text-muted)] mb-2">{L.usageTopUsers}</div>
+                    {usageUsers.map(u => (
+                      <div key={u.uid} className="flex items-center justify-between text-sm py-0.5">
+                        <span className="text-[var(--text-primary)] font-mono text-xs truncate mr-2">{u.uid?.slice(0, 14)}…</span>
+                        <span className="text-[var(--text-muted)] flex-shrink-0">{fmt(u.total)} · {fmt(u.calls)} {L.usageCalls}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── VOICE DATA TAB ── */}
       {tab === 'voice' && (
