@@ -1,12 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
-  collection, addDoc, db, serverTimestamp,
+  collection, addDoc, db, serverTimestamp, onSnapshot,
   storage, ref, uploadBytes, getDownloadURL,
 } from '../firebase';
 import type { User } from '../firebase';
-import { Camera, X, CheckCircle2, RefreshCw, ImagePlus } from 'lucide-react';
+import { Camera, X, CheckCircle2, RefreshCw, ImagePlus, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { AudioRecorder } from './AudioRecorder';
+import { DEFAULT_CATEGORIES, mergeCategories, categoryLabel, slugify, type Category } from '../lib/categories';
 
 const withTimeout = <T,>(p: Promise<T>, ms: number, label: string): Promise<T> =>
   Promise.race([
@@ -21,14 +22,13 @@ const ADLAM_FONT = '"Noto Sans Adlam", "ADLaM Display", serif';
 
 type LangCode = 'ff-adlm' | 'en' | 'fr';
 
-const DOMAINS = ['casual', 'tech', 'religion', 'news', 'literature', 'ui_vocab'] as const;
-type Domain = typeof DOMAINS[number];
 
 const I18N: Partial<Record<LangCode, {
   title: string; subtitle: string; photoLabel: string; photoHint: string;
   audioLabel: string; audioHint: string;
   enLabel: string; frLabel: string; latinLabel: string; adlamLabel: string;
   fieldsHint: string; domainLabel: string;
+  addCategory: string; addCategoryHint: string;
   submit: string; submitting: string; success: string; needAnything: string;
   adlamOk: string; adlamBad: string; remove: string;
 }>> = {
@@ -42,7 +42,9 @@ const I18N: Partial<Record<LangCode, {
     enLabel: 'English', frLabel: 'French', latinLabel: 'Pulaar (Latin letters)',
     adlamLabel: 'ADLaM script',
     fieldsHint: 'Fill whatever you know — at least one field or an audio recording.',
-    domainLabel: 'Category', submit: 'Submit contribution', submitting: 'Submitting…',
+    domainLabel: 'Category',
+    addCategory: 'Add category', addCategoryHint: 'Type in English (required), French and ADLaM optional. Saved for everyone.',
+    submit: 'Submit contribution', submitting: 'Submitting…',
     success: 'Thank you! Sent for review.',
     needAnything: 'Enter at least one word, or record audio',
     adlamOk: '✓ ADLaM script detected', adlamBad: '✗ Not ADLaM script (saved anyway)',
@@ -56,7 +58,9 @@ const I18N: Partial<Record<LangCode, {
     enLabel: 'Anglais', frLabel: 'Français', latinLabel: 'Pulaar (lettres latines)',
     adlamLabel: 'Écriture ADLaM',
     fieldsHint: 'Remplissez ce que vous savez — au moins un champ ou un enregistrement audio.',
-    domainLabel: 'Catégorie', submit: 'Envoyer la contribution', submitting: 'Envoi…',
+    domainLabel: 'Catégorie',
+    addCategory: 'Ajouter une catégorie', addCategoryHint: 'Tapez en anglais (requis), français et ADLaM facultatifs. Enregistré pour tous.',
+    submit: 'Envoyer la contribution', submitting: 'Envoi…',
     success: 'Merci ! Envoyé pour révision.',
     needAnything: 'Entrez au moins un mot, ou enregistrez un audio',
     adlamOk: '✓ Écriture ADLaM détectée', adlamBad: '✗ Pas en ADLaM (enregistré quand même)',
@@ -85,7 +89,47 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
   const [en, setEn] = useState('');
   const [fr, setFr] = useState('');
   const [latin, setLatin] = useState('');
-  const [domain, setDomain] = useState<Domain>('casual');
+  const [domain, setDomain] = useState<string>('casual');
+
+  // Categories = seed list + anything instructors/contributors added (persisted).
+  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  useEffect(() => onSnapshot(collection(db, 'corpus_categories'), snap => {
+    setCategories(mergeCategories(snap.docs.map(d => d.data() as Category)));
+  }, () => {/* keep defaults if the read fails */}), []);
+
+  // "+ Add category" inline form.
+  const [addingCat, setAddingCat] = useState(false);
+  const [catEn, setCatEn] = useState('');
+  const [catFr, setCatFr] = useState('');
+  const [catAdlam, setCatAdlam] = useState('');
+  const [catSaving, setCatSaving] = useState(false);
+
+  async function addCategory() {
+    const en = catEn.trim();
+    if (!en) return;                       // English is the key — required
+    const slug = slugify(en);
+    if (!slug) return;
+    setCatSaving(true);
+    try {
+      // doc id = slug so re-adding an existing category updates it (e.g. fills ADLaM)
+      // rather than duplicating. setDoc via addDoc-with-known-id isn't available here,
+      // so we write through the collection; merge-by-slug on read dedupes anyway.
+      await addDoc(collection(db, 'corpus_categories'), {
+        slug, en,
+        fr: catFr.trim() || null,
+        adlam: catAdlam.trim() || null,
+        created_by: user.email,
+        created_at: serverTimestamp(),
+      });
+      setDomain(slug);
+      setCatEn(''); setCatFr(''); setCatAdlam('');
+      setAddingCat(false);
+    } catch (e) {
+      setError('Could not add category: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setCatSaving(false);
+    }
+  }
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -198,6 +242,7 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
 
   const labelCls = cn('text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest', isAdlam && 'font-adlam');
   const inputCls = 'w-full rounded-xl px-4 py-3 text-[var(--text-primary)] bg-[var(--input-bg)] outline-none transition-all placeholder-[var(--text-faint)]';
+  const catInputCls = 'w-full rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] bg-[var(--input-bg)] outline-none placeholder-[var(--text-faint)] border border-[var(--border)]';
 
   return (
     <div className="flex-1 overflow-y-auto p-8" style={{ fontFamily: MANROPE, background: 'var(--app-bg)', color: 'var(--text-primary)' }}>
@@ -285,22 +330,53 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
           </div>
         </div>
 
-        {/* domain */}
-        <div className="rounded-2xl border border-[var(--border)] p-5 space-y-2" style={{ background: 'var(--card-bg)' }}>
+        {/* category */}
+        <div className="rounded-2xl border border-[var(--border)] p-5 space-y-3" style={{ background: 'var(--card-bg)' }}>
           <p className={labelCls}>{t.domainLabel}</p>
           <div className="flex flex-wrap gap-1.5">
-            {DOMAINS.map(d => (
-              <button key={d} onClick={() => setDomain(d)}
+            {categories.map(c => (
+              <button key={c.slug} onClick={() => setDomain(c.slug)}
                 className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
                 style={{
-                  background: domain === d ? `${P}25` : 'rgba(255,255,255,0.04)',
-                  color: domain === d ? P : '#71717a',
-                  border: `1px solid ${domain === d ? P + '50' : 'transparent'}`,
+                  background: domain === c.slug ? `${P}25` : 'rgba(255,255,255,0.04)',
+                  color: domain === c.slug ? P : '#71717a',
+                  border: `1px solid ${domain === c.slug ? P + '50' : 'transparent'}`,
                 }}>
-                {d}
+                {categoryLabel(c, langCode)}
               </button>
             ))}
+            <button onClick={() => setAddingCat(v => !v)}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+              style={{ background: 'rgba(255,255,255,0.04)', color: P, border: `1px dashed ${P}55` }}>
+              <Plus className="w-3.5 h-3.5" /> {t.addCategory}
+            </button>
           </div>
+
+          {addingCat && (
+            <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
+              <p className="text-xs text-[var(--text-muted)]">{t.addCategoryHint}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input value={catEn} onChange={e => setCatEn(e.target.value)}
+                  placeholder={t.enLabel + ' *'} className={catInputCls} />
+                <input value={catFr} onChange={e => setCatFr(e.target.value)}
+                  placeholder={t.frLabel} className={catInputCls} />
+                <input value={catAdlam} onChange={e => setCatAdlam(e.target.value)}
+                  placeholder={t.adlamLabel} dir="rtl"
+                  className={catInputCls} style={{ fontFamily: ADLAM_FONT }} />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={addCategory} disabled={!catEn.trim() || catSaving}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50"
+                  style={{ background: `${P}25`, color: P, border: `1px solid ${P}50` }}>
+                  {catSaving ? t.submitting : t.addCategory}
+                </button>
+                <button onClick={() => { setAddingCat(false); setCatEn(''); setCatFr(''); setCatAdlam(''); }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--text-muted)]">
+                  {t.remove}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* error */}

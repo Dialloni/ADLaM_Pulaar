@@ -93,6 +93,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Corpus categories ────────────────────────────────────────────────────
+    // Shared category list. Any logged-in user may read (chips) and add a new
+    // one (must carry a slug + English label); only admins edit/remove.
+    match /corpus_categories/{docId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.slug is string
+        && request.resource.data.en is string;
+      allow update, delete: if isAdmin();
+    }
+
     // ── Admins list (read: any logged-in user to check own status) ───────────
     match /admins/{email} {
       allow read: if request.auth != null;

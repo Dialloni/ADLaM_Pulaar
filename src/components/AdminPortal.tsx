@@ -12,6 +12,7 @@ import type { Project } from '../types';
 import { AudioRecorder } from './AudioRecorder';
 import { ProjectThumb } from './ProjectThumb';
 import { adlamToLatin, latinToAdlam } from '../../lib/translit';
+import { DEFAULT_CATEGORIES, mergeCategories, categoryLabel, categoryColor, type Category } from '../lib/categories';
 // pdfjs (~400 KB) loads on first PDF use, not with the page
 async function getPdfjs() {
   const pdfjsLib = await import('pdfjs-dist');
@@ -20,7 +21,7 @@ async function getPdfjs() {
 }
 
 type SubmissionStatus = 'pending' | 'verified' | 'rejected' | 'needs_adlam';
-type SubmissionDomain = 'tech' | 'religion' | 'news' | 'casual' | 'literature' | 'ui_vocab';
+type SubmissionDomain = string;   // category slug — now dynamic (see lib/categories.ts)
 type Tab = 'queue' | 'upload' | 'paste' | 'dictionary' | 'community' | 'translit' | 'voice' | 'controls' | 'usage';
 type DictStatus = 'draft' | 'verified';
 
@@ -68,9 +69,9 @@ interface PdfResult {
 
 const P = '#3b82f6';
 const MANROPE = 'Manrope, sans-serif';
-const DOMAINS: SubmissionDomain[] = ['tech', 'religion', 'news', 'casual', 'literature', 'ui_vocab'];
-
-const DOMAIN_COLORS: Record<SubmissionDomain, string> = {
+// Hand-picked colors for the original core categories; everything else gets a
+// stable hashed color from lib/categories.
+const DOMAIN_COLORS: Record<string, string> = {
   tech:       '#bca2ff',
   religion:   '#fd8b00',
   news:       '#3b82f6',
@@ -78,6 +79,8 @@ const DOMAIN_COLORS: Record<SubmissionDomain, string> = {
   literature: '#60a5fa',
   ui_vocab:   '#f59e0b',
 };
+const domColor = (slug?: string | null): string =>
+  (slug && DOMAIN_COLORS[slug]) || (slug ? categoryColor(slug) : '#52525b');
 
 const SOURCE_COLORS: Record<string, string> = {
   telegram:    '#229ed9',
@@ -487,6 +490,11 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
   }, [statusFilter]);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<SubmissionDomain>('casual');
+  // Shared category list (seed + instructor-added), same source as the Collector.
+  const [adminCategories, setAdminCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  useEffect(() => onSnapshot(collection(db, 'corpus_categories'), snap => {
+    setAdminCategories(mergeCategories(snap.docs.map(d => d.data() as Category)));
+  }, () => {/* keep defaults on error */}), []);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>('');
@@ -1410,15 +1418,15 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
             <div className="rounded-xl border border-[var(--border)] p-4 space-y-2" style={{ background: 'var(--card-bg)' }}>
               <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{L.domain}</p>
               <div className="flex flex-wrap gap-1.5">
-                {DOMAINS.map(d => (
-                  <button key={d} onClick={() => setPasteDomain(d)}
+                {adminCategories.map(c => (
+                  <button key={c.slug} onClick={() => setPasteDomain(c.slug)}
                     className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all"
                     style={{
-                      background: pasteDomain === d ? `${DOMAIN_COLORS[d]}25` : 'rgba(255,255,255,0.04)',
-                      color: pasteDomain === d ? DOMAIN_COLORS[d] : '#52525b',
-                      border: `1px solid ${pasteDomain === d ? DOMAIN_COLORS[d] + '50' : 'transparent'}`,
+                      background: pasteDomain === c.slug ? `${domColor(c.slug)}25` : 'rgba(255,255,255,0.04)',
+                      color: pasteDomain === c.slug ? domColor(c.slug) : '#52525b',
+                      border: `1px solid ${pasteDomain === c.slug ? domColor(c.slug) + '50' : 'transparent'}`,
                     }}>
-                    {d}
+                    {categoryLabel(c, langCode)}
                   </button>
                 ))}
               </div>
@@ -1793,7 +1801,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
                     <span className="text-xs text-[var(--text-faint)]">{s.word_count ?? s.raw_text?.trim().split(/\s+/).filter(Boolean).length ?? 0} {L.words}</span>
                     {s.domain && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                        style={{ background: `${DOMAIN_COLORS[s.domain]}20`, color: DOMAIN_COLORS[s.domain] }}>
+                        style={{ background: `${domColor(s.domain)}20`, color: domColor(s.domain) }}>
                         {s.domain}
                       </span>
                     )}
@@ -1922,10 +1930,10 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
                         </>
                       ) : approvingId === s.id ? (
                         <>
-                          <select value={selectedDomain} onChange={e => setSelectedDomain(e.target.value as SubmissionDomain)}
+                          <select value={selectedDomain} onChange={e => setSelectedDomain(e.target.value)}
                             className="text-xs rounded-lg px-3 py-2 font-bold"
                             style={{ background: 'var(--card-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}>
-                            {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
+                            {adminCategories.map(c => <option key={c.slug} value={c.slug}>{categoryLabel(c, langCode)}</option>)}
                           </select>
                           <button onClick={() => approve(s.id)} disabled={actionLoading === s.id}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 disabled:opacity-40"
