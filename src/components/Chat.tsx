@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Send, Loader2, Layout, GraduationCap, Globe, User, ArrowRight, ArrowUp, Mic, MicOff, Copy, RotateCcw, ThumbsUp, ThumbsDown, Code2, Plus, Paperclip, Check, ChevronDown, MessageSquare, Square, Volume2, VolumeX } from 'lucide-react';
 import { GandoSpark } from './GandoSpark';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Message, TokenUsage } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -15,6 +16,40 @@ import { downscaleDataUrl, MAX_APP_IMAGES } from '../lib/appImages';
 
 type Attachment = { id: string; name: string; kind: 'image' | 'text'; content: string; previewUrl?: string };
 
+
+// Styled renderers for chat markdown — tables, code, lists, headings, links.
+// Without these (and remark-gfm) a table answer shows as raw `| a | b |` pipes.
+const MD_COMPONENTS = {
+  table: (p: any) => (
+    <div style={{ overflowX: 'auto', margin: '10px 0', borderRadius: 10, border: '1px solid var(--border)' }}>
+      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12.5 }} {...p} />
+    </div>
+  ),
+  thead: (p: any) => <thead style={{ background: 'var(--hover-bg)' }} {...p} />,
+  th: (p: any) => <th style={{ textAlign: 'left', padding: '7px 10px', fontWeight: 700, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }} {...p} />,
+  td: (p: any) => <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border-subtle)', borderRight: '1px solid var(--border-subtle)', verticalAlign: 'top' }} {...p} />,
+  tr: (p: any) => <tr {...p} />,
+  code: ({ className, children, ...p }: any) =>
+    /language-/.test(className || '') ? (
+      <code className={className} {...p}>{children}</code>
+    ) : (
+      <code style={{ background: 'var(--hover-bg)', padding: '1px 5px', borderRadius: 5, fontSize: '0.88em', fontFamily: 'ui-monospace, monospace' }} {...p}>{children}</code>
+    ),
+  pre: (p: any) => (
+    <pre style={{ background: 'var(--app-bg)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 12, overflowX: 'auto', margin: '10px 0', fontSize: 12.5, lineHeight: 1.5 }} {...p} />
+  ),
+  a: (p: any) => <a style={{ color: 'var(--brand, #3b82f6)', textDecoration: 'underline', textUnderlineOffset: 2 }} target="_blank" rel="noreferrer" {...p} />,
+  ul: (p: any) => <ul style={{ paddingLeft: 20, margin: '8px 0', listStyle: 'disc' }} {...p} />,
+  ol: (p: any) => <ol style={{ paddingLeft: 20, margin: '8px 0', listStyle: 'decimal' }} {...p} />,
+  li: (p: any) => <li style={{ margin: '3px 0' }} {...p} />,
+  h1: (p: any) => <h1 style={{ fontSize: 18, fontWeight: 800, margin: '14px 0 8px', color: 'var(--text-primary)' }} {...p} />,
+  h2: (p: any) => <h2 style={{ fontSize: 16, fontWeight: 800, margin: '12px 0 6px', color: 'var(--text-primary)' }} {...p} />,
+  h3: (p: any) => <h3 style={{ fontSize: 14, fontWeight: 700, margin: '10px 0 5px', color: 'var(--text-primary)' }} {...p} />,
+  p: (p: any) => <p style={{ margin: '6px 0' }} {...p} />,
+  blockquote: (p: any) => <blockquote style={{ borderLeft: '3px solid var(--border)', paddingLeft: 12, margin: '8px 0', color: 'var(--text-muted)' }} {...p} />,
+  hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--border-subtle)', margin: '12px 0' }} />,
+  strong: (p: any) => <strong style={{ fontWeight: 700, color: 'var(--text-primary)' }} {...p} />,
+};
 
 interface ChatProps {
   messages: Message[];
@@ -700,8 +735,8 @@ const ChatImpl: React.FC<ChatProps> = ({
                               color: 'var(--text-secondary)',
                             }}>
                             {m.role === 'assistant' ? (
-                              <div className="prose prose-invert max-w-none">
-                                <ReactMarkdown>{normalizeAdlam(m.content)}</ReactMarkdown>
+                              <div className="max-w-none" dir="auto" style={{ overflowWrap: 'anywhere' }}>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>{normalizeAdlam(m.content)}</ReactMarkdown>
                               </div>
                             ) : (
                               <>
@@ -741,7 +776,7 @@ const ChatImpl: React.FC<ChatProps> = ({
                   </motion.div>
                 ))}
                 
-                {isGenerating && (
+                {isGenerating && !(mode === 'chat' && (messages[messages.length - 1]?.content || '').trim().length > 0) && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
