@@ -229,8 +229,66 @@ def _load_seen_hashes() -> set:
             seen.add(_text_hash(doc["raw_text"]))
     return seen
 
+def _harvest_wp(base: str, seen: set, parse_html, strip_emoji):
+    """WordPress REST API path: clean title+content per post, stable content hash
+    (no nav/sidebar boilerplate, so widget churn can't re-ingest old articles).
+    Returns (records, posts_checked), or None if the site isn't WordPress or the
+    API is blocked — caller falls back to the HTML crawl."""
+    import requests
+    from urllib.parse import urlparse
+    site = urlparse(base).netloc.removeprefix("www.")
+    records, checked = [], 0
+    for page in range(1, 6):  # newest-first, ≤500 posts per run
+        url = (f"{base.rstrip('/')}/wp-json/wp/v2/posts"
+               f"?per_page=100&page={page}&_fields=id,link,title,content")
+        try:
+            resp = requests.get(url, timeout=20,
+                                headers={"User-Agent": "GandoAI-Scraper/1.0"})
+        except requests.RequestException as e:
+            if page == 1:
+                print(f"harvest: {site} WP API unreachable ({e})", flush=True)
+                return None
+            break
+        if resp.status_code == 400:  # past last page
+            break
+        if resp.status_code != 200:
+            if page == 1:
+                return None
+            break
+        try:
+            posts = resp.json()
+        except ValueError:
+            return None if page == 1 else (records, checked)
+        if not isinstance(posts, list) or not posts:
+            if page == 1 and not isinstance(posts, list):
+                return None
+            break
+        new_on_page = 0
+        for post in posts:
+            checked += 1
+            title   = strip_emoji(parse_html((post.get("title") or {}).get("rendered", ""))[0])
+            content = strip_emoji(parse_html((post.get("content") or {}).get("rendered", ""))[0])
+            text    = f"{title}\n\n{content}".strip() if title else content.strip()
+            if not text:
+                continue
+            ratio = _adlam_ratio(text)
+            if ratio < HARVEST_MIN_RATIO:
+                continue
+            h = _text_hash(text)
+            if h in seen:
+                continue
+            seen.add(h)
+            new_on_page += 1
+            records.append({"text": text, "source": site,
+                            "url": post.get("link"), "ratio": ratio, "hash": h})
+        if new_on_page == 0 or len(posts) < 100:
+            break  # newest-first: a page with nothing new means older pages have nothing new
+        time.sleep(1.0)
+    return records, checked
+
 def _harvest_web(seen: set) -> list:
-    """Scrape HARVEST_URLS (+ same-domain links) for new ADLaM-rich pages. Blocking."""
+    """Scrape HARVEST_URLS for new ADLaM-rich text. WordPress API first (clean,
+    stable per-post records); HTML crawl only for non-WP sites. Blocking."""
     from urllib.parse import urljoin, urlparse
     import sys as _sys
     if SCRAPER_DIR not in _sys.path:
@@ -245,8 +303,17 @@ def _harvest_web(seen: set) -> list:
         return urlparse(u).netloc.removeprefix("www.")
 
     records, visited = [], set()
-    queue = list(HARVEST_URLS)
-    seed_domains = {domain(u) for u in HARVEST_URLS}
+    queue, wp_checked = [], 0
+    for base in HARVEST_URLS:
+        wp = _harvest_wp(base, seen, parse_html, strip_emoji)
+        if wp is None:
+            queue.append(base)  # not WordPress → existing HTML crawl below
+            continue
+        wp_records, checked = wp
+        wp_checked += checked
+        records.extend(wp_records)
+        print(f"harvest: {domain(base)} via WP API — {checked} posts checked, {len(wp_records)} new", flush=True)
+    seed_domains = {domain(u) for u in queue}
 
     while queue and len(visited) < HARVEST_MAX_PAGES:
         url = queue.pop(0).split("#")[0]
@@ -277,7 +344,7 @@ def _harvest_web(seen: set) -> list:
             if nxt.startswith("http") and domain(nxt) in seed_domains and nxt not in visited:
                 queue.append(nxt)
         time.sleep(1.0)
-    return records, len(visited), None
+    return records, len(visited) + wp_checked, None
 
 async def _harvest_groups(seen: set) -> list:
     """Read new messages from HARVEST_GROUPS via a USER session (bot tokens can't). Optional."""
