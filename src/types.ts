@@ -43,8 +43,11 @@ export interface Submission {
   ua?: string;
 }
 
+export interface TokenUsage { inTok: number; outTok: number; model: string }
+
 export interface GenerationResult {
   code: string;
   explanation: string;
   name: string;
+  usage?: TokenUsage;
 }

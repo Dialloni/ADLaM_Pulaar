@@ -163,11 +163,14 @@ Incremental edits:
 
 ${EDIT_PROTOCOL}`;
 
+export interface TokenUsage { inTok: number; outTok: number; model: string }
+
 export interface GenResult {
   language: string;
   name: string;
   code: string;
   explanation: string;
+  usage?: TokenUsage;
 }
 
 // A user-attached image for vision. `data` is RAW base64 (no "data:...;base64," prefix).
@@ -429,8 +432,14 @@ async function runClaude(
       inMeta = true;
     }
   }
-  await stream.finalMessage();
-  return opts.kind === 'edit' ? finishEdit(buf, opts.currentCode ?? '', onCode) : splitOutput(buf);
+  const final = await stream.finalMessage();
+  const usage: TokenUsage = {
+    inTok: final.usage?.input_tokens ?? 0,
+    outTok: final.usage?.output_tokens ?? 0,
+    model,
+  };
+  const result = opts.kind === 'edit' ? finishEdit(buf, opts.currentCode ?? '', onCode) : splitOutput(buf);
+  return { ...result, usage };
 }
 
 // Works with any OpenAI-compatible /chat/completions endpoint: Groq (free), and
@@ -458,6 +467,7 @@ async function runOpenAICompatible(
       max_tokens: maxTokens(),
       temperature: 0.8,
       stream: true,
+      stream_options: { include_usage: true }, // final chunk carries token counts
     }),
   });
 
@@ -466,6 +476,7 @@ async function runOpenAICompatible(
     throw new Error((err as { error?: { message?: string } })?.error?.message || `Provider error: ${res.status}`);
   }
 
+  let usage: TokenUsage = { inTok: 0, outTok: 0, model: modelId };
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let sseBuffer = '';
@@ -529,14 +540,19 @@ async function runOpenAICompatible(
       const payload = line.slice(6);
       if (payload === '[DONE]') break outer;
       try {
-        const json = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] };
+        const json = JSON.parse(payload) as {
+          choices?: { delta?: { content?: string } }[];
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        };
         const token = json.choices?.[0]?.delta?.content ?? '';
         if (token) processToken(token);
+        if (json.usage) usage = { inTok: json.usage.prompt_tokens ?? 0, outTok: json.usage.completion_tokens ?? 0, model: modelId };
       } catch { /* skip malformed SSE frame */ }
     }
   }
 
-  return opts.kind === 'edit' ? finishEdit(buf, opts.currentCode ?? '', onCode) : splitOutput(buf);
+  const result = opts.kind === 'edit' ? finishEdit(buf, opts.currentCode ?? '', onCode) : splitOutput(buf);
+  return { ...result, usage };
 }
 
 // Gemini fallback: non-streaming structured JSON, emitted as one code chunk.
@@ -576,7 +592,12 @@ async function runGemini(
   const text = (res.text || '').trim().replace(/^```json\s*/i, '').replace(/```$/, '').trim();
   const m = JSON.parse(text) as GenResult;
   if (m.code) onCode(m.code);
-  return { code: m.code ?? '', name: m.name ?? '', language: m.language ?? '', explanation: m.explanation ?? '' };
+  const usage: TokenUsage = {
+    inTok: res.usageMetadata?.promptTokenCount ?? 0,
+    outTok: res.usageMetadata?.candidatesTokenCount ?? 0,
+    model,
+  };
+  return { code: m.code ?? '', name: m.name ?? '', language: m.language ?? '', explanation: m.explanation ?? '', usage };
 }
 
 // ── Chat mode ─────────────────────────────────────────────────────────────
@@ -608,33 +629,39 @@ function buildChatContent(o: ChatOpts): string {
   return `${hint}${codeCtx}${hist}User: ${o.prompt}`;
 }
 
-/** Stream a chat answer token-by-token. Resolves with the full answer text. */
-export async function chatStream(opts: ChatOpts, onToken: (chunk: string) => void): Promise<string> {
+/** Stream a chat answer token-by-token. Resolves with the full answer text.
+ * onUsage (optional) fires once at the end with the token counts. */
+export async function chatStream(
+  opts: ChatOpts,
+  onToken: (chunk: string) => void,
+  onUsage?: (u: TokenUsage) => void,
+): Promise<string> {
   // BYOK takes priority — user's own key, no fallback to our keys.
   if (opts.byok?.apiKey) {
     const d = BYOK_DEFAULTS[opts.byok.provider];
     if (!d) throw new Error(`Unknown provider: ${opts.byok.provider}`);
-    if (d.kind === 'openai') return chatOpenAICompatible(opts, d.baseUrl!, opts.byok.apiKey, d.model, onToken);
-    if (d.kind === 'anthropic') return chatClaude(opts, onToken, opts.byok.apiKey, d.model);
-    return chatGeminiOnce(opts, onToken, opts.byok.apiKey, d.model);
+    if (d.kind === 'openai') return chatOpenAICompatible(opts, d.baseUrl!, opts.byok.apiKey, d.model, onToken, onUsage);
+    if (d.kind === 'anthropic') return chatClaude(opts, onToken, onUsage, opts.byok.apiKey, d.model);
+    return chatGeminiOnce(opts, onToken, onUsage, opts.byok.apiKey, d.model);
   }
   const provider = opts.provider || 'claude';
   if (provider === 'groq-llama' || provider === 'groq-scout') {
-    return chatOpenAICompatible(opts, 'https://api.groq.com/openai/v1', groqKey(), GROQ_MODEL_IDS[provider], onToken);
+    return chatOpenAICompatible(opts, 'https://api.groq.com/openai/v1', groqKey(), GROQ_MODEL_IDS[provider], onToken, onUsage);
   }
   if (provider === 'claude' && anthropicKey()) {
     try {
-      return await chatClaude(opts, onToken);
+      return await chatClaude(opts, onToken, onUsage);
     } catch (err) {
       if (!geminiKey()) throw err;
     }
   }
-  return chatGeminiOnce(opts, onToken);
+  return chatGeminiOnce(opts, onToken, onUsage);
 }
 
 async function chatClaude(
   opts: ChatOpts,
   onToken: (chunk: string) => void,
+  onUsage?: (u: TokenUsage) => void,
   apiKey: string = anthropicKey(),
   model: string = claudeModel()
 ): Promise<string> {
@@ -653,7 +680,8 @@ async function chatClaude(
       onToken(ev.delta.text);
     }
   }
-  await stream.finalMessage();
+  const final = await stream.finalMessage();
+  onUsage?.({ inTok: final.usage?.input_tokens ?? 0, outTok: final.usage?.output_tokens ?? 0, model });
   return full;
 }
 
@@ -661,6 +689,7 @@ async function chatClaude(
 async function chatGeminiOnce(
   opts: ChatOpts,
   onToken: (chunk: string) => void,
+  onUsage?: (u: TokenUsage) => void,
   apiKey: string = geminiKey(),
   model: string = geminiModel()
 ): Promise<string> {
@@ -673,6 +702,7 @@ async function chatGeminiOnce(
   });
   const out = (res.text || '').trim();
   if (out) onToken(out);
+  onUsage?.({ inTok: res.usageMetadata?.promptTokenCount ?? 0, outTok: res.usageMetadata?.candidatesTokenCount ?? 0, model });
   return out;
 }
 
@@ -682,7 +712,8 @@ async function chatOpenAICompatible(
   baseUrl: string,
   apiKey: string,
   modelId: string,
-  onToken: (chunk: string) => void
+  onToken: (chunk: string) => void,
+  onUsage?: (u: TokenUsage) => void
 ): Promise<string> {
   if (!apiKey) throw new Error('API key not configured for this provider.');
   const isGroq = baseUrl.includes('groq.com');
@@ -699,6 +730,7 @@ async function chatOpenAICompatible(
       max_tokens: 4096,
       temperature: 0.7,
       stream: true,
+      stream_options: { include_usage: true },
     }),
   });
 
@@ -724,9 +756,13 @@ async function chatOpenAICompatible(
       const payload = line.slice(6);
       if (payload === '[DONE]') break outer;
       try {
-        const json = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] };
+        const json = JSON.parse(payload) as {
+          choices?: { delta?: { content?: string } }[];
+          usage?: { prompt_tokens?: number; completion_tokens?: number };
+        };
         const token = json.choices?.[0]?.delta?.content ?? '';
         if (token) { full += token; onToken(token); }
+        if (json.usage) onUsage?.({ inTok: json.usage.prompt_tokens ?? 0, outTok: json.usage.completion_tokens ?? 0, model: modelId });
       } catch { /* skip */ }
     }
   }
