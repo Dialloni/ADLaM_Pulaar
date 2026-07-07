@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   collection, query, where, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, setDoc, getDocs, getCountFromServer,
   db, serverTimestamp, addDoc, storage, ref, uploadBytes, uploadBytesResumable, getDownloadURL,
@@ -127,14 +127,15 @@ async function renderPageToJpeg(page: any, scale = 2): Promise<string> {
 }
 
 async function ocrOneImage(base64: string, token: string): Promise<string> {
-  for (let attempt = 0; attempt <= 3; attempt++) {
+  for (let attempt = 0; attempt <= 4; attempt++) {
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ imageBase64: base64, mimeType: 'image/jpeg' }),
     });
-    if (res.status === 429) {
-      await new Promise(r => setTimeout(r, 4000 * (attempt + 1)));
+    // 429 rate limit and transient 5xx (Gemini INTERNAL/UNAVAILABLE) are both retryable.
+    if ((res.status === 429 || res.status >= 500) && attempt < 4) {
+      await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
       continue;
     }
     if (!res.ok) {
@@ -144,16 +145,18 @@ async function ocrOneImage(base64: string, token: string): Promise<string> {
     const { text } = await res.json() as { text: string };
     return text;
   }
-  throw new Error('OCR rate limited — try again later.');
+  throw new Error('OCR failed after retries — Gemini kept returning errors. Try again later.');
 }
 
-// Render PDF pages client-side → OCR each page image individually.
-// Per-page image OCR is fast (seconds) and stays under Vercel's 60s limit,
-// unlike sending a whole PDF to Gemini.
+// Render PDF pages client-side → OCR each page image individually, saving in
+// page-range chunks as we go. Incremental save matters: a whole book in ONE
+// Firestore doc would blow the 1MB doc cap and lose everything; chunking also
+// means a crash at page 250 keeps the first 240. onBatch persists each chunk.
 async function ocrPdfWithGemini(
   file: File,
-  onProgress?: (msg: string) => void,
-): Promise<{ text: string; pages: number }> {
+  onProgress: (msg: string) => void,
+  onBatch: (text: string, fromPage: number, toPage: number) => Promise<void>,
+): Promise<{ pages: number; words: number; failed: number; sample: string }> {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('Not authenticated');
 
@@ -162,15 +165,56 @@ async function ocrPdfWithGemini(
   const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
   const pages = pdf.numPages;
 
-  const texts: string[] = [];
-  for (let i = 1; i <= pages; i++) {
-    onProgress?.(`Gemini OCR page ${i}/${pages}…`);
-    const page = await pdf.getPage(i);
-    const base64 = await renderPageToJpeg(page, 2);
-    const text = await ocrOneImage(base64, token);
-    if (text) texts.push(text);
+  const CONCURRENCY = 5;   // overlap network-bound page OCR — ~5× faster than serial
+  const BATCH = 10;        // save every 10 pages — stays well under Firestore's 1MB doc cap
+  let done = 0;
+  let failed = 0;
+  let words = 0;
+  let sample = '';
+
+  for (let start = 1; start <= pages; start += BATCH) {
+    const end = Math.min(start + BATCH - 1, pages);
+    const pageNums = Array.from({ length: end - start + 1 }, (_, k) => start + k);
+    const texts: string[] = new Array(pageNums.length).fill('');
+    let cursor = 0;
+
+    const worker = async () => {
+      while (true) {
+        const idx = cursor++;
+        if (idx >= pageNums.length) return;
+        const pageNum = pageNums[idx];
+        try {
+          const page = await pdf.getPage(pageNum);
+          const base64 = await renderPageToJpeg(page, 2);
+          texts[idx] = await ocrOneImage(base64, token);
+        } catch (err) {
+          // One flaky page shouldn't kill a whole book — skip it, keep the rest.
+          failed++;
+          console.error(`OCR page ${pageNum} failed:`, err);
+        } finally {
+          done++;
+          const tail = failed ? ` (${failed} skipped)` : '';
+          onProgress(`Gemini OCR ${done}/${pages}…${tail}`);
+        }
+      }
+    };
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, pageNums.length) }, () => worker()),
+    );
+
+    const batchText = texts.filter(t => t.trim().length > 0).join('\n\n').trim();
+    if (batchText) {
+      onProgress(`Saving pages ${start}–${end}…`);
+      await onBatch(batchText, start, end);
+      words += batchText.split(/\s+/).filter(Boolean).length;
+      if (!sample) sample = batchText.slice(0, 300);
+    }
   }
-  return { text: texts.join('\n\n'), pages };
+
+  if (!words && failed) {
+    throw new Error(`All ${failed} pages failed OCR — Gemini kept erroring. Try again later.`);
+  }
+  return { pages, words, failed, sample };
 }
 
 
@@ -418,6 +462,29 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
   const [corpusError, setCorpusError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | SubmissionStatus>('pending');
   const [sourceFilter, setSourceFilter] = useState<'all' | string>('all');
+  // verified/rejected docs aren't in the live review listeners — fetch on demand.
+  const [filterDocs, setFilterDocs] = useState<Submission[] | null>(null);
+  useEffect(() => {
+    if (statusFilter !== 'verified' && statusFilter !== 'rejected') {
+      setFilterDocs(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'corpus_submissions'),
+          where('status', '==', statusFilter),
+          limit(300),
+        ));
+        if (!cancelled) setFilterDocs(snap.docs.map(d => ({ id: d.id, ...d.data() } as Submission)));
+      } catch (e) {
+        console.error('filter load error:', e);
+        if (!cancelled) setFilterDocs([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [statusFilter]);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<SubmissionDomain>('casual');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -521,8 +588,11 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
     // Three single-field listeners merged client-side — none uses where+orderBy
     // together, so no composite index is needed. needs_adlam = contributor gave
     // a gloss/audio but no ADLaM yet; instructors complete those.
-    const qPending = query(collection(db, 'corpus_submissions'), where('status', '==', 'pending'));
-    const qNeeds = query(collection(db, 'corpus_submissions'), where('status', '==', 'needs_adlam'));
+    // Cap the pending listener: loading ALL pending docs (thousands) live froze
+    // the tab and made the counter flicker. 500 is plenty to review at a time;
+    // the true totals come from getCountFromServer (refreshCounts), not this list.
+    const qPending = query(collection(db, 'corpus_submissions'), where('status', '==', 'pending'), limit(500));
+    const qNeeds = query(collection(db, 'corpus_submissions'), where('status', '==', 'needs_adlam'), limit(500));
     const qRecent = query(collection(db, 'corpus_submissions'), orderBy('submitted_at', 'desc'), limit(100));
     const unsubP = onSnapshot(qPending, snap => { pendingDocs = snap.docs.map(toSub); recompute(); setLoading(false); }, onErr);
     const unsubN = onSnapshot(qNeeds, snap => { needsAdlamDocs = snap.docs.map(toSub); recompute(); setLoading(false); }, onErr);
@@ -545,18 +615,33 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
     return unsub;
   }, []);
 
-  const filtered = submissions.filter(s => {
+  const filtered = (filterDocs ?? submissions).filter(s => {
     if (statusFilter !== 'all' && s.status !== statusFilter) return false;
     if (sourceFilter !== 'all' && s.source !== sourceFilter) return false;
     return true;
   });
 
-  const stats = {
-    needs_adlam: submissions.filter(s => s.status === 'needs_adlam').length,
-    pending:  submissions.filter(s => s.status === 'pending').length,
-    verified: submissions.filter(s => s.status === 'verified').length,
-    rejected: submissions.filter(s => s.status === 'rejected').length,
-  };
+  // Accurate totals from the server (aggregation query — one cheap read each,
+  // no docs downloaded). The capped listener above can't be trusted for counts.
+  const [stats, setStats] = useState({ needs_adlam: 0, pending: 0, verified: 0, rejected: 0 });
+  const refreshCounts = useCallback(async () => {
+    try {
+      const c = collection(db, 'corpus_submissions');
+      const [n, p, v, r] = await Promise.all([
+        getCountFromServer(query(c, where('status', '==', 'needs_adlam'))),
+        getCountFromServer(query(c, where('status', '==', 'pending'))),
+        getCountFromServer(query(c, where('status', '==', 'verified'))),
+        getCountFromServer(query(c, where('status', '==', 'rejected'))),
+      ]);
+      setStats({
+        needs_adlam: n.data().count, pending: p.data().count,
+        verified: v.data().count, rejected: r.data().count,
+      });
+    } catch (e) {
+      console.error('count refresh error:', e);
+    }
+  }, []);
+  useEffect(() => { refreshCounts(); }, [refreshCounts]);
 
   /* ── QUEUE ACTIONS ── */
   async function approve(id: string) {
@@ -569,6 +654,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
     });
     setApprovingId(null);
     setActionLoading(null);
+    refreshCounts();
   }
 
   async function saveEdit(id: string, prevStatus: SubmissionStatus) {
@@ -607,6 +693,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
       setEditText('');
       setEditAudio(null);
       setActionLoading(null);
+      refreshCounts();
     }
   }
 
@@ -618,6 +705,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
       verified_at: serverTimestamp(),
     });
     setActionLoading(null);
+    refreshCounts();
   }
 
   function exportJSONL() {
@@ -750,6 +838,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
     setPasteSubmitting(false);
     setPasteSuccess(true);
     setTimeout(() => setPasteSuccess(false), 3000);
+    refreshCounts();
   }
 
   async function decodeWithAI() {
@@ -794,64 +883,75 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
         });
         const file_url = await getDownloadURL(storageRef);
 
-        // 2. Extract text (digital) then OCR fallback (scanned/custom-font)
-        let extracted = await extractPdfText(file);
-        let ratio = adlamRatio(extracted.text);
-        let word_count = extracted.text.trim().split(/\s+/).filter(Boolean).length;
-        let usedOcr = false;
+        const patchRow = (patch: Partial<PdfResult>) => setResults(prev => prev.map(r =>
+          r.fileName === file.name ? { ...r, ...patch } : r
+        ));
 
+        // 2. Extract digital text; decide whether OCR is needed.
         // Text-layer ADLaM almost always comes from broken pre-Unicode fonts →
         // garbage (boxes + jumbled glyphs) even at a high ADLaM ratio. Trust the
         // text layer only for clean Latin/French digital PDFs; for anything with
         // meaningful ADLaM, render + OCR each page (reliable, page-by-page).
-        if (ratio === 0 || word_count < 10 || ratio >= 0.3) {
-          // fallback: render pages client-side → Gemini vision OCR per page
-          const setMsg = (msg: string) => setResults(prev => prev.map(r =>
-            r.fileName === file.name ? { ...r, status: 'ready', error: msg } : r
-          ));
+        const extracted = await extractPdfText(file);
+        const digitalRatio = adlamRatio(extracted.text);
+        const digitalWords = extracted.text.trim().split(/\s+/).filter(Boolean).length;
+        const needsOcr = digitalRatio === 0 || digitalWords < 10 || digitalRatio >= 0.3;
+
+        if (needsOcr) {
+          // OCR path: save each 10-page chunk to the queue as it finishes, so a
+          // whole book never lives in one (over-1MB) doc and partial work survives.
+          const setMsg = (msg: string) => patchRow({ status: 'ready', error: msg });
           setMsg('Running Gemini OCR…');
-          extracted = await ocrPdfWithGemini(file, setMsg);
-          ratio = adlamRatio(extracted.text);
-          word_count = extracted.text.trim().split(/\s+/).filter(Boolean).length;
-          usedOcr = true;
-        }
-
-        const { text, pages } = extracted;
-
-        setResults(prev => prev.map(r =>
-          r.fileName === file.name
-            ? { ...r, text, adlam_ratio: ratio, word_count, pages, file_url, error: undefined }
-            : r
-        ));
-
-        // 3. Save any extracted text to the pending queue for review.
-        //    Don't discard low-ADLaM-ratio results — Gemini may transliterate
-        //    to Latin or emit pre-Unicode codepoints; admin inspects/edits/rejects.
-        if (word_count >= 3) {
-          await addDoc(collection(db, 'corpus_submissions'), {
-            source: 'pdf',
-            raw_text: text,
-            adlam_ratio: ratio,
-            word_count,
-            status: 'pending',
-            domain: null,
-            submitted_at: serverTimestamp(),
-            verified_by: null,
-            verified_at: null,
-            source_meta: { file_name: file.name, pages, ocr: usedOcr, low_adlam: ratio < 0.1 },
-            file_url,
+          let savedWords = 0;
+          const summary = await ocrPdfWithGemini(file, setMsg, async (chunkText, fromPage, toPage) => {
+            const cRatio = adlamRatio(chunkText);
+            const cWords = chunkText.trim().split(/\s+/).filter(Boolean).length;
+            await addDoc(collection(db, 'corpus_submissions'), {
+              source: 'pdf',
+              raw_text: chunkText,
+              adlam_ratio: cRatio,
+              word_count: cWords,
+              status: 'pending',
+              domain: null,
+              submitted_at: serverTimestamp(),
+              verified_by: null,
+              verified_at: null,
+              source_meta: { file_name: file.name, ocr: true, low_adlam: cRatio < 0.1, page_from: fromPage, page_to: toPage },
+              file_url,
+            });
+            savedWords += cWords;
+            patchRow({ word_count: savedWords, adlam_ratio: cRatio, text: chunkText.slice(0, 300) });
+            refreshCounts();
           });
-          setResults(prev => prev.map(r =>
-            r.fileName === file.name
-              ? { ...r, status: 'done', error: ratio < 0.1 ? 'Saved, but low ADLaM ratio — review in queue (may be Latin/pre-Unicode).' : undefined }
-              : r
-          ));
+
+          if (summary.words === 0) {
+            patchRow({ status: 'error', error: 'Gemini returned almost no text. PDF may be blank or unreadable.' });
+          } else {
+            const skipped = summary.failed ? ` (${summary.failed} pages skipped)` : '';
+            patchRow({ status: 'done', pages: summary.pages, word_count: savedWords, file_url, error: `Saved ${savedWords} words${skipped}.` });
+          }
         } else {
-          setResults(prev => prev.map(r =>
-            r.fileName === file.name
-              ? { ...r, status: 'error', error: 'Gemini returned almost no text. PDF may be blank or unreadable.' }
-              : r
-          ));
+          // Digital text path: clean Latin/French — one save (these are small).
+          const { text, pages } = extracted;
+          patchRow({ text, adlam_ratio: digitalRatio, word_count: digitalWords, pages, file_url, error: undefined });
+          if (digitalWords >= 3) {
+            await addDoc(collection(db, 'corpus_submissions'), {
+              source: 'pdf',
+              raw_text: text,
+              adlam_ratio: digitalRatio,
+              word_count: digitalWords,
+              status: 'pending',
+              domain: null,
+              submitted_at: serverTimestamp(),
+              verified_by: null,
+              verified_at: null,
+              source_meta: { file_name: file.name, pages, ocr: false, low_adlam: digitalRatio < 0.1 },
+              file_url,
+            });
+            patchRow({ status: 'done', error: digitalRatio < 0.1 ? 'Saved, but low ADLaM ratio — review in queue (may be Latin/pre-Unicode).' : undefined });
+          } else {
+            patchRow({ status: 'error', error: 'No readable text found. PDF may be blank or unreadable.' });
+          }
         }
       } catch (err) {
         setResults(prev => prev.map(r =>
@@ -862,6 +962,7 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
       }
     }
     setProcessing(false);
+    refreshCounts();
   }
 
   const sources = ['all', ...Array.from(new Set(submissions.map(s => s.source)))];
@@ -1220,7 +1321,10 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
                     <FileText className="w-4 h-4 flex-shrink-0" style={{ color: '#fd8b00' }} />
                     <span className="text-sm font-bold text-[var(--text-primary)] truncate flex-1">{r.fileName}</span>
                     {r.status === 'ready' && (
-                      <RefreshCw className="w-4 h-4 text-[var(--text-muted)] animate-spin" />
+                      <span className="flex items-center gap-2 text-xs font-bold text-[var(--text-muted)]">
+                        {r.error && <span className="truncate max-w-[220px]">{r.error}</span>}
+                        <RefreshCw className="w-4 h-4 animate-spin flex-shrink-0" />
+                      </span>
                     )}
                     {r.status === 'done' && (
                       <span className="flex items-center gap-1.5 text-xs font-bold text-green-400">
