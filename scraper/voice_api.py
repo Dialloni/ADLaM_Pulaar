@@ -6,14 +6,24 @@
 # Models lazy-load on first use (TTS ~150MB, ASR ~3.9GB download).
 import base64
 import io
+import os
 import subprocess
 
 import torch
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
 app = FastAPI()
+
+# Shared-secret gate: set VOICE_SHARED_SECRET here AND on the Gando server to
+# lock /tts + /asr to Gando-only traffic. Unset = open (safe rollout order).
+VOICE_SHARED_SECRET = os.environ.get("VOICE_SHARED_SECRET", "")
+
+
+def require_secret(x_voice_secret: str = Header(default="")):
+    if VOICE_SHARED_SECRET and x_voice_secret != VOICE_SHARED_SECRET:
+        raise HTTPException(401, "unauthorized")
 _tts: dict = {}
 _asr: dict = {}
 
@@ -53,7 +63,7 @@ class TtsReq(BaseModel):
     rate: float = 0.8
 
 
-@app.post("/tts")
+@app.post("/tts", dependencies=[Depends(require_secret)])
 def tts(req: TtsReq):
     text = req.text.strip()
     if not text:
@@ -74,7 +84,7 @@ class AsrReq(BaseModel):
     mime: str = "audio/webm"
 
 
-@app.post("/asr")
+@app.post("/asr", dependencies=[Depends(require_secret)])
 def asr(req: AsrReq):
     try:
         raw = base64.b64decode(req.audio)

@@ -161,6 +161,13 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 type AuthedRequest = Request & { uid: string };
 
+// Shared secret for the self-hosted voice Space (scraper/voice_api.py). The Space
+// only enforces it when VOICE_SHARED_SECRET is set on both sides.
+function voiceSecretHeader(): Record<string, string> {
+  const secret = (process.env.VOICE_SHARED_SECRET || '').replace(/['"]/g, '');
+  return secret ? { 'x-voice-secret': secret } : {};
+}
+
 // Daily per-user quota on the routes that spend our LLM credits (BYOK exempt).
 function meter(kind: RateKind) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -412,7 +419,7 @@ Output ONLY the extracted text, nothing else.`;
       try {
         const asrRes = await fetch(`${voiceApi}/asr`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...voiceSecretHeader() },
           body: JSON.stringify({ audio, mime: mimeType }),
         });
         if (asrRes.ok) {
@@ -472,7 +479,7 @@ Output ONLY the extracted text, nothing else.`;
       const rate = Math.min(1.5, Math.max(0.5, Number(req.body?.rate) || Number(process.env.TTS_SPEAKING_RATE) || 0.8));
       const ttsRes = await fetch(`${voiceApi}/tts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...voiceSecretHeader() },
         body: JSON.stringify({ text: romanized, rate }),
       });
       if (!ttsRes.ok) {
