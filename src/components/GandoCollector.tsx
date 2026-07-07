@@ -269,13 +269,6 @@ export function GandoCollector({ user, langCode = 'en' }: { user: User; langCode
           </div>
 
           <div className="space-y-1.5">
-            <p className={labelCls}>{t.latinLabel}</p>
-            <input value={latin} onChange={e => setLatin(e.target.value)}
-              placeholder="Pulaar in Latin letters…"
-              className={inputCls} style={{ border: '1px solid var(--border)' }} />
-          </div>
-
-          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <p className={labelCls}>{t.adlamLabel}</p>
               {adlam.trim() !== '' && (
