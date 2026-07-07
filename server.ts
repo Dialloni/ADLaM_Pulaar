@@ -409,18 +409,26 @@ Output ONLY the extracted text, nothing else.`;
 
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-    for (let attempt = 0; attempt <= 3; attempt++) {
+    for (let attempt = 0; attempt <= 4; attempt++) {
       try {
         const response = await ai.models.generateContent({
           model: MODEL,
           contents: { parts: [{ inlineData: { data: imageBase64, mimeType } }, { text: OCR_PROMPT }] },
+          config: {
+            // OCR is mechanical — thinking only adds latency + timeout risk.
+            thinkingConfig: { thinkingBudget: 0 },
+            temperature: 0,
+          },
         });
         return res.json({ text: response.text?.trim() || '' });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         const is429 = /429|quota|rate|RESOURCE_EXHAUSTED|Too Many/i.test(msg);
-        if (is429 && attempt < 3) {
-          await sleep(2000 * (attempt + 1));
+        // 500 INTERNAL / 503 UNAVAILABLE / deadline are transient Gemini backend
+        // flakes — Google says to retry. Back off and try again, don't abort.
+        const isTransient = /\b(500|503)\b|INTERNAL|UNAVAILABLE|deadline|overloaded/i.test(msg);
+        if ((is429 || isTransient) && attempt < 4) {
+          await sleep(1500 * (attempt + 1) + Math.floor(Math.random() * 500));
           continue;
         }
         console.error('ocr error:', err);
