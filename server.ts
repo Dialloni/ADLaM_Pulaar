@@ -23,6 +23,10 @@ const FIREBASE_AUTH_PROXY_TARGET =
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+// OCR uses a stronger vision model — ADLaM is a hard, low-resource script and
+// flash hallucinates on it. Pro reads the actual glyphs far more reliably.
+// (Railway stores env values with literal quotes — strip them.)
+const OCR_MODEL = (process.env.GEMINI_OCR_MODEL || 'gemini-2.5-pro').replace(/['"]/g, '');
 const MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS) || 32768;
 
 const ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
@@ -397,26 +401,27 @@ ${text}`,
     if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' });
     if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-    const OCR_PROMPT = `Extract ALL text from this document. It may contain ADLaM script (Fulani/Pulaar, Unicode block U+1E900–U+1E95F), French, Arabic, or Latin text.
+    const OCR_PROMPT = `You are a precise OCR engine. Transcribe the text in this image EXACTLY as printed.
 
-Output the extracted text exactly as it appears, preserving:
-- ADLaM characters in Unicode (𞤀-𞥋 range) — do NOT convert to Latin
-- Line breaks where they occur in the document
-- Paragraph structure
+The image may contain ADLaM script (Fulani/Pulaar, Unicode block U+1E900–U+1E95F), French, Arabic, or Latin text. ADLaM is right-to-left with rounded/curved glyphs.
 
-If the document contains a mix of scripts, include all of it.
-Output ONLY the extracted text, nothing else.`;
+Rules:
+- Output ADLaM as real Unicode codepoints in U+1E900–U+1E95F. Do NOT romanize/transliterate to Latin, and do NOT output Arabic codepoints.
+- Transcribe ONLY what is clearly visible. Do NOT guess, autocomplete, correct, translate, or invent words. If a word or line is blurry or unreadable, skip it rather than making something up.
+- Preserve line breaks and paragraph structure. Keep French/Latin/Arabic passages as-is.
+
+Output ONLY the transcribed text. If the image has no readable text, output nothing.`;
 
     const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
     for (let attempt = 0; attempt <= 4; attempt++) {
       try {
         const response = await ai.models.generateContent({
-          model: MODEL,
+          model: OCR_MODEL,
           contents: { parts: [{ inlineData: { data: imageBase64, mimeType } }, { text: OCR_PROMPT }] },
           config: {
-            // OCR is mechanical — thinking only adds latency + timeout risk.
-            thinkingConfig: { thinkingBudget: 0 },
+            // temperature 0 = deterministic, less hallucination. Let pro think as
+            // needed for accuracy (Railway has no request timeout).
             temperature: 0,
           },
         });

@@ -3,20 +3,19 @@ import { GoogleGenAI } from '@google/genai';
 import { verifyIdToken } from '../lib/firebaseAdmin.js';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+// OCR uses a stronger vision model — flash hallucinates on ADLaM.
+const MODEL = (process.env.GEMINI_OCR_MODEL || 'gemini-2.5-pro').replace(/['"]/g, '');
 
-const OCR_PROMPT = `You are an OCR engine specialized in the ADLaM script (Fulani/Pulaar).
+const OCR_PROMPT = `You are a precise OCR engine. Transcribe the text in this image EXACTLY as printed.
 
-The image/PDF may contain ADLaM script, French, Arabic, or Latin text. ADLaM is a right-to-left script; its letters look like rounded/curved glyphs.
+The image/PDF may contain ADLaM script (Fulani/Pulaar, Unicode block U+1E900–U+1E95F), French, Arabic, or Latin text. ADLaM is right-to-left with rounded/curved glyphs.
 
-CRITICAL OUTPUT RULES:
-- When you see ADLaM script, output it as real ADLaM Unicode codepoints in the block U+1E900–U+1E95F (characters like 𞤀 𞤁 𞤂 𞤃 𞤄 … 𞥋).
-- DO NOT transliterate ADLaM into Latin letters (a, b, c…) or romanization.
-- DO NOT output ADLaM as Arabic codepoints or Arabic presentation forms.
-- Preserve line breaks and paragraph structure.
-- Keep French/Latin/Arabic passages as-is.
+Rules:
+- Output ADLaM as real Unicode codepoints in U+1E900–U+1E95F (𞤀 𞤁 𞤂 … 𞥋). Do NOT romanize/transliterate to Latin, and do NOT output Arabic codepoints or presentation forms.
+- Transcribe ONLY what is clearly visible. Do NOT guess, autocomplete, correct, translate, or invent words. If a word or line is blurry or unreadable, skip it rather than making something up.
+- Preserve line breaks and paragraph structure. Keep French/Latin/Arabic passages as-is.
 
-Output ONLY the extracted text. No commentary, no labels, no markdown.`;
+Output ONLY the transcribed text. If the image has no readable text, output nothing.`;
 
 async function generateOcr(base64: string, mimeType: string): Promise<string> {
   for (let attempt = 0; attempt <= 3; attempt++) {
@@ -31,9 +30,8 @@ async function generateOcr(base64: string, mimeType: string): Promise<string> {
           ],
         }],
         config: {
-          // Disable 2.5-flash "thinking" — OCR is mechanical, thinking only
-          // adds latency and risks Vercel 60s gateway timeout (504).
-          thinkingConfig: { thinkingBudget: 0 },
+          // temperature 0 = deterministic transcription, less hallucination.
+          // (Pro is the accuracy path; let it think as needed.)
           temperature: 0,
         },
       });
