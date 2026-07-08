@@ -49,7 +49,7 @@ flowchart TB
 
     subgraph LLM["🧠 LLM layer (lib/llm.ts)"]
         Claude["Claude Sonnet 4.6<br/>(default — best ADLaM)"]
-        Gemini["Gemini 2.5 Flash<br/>(fallback + OCR/vision)"]
+        Gemini["Gemini 2.5 Flash (fallback/vision)<br/>+ 2.5 Pro (ADLaM OCR)"]
         Groq["Llama 3.3 / Llama 4 Scout<br/>(free via Groq)"]
         BYOK["BYOK: OpenAI · Anthropic ·<br/>Gemini · DeepSeek · Groq"]
     end
@@ -75,7 +75,7 @@ flowchart LR
     subgraph Sources
         Coll["📷🎙 Gando Collector<br/>(photos, Pulaar audio,<br/>multi-script text)"]
         TG["🤖 Telegram harvester bot<br/>(scheduled, dedup)"]
-        PDF["📄 PDF OCR<br/>(Gemini page-by-page)"]
+        PDF["📄 PDF + image OCR<br/>(Gemini 2.5 Pro, chunked)"]
         Paste["📋 Paste text<br/>(+ pre-Unicode decoder)"]
         Shares["🌍 Community shares"]
     end
@@ -150,9 +150,10 @@ flowchart LR
 
 ### ADLaM Corpus Pipeline (Admin — English & French UI)
 
-- 📄 **PDF OCR** — page-by-page Gemini OCR outputs proper ADLaM Unicode (handles broken text-layer fonts)
+- 📄 **PDF + image OCR** — upload PDFs *or* JPG/PNG scans; each page renders to lossless PNG (3×) and goes to **Gemini 2.5 Pro** with an anti-hallucination prompt for accurate ADLaM Unicode. Big books OCR ~5 pages in parallel and save in **10-page chunks** — survives interruptions and dodges Firestore's 1 MB doc cap; transient Gemini 5xx auto-retry
 - 📋 **Paste text** — encoding inspector flags pre-Unicode Arabic-mapped fonts; **AI decoder** converts them to real ADLaM
-- ✅ **Review queue** — approve / reject / complete-the-ADLaM workflow with domain tagging and instructor audio recording
+- ✅ **Review queue** — approve / reject / complete-the-ADLaM flow with category tagging + instructor audio recording. Rejected items can be **restored** or **permanently deleted** (two-step confirm); approved items can be **edited** or **unverified**; stat cards show accurate server-side totals
+- 🏷 **Expandable categories** — 60 built-in domains (animals, housing, clothing, food, livestock, transport land/water/air, colors, body, health…) plus a **"+ Add"** that saves new categories in **English / French / ADLaM**, shared for everyone
 - 📖 **Dictionary** — verified term registry (ADLaM · Latin · French) with draft→verified flow and JSON export
 - 🌍 **Community moderation** — approve user-shared projects into the public template gallery
 - 📤 **JSONL export** — one-click download of the verified corpus for fine-tuning
@@ -385,7 +386,9 @@ npx tsx scripts/check-translit.ts      # transliterator rule assertions
 - [x] OG/Twitter link cards (WhatsApp-ready)
 - [x] Corpus Admin in French; dictionary draft→verified flow
 - [x] Telegram/web ADLaM harvester (scheduled, deduped)
-- [x] PDF OCR (page-by-page) + pre-Unicode ADLaM decoder
+- [x] **Accurate ADLaM OCR** — Gemini 2.5 Pro + anti-hallucination prompt + lossless PNG render; **PDF or JPG/PNG** upload; parallel page OCR saved in 10-page chunks (interruption-safe, 1 MB-cap-safe) + pre-Unicode ADLaM decoder
+- [x] **Expandable corpus categories** — 60 built-in domains + user-added ones (English/French/ADLaM), persisted and shared
+- [x] **Review-queue controls** — restore/delete rejected items (two-step confirm), edit/unverify approved items, accurate server-side counts
 - [x] RLHF thumbs feedback, stop-mid-build, light/dark by time of day
 - [x] Code-split bundle (‑28% first load), Safari first-party auth proxy
 
