@@ -2,6 +2,7 @@ import { adminDb } from './firebaseAdmin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { TokenUsage } from './llm';
 import { sendAlert } from './alert';
+import { getRuntimeConfig } from './runtimeConfig';
 
 // Rough blended $/1M tokens by model family — for the spend ALERT only, NOT
 // billing. Deliberately on the high side so the warning fires early, not late.
@@ -26,24 +27,25 @@ function estimateUsd(byModel: Record<string, unknown>, total: number): number {
   return usd;
 }
 
-// Daily spend ceiling (USD, our keys only). Alerts once/day when first crossed.
-const SPEND_ALERT_USD = Number((process.env.SPEND_ALERT_USD || '5').replace(/['"]/g, '')) || 5;
-
+// Alerts once/day when the day's estimated spend first crosses the ceiling.
+// The ceiling comes from runtime config (set via the /setlimit bot command or
+// admin portal), falling back to the SPEND_ALERT_USD env var.
 async function maybeAlertSpend(day: string): Promise<void> {
   try {
+    const { spendAlertUsd } = await getRuntimeConfig();
     const ref = adminDb().collection('usage_tokens').doc(day);
     const usd = await adminDb().runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       const d = snap.data() || {};
       if (d.spendAlertSent) return null; // already warned today
       const est = estimateUsd(d.byModel as Record<string, unknown>, Number(d.total || 0));
-      if (est < SPEND_ALERT_USD) return null;
-      tx.set(ref, { spendAlertSent: true, spendAlertUsd: est }, { merge: true });
+      if (est < spendAlertUsd) return null;
+      tx.set(ref, { spendAlertSent: true, spendAlertAtUsd: est }, { merge: true });
       return est;
     });
     if (usd != null) {
       await sendAlert(
-        `⚠ Gando spend alert\nEstimated $${usd.toFixed(2)} in AI usage today (${day}) — over your $${SPEND_ALERT_USD} limit.\nOpen the admin Usage tab; flip the shared-key kill-switch in Controls if this is abuse.`,
+        `⚠ Gando spend alert\nEstimated $${usd.toFixed(2)} in AI usage today (${day}) — over your $${spendAlertUsd} limit.\nOpen the admin Usage tab; flip the shared-key kill-switch in Controls if this is abuse.`,
       );
     }
   } catch (e) {
