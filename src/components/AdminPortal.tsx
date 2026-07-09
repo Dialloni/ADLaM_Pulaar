@@ -254,6 +254,9 @@ const ADMIN_I18N = {
     controlsOn: 'ON', controlsOff: 'OFF',
     controlsActive: 'active', controlsPaused: 'paused',
     controlsKeyNote: 'Note: for now this stops ALL our keys (Claude, Gemini, Groq). Goal later: pause only the paid ones (Claude + Gemini) and leave the free tiers running.',
+    controlsSpendTitle: 'Daily spend alert',
+    controlsSpendDesc: 'Get a Telegram alert once per day when estimated AI spend crosses this amount. Also settable from the bot with /setlimit.',
+    controlsSpendSave: 'Save',
     tabUsage: 'Usage',
     usageHint: 'Token spend on our keys (BYOK excluded). Live from the backend — no need to check Anthropic or Google dashboards.',
     usageToday: 'Today', usageTotal: 'Total tokens', usageIn: 'in', usageOut: 'out', usageCalls: 'calls',
@@ -322,6 +325,9 @@ const ADMIN_I18N = {
     controlsOn: 'ON', controlsOff: 'OFF',
     controlsActive: 'actif', controlsPaused: 'suspendu',
     controlsKeyNote: 'Note : pour l’instant, cela coupe TOUTES nos clés (Claude, Gemini, Groq). Objectif futur : ne suspendre que les payantes (Claude + Gemini) et laisser les gratuites actives.',
+    controlsSpendTitle: 'Alerte de dépense journalière',
+    controlsSpendDesc: 'Recevez une alerte Telegram une fois par jour lorsque la dépense IA estimée dépasse ce montant. Modifiable aussi via le bot avec /setlimit.',
+    controlsSpendSave: 'Enregistrer',
     tabUsage: 'Utilisation',
     usageHint: "Consommation de jetons sur nos clés (BYOK exclu). En direct depuis le backend — pas besoin de consulter les tableaux de bord Anthropic ou Google.",
     usageToday: "Aujourd'hui", usageTotal: 'Jetons totaux', usageIn: 'entrée', usageOut: 'sortie', usageCalls: 'appels',
@@ -383,11 +389,13 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
   const [trAdlam, setTrAdlam] = useState('');
 
   /* ── RUNTIME CONTROLS STATE ── live config/runtime kill switches */
-  const [runtimeCfg, setRuntimeCfg] = useState({ limitsEnabled: true, sharedKeyEnabled: true });
+  const [runtimeCfg, setRuntimeCfg] = useState({ limitsEnabled: true, sharedKeyEnabled: true, spendAlertUsd: 5 });
   const [cfgSaving, setCfgSaving] = useState<string | null>(null);
+  const [spendInput, setSpendInput] = useState('');
   useEffect(() => onSnapshot(doc(db, 'config', 'runtime'), snap => {
     const d = snap.data() ?? {};
-    setRuntimeCfg({ limitsEnabled: d.limitsEnabled !== false, sharedKeyEnabled: d.sharedKeyEnabled !== false });
+    const spend = typeof d.spendAlertUsd === 'number' && d.spendAlertUsd > 0 ? d.spendAlertUsd : 5;
+    setRuntimeCfg({ limitsEnabled: d.limitsEnabled !== false, sharedKeyEnabled: d.sharedKeyEnabled !== false, spendAlertUsd: spend });
   }, err => console.error('runtime config subscribe error:', err)), []);
   const setRuntimeFlag = async (key: 'limitsEnabled' | 'sharedKeyEnabled', value: boolean) => {
     setCfgSaving(key);
@@ -395,6 +403,19 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
       await setDoc(doc(db, 'config', 'runtime'), { [key]: value, updatedAt: serverTimestamp() }, { merge: true });
     } catch (e) {
       console.error('runtime config write error:', e);
+    } finally {
+      setCfgSaving(null);
+    }
+  };
+  const saveSpendLimit = async () => {
+    const val = parseFloat(spendInput.replace('$', '').trim());
+    if (!isFinite(val) || val <= 0 || val > 10000) return;
+    setCfgSaving('spendAlertUsd');
+    try {
+      await setDoc(doc(db, 'config', 'runtime'), { spendAlertUsd: val, updatedAt: serverTimestamp() }, { merge: true });
+      setSpendInput('');
+    } catch (e) {
+      console.error('spend limit write error:', e);
     } finally {
       setCfgSaving(null);
     }
@@ -1182,6 +1203,33 @@ export function AdminPortal({ user, langCode = 'en' }: { user: User; langCode?: 
               </button>
             </div>
           ))}
+
+          <div className="rounded-2xl border border-[var(--border)] p-5" style={{ background: 'var(--card-bg)' }}>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base font-black text-[var(--text-primary)]">{L.controlsSpendTitle}</h3>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}>
+                ${runtimeCfg.spendAlertUsd.toFixed(2)}/day
+              </span>
+            </div>
+            <p className="text-sm text-[var(--text-muted)] mt-1.5">{L.controlsSpendDesc}</p>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-sm font-bold text-[var(--text-muted)]">$</span>
+              <input
+                type="number" min="0" step="0.5"
+                value={spendInput}
+                onChange={e => setSpendInput(e.target.value)}
+                placeholder={runtimeCfg.spendAlertUsd.toString()}
+                className="w-28 px-3 py-2 rounded-lg border border-[var(--border)] bg-transparent text-[var(--text-primary)] text-sm" />
+              <button
+                onClick={saveSpendLimit}
+                disabled={cfgSaving === 'spendAlertUsd' || !spendInput.trim()}
+                className="px-4 py-2 rounded-lg font-bold text-sm text-white disabled:opacity-40"
+                style={{ background: 'var(--brand, #3b82f6)' }}>
+                {L.controlsSpendSave}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
