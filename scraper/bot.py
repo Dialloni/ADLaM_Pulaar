@@ -58,6 +58,7 @@ gemini_model = _GeminiCompat(gemini_client, GEMINI_MODEL_ID) if gemini_client el
 try:
     from telethon import TelegramClient, events
     from telethon.sessions import StringSession
+    from telethon.tl import functions, types as tl_types
 except ImportError:
     sys.exit("Run: pip install telethon")
 
@@ -725,6 +726,35 @@ async def main():
     client = TelegramClient(StringSession(""), API_ID, API_HASH)
     await client.start(bot_token=BOT_TOKEN)
     print(f"✓ Gando bot running. Listening for commands from chat {CHAT_ID}...")
+
+    # Register the tappable command menu: public commands for everyone, the full
+    # admin set only in the admin chat. Best-effort — never crash startup on this.
+    try:
+        await client(functions.bots.SetBotCommandsRequest(
+            scope=tl_types.BotCommandScopeDefault(), lang_code="",
+            commands=[
+                tl_types.BotCommand("start", "Start / how to use"),
+                tl_types.BotCommand("help", "How to use the bot"),
+                tl_types.BotCommand("speak", "Read Pulaar/ADLaM text aloud"),
+            ],
+        ))
+        await client(functions.bots.SetBotCommandsRequest(
+            scope=tl_types.BotCommandScopePeer(peer=await client.get_input_entity(CHAT_ID)),
+            lang_code="",
+            commands=[
+                tl_types.BotCommand("status", "Corpus stats"),
+                tl_types.BotCommand("usage", "Today's AI spend"),
+                tl_types.BotCommand("setlimit", "Set daily spend limit"),
+                tl_types.BotCommand("pending", "Pending review count"),
+                tl_types.BotCommand("next", "Preview next pending entry"),
+                tl_types.BotCommand("sync", "Run harvester now"),
+                tl_types.BotCommand("speak", "Read text aloud"),
+                tl_types.BotCommand("help", "All commands"),
+            ],
+        ))
+        print("✓ Bot command menu registered.")
+    except Exception as e:
+        print(f"command menu registration failed: {e}")
 
     @client.on(events.NewMessage(chats=CHAT_ID))
     async def voice_handler(event):
