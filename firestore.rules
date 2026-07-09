@@ -82,7 +82,12 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if request.auth != null
         && request.resource.data.status in ['pending', 'needs_adlam']
-        && request.resource.data.verified_by == null;
+        && request.resource.data.verified_by == null
+        // Bind authorship to the caller (no forging someone else's email) and
+        // cap the text field so the review queue can't be flooded with giant docs.
+        && request.resource.data.source_meta.submitted_by == request.auth.token.email
+        && request.resource.data.raw_text is string
+        && request.resource.data.raw_text.size() < 10000;
       allow update, delete: if isAdmin();
     }
 
@@ -100,7 +105,9 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.slug is string
-        && request.resource.data.en is string;
+        && request.resource.data.slug.size() < 60
+        && request.resource.data.en is string
+        && request.resource.data.en.size() < 80;
       allow update, delete: if isAdmin();
     }
 
