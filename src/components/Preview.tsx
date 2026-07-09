@@ -142,7 +142,8 @@ const MobilePreview: React.FC<PreviewProps> = ({ code, projectId, onFixError, er
     const onMsg = (e: MessageEvent) => {
       const h = e.data && (e.data as { __gandoHeight?: number }).__gandoHeight;
       if (typeof h === 'number' && h > 0) {
-        const next = Math.max(h, 400);
+        // Clamp: a hostile frame could post a huge number to force a runaway layout.
+        const next = Math.min(Math.max(h, 400), 60000);
         // ignore sub-pixel/tiny jitter to avoid re-render thrash (freeze on animated apps)
         setHeight(prev => (Math.abs(prev - next) > 8 ? next : prev));
       }
