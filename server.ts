@@ -205,6 +205,11 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
+  // Railway/Vercel terminate TLS at one proxy hop in front of us. Trust exactly
+  // that hop so req.ip is the real client IP (the last entry the proxy appends),
+  // not a value the client can forge via X-Forwarded-For to dodge per-IP caps.
+  app.set('trust proxy', 1);
+
   // First-party Firebase auth: proxy /__/auth/* and /__/firebase/* to the Firebase
   // handler so Google sign-in cookies are first-party on this domain (fixes the
   // login bounce on Safari redirect + Chrome partitioned storage). Mounted at ROOT
@@ -235,33 +240,16 @@ async function startServer() {
     res.json({ status: 'ok', hasKey: Boolean(GEMINI_API_KEY), model: MODEL });
   });
 
-  app.get('/api/status', async (_req, res) => {
-    const uptime = Math.floor((Date.now() - startTime) / 1000);
-    let aiStatus: 'ok' | 'degraded' | 'down' = 'down';
-    let aiLatencyMs = 0;
-
-    if (ai && GEMINI_API_KEY) {
-      try {
-        const t0 = Date.now();
-        await ai.models.generateContent({
-          model: MODEL,
-          contents: 'ping',
-          config: { maxOutputTokens: 4 },
-        });
-        aiLatencyMs = Date.now() - t0;
-        aiStatus = aiLatencyMs < 5000 ? 'ok' : 'degraded';
-      } catch {
-        aiStatus = 'degraded';
-      }
-    }
-
+  app.get('/api/status', (_req, res) => {
+    // Unauthenticated health check — must NOT call the model, or an anonymous
+    // flood spends our key and exhausts the shared Gemini quota.
     res.json({
       server: 'ok',
-      uptime,
+      uptime: Math.floor((Date.now() - startTime) / 1000),
       model: MODEL,
       hasKey: Boolean(GEMINI_API_KEY),
-      ai: aiStatus,
-      aiLatencyMs,
+      ai: GEMINI_API_KEY ? 'ok' : 'down',
+      aiLatencyMs: 0,
       timestamp: new Date().toISOString(),
     });
   });
@@ -546,7 +534,7 @@ Output ONLY the transcribed text. If the image has no readable text, output noth
   app.post('/api/submit/:id', async (req: Request, res: Response) => {
     submitCors(res);
     try {
-      const ip = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || req.socket.remoteAddress || undefined;
+      const ip = req.ip || req.socket.remoteAddress || undefined;
       const result = await storeSubmission(String(req.params.id ?? ''), req.body, ip, String(req.headers['user-agent'] ?? ''));
       if (result.ok === false) return res.status(result.status).json({ error: result.error });
       res.json({ ok: true });
