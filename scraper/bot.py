@@ -130,6 +130,59 @@ def get_corpus_stats():
         f"<b>By source:</b>\n{src_lines}"
     )
 
+# Rough blended $/1M tokens by model family — mirrors lib/tokenUsage.ts. For the
+# /usage readout and spend alert only, NOT billing. On the high side on purpose.
+RATE_PER_MTOK = [
+    (re.compile(r"haiku", re.I), 2.0),
+    (re.compile(r"opus", re.I), 45.0),
+    (re.compile(r"sonnet", re.I), 9.0),
+    (re.compile(r"gemini.*pro|2\.5-pro", re.I), 5.0),
+    (re.compile(r"flash", re.I), 0.3),
+    (re.compile(r"gpt|deepseek|groq|llama|qwen|mistral", re.I), 1.0),
+]
+DEFAULT_RATE = 5.0
+
+def _estimate_usd(by_model: dict, total: int) -> float:
+    if not by_model:
+        return (total / 1e6) * DEFAULT_RATE
+    usd = 0.0
+    for model, toks in by_model.items():
+        rate = next((r for rx, r in RATE_PER_MTOK if rx.search(str(model))), DEFAULT_RATE)
+        usd += (float(toks) / 1e6) * rate
+    return usd
+
+def get_usage_stats():
+    """Today's AI spend from usage_tokens/<day> (written by lib/tokenUsage.ts)."""
+    if not db:
+        return "Firebase not connected."
+    day = datetime.utcnow().strftime("%Y-%m-%d")
+    snap = db.collection("usage_tokens").document(day).get()
+    if not snap.exists:
+        return f"💸 <b>Usage — {day} (UTC)</b>\nNo AI usage recorded yet today."
+    d = snap.to_dict() or {}
+    total   = int(d.get("total", 0))
+    in_tok  = int(d.get("inTok", 0))
+    out_tok = int(d.get("outTok", 0))
+    calls   = int(d.get("calls", 0))
+    by_model = d.get("byModel", {}) or {}
+    by_kind  = d.get("byKind", {}) or {}
+    usd = _estimate_usd(by_model, total)
+    limit = os.environ.get("SPEND_ALERT_USD", "5").replace('"', '').replace("'", "")
+    model_lines = "\n".join(
+        f"  • {m}: {int(t):,} tok" for m, t in sorted(by_model.items(), key=lambda x: -x[1])
+    ) or "  (none)"
+    kind_lines = "\n".join(
+        f"  • {k}: {int(t):,} tok" for k, t in sorted(by_kind.items(), key=lambda x: -x[1])
+    ) or "  (none)"
+    return (
+        f"💸 <b>Usage — {day} (UTC)</b>\n"
+        f"Est. cost: <b>${usd:.2f}</b> / ${limit} limit\n"
+        f"Tokens: <b>{total:,}</b> ({in_tok:,} in / {out_tok:,} out)\n"
+        f"Calls: <b>{calls}</b>\n\n"
+        f"<b>By model:</b>\n{model_lines}\n\n"
+        f"<b>By route:</b>\n{kind_lines}"
+    )
+
 sync_running = False
 last_pending_id = None  # track last /next result for quick approve/reject
 
@@ -665,6 +718,7 @@ Return ONLY valid JSON. No markdown, no explanation."""
                 "𞤘𞤢𞤲𞤣𞤮 AI Bot 🤖\n\n"
                 "Commands:\n"
                 "/status — corpus stats\n"
+                "/usage — today's AI spend 💸\n"
                 "/pending — pending review count\n"
                 "/next — preview next pending entry\n"
                 "/approve <id> — verify entry\n"
@@ -695,6 +749,8 @@ Return ONLY valid JSON. No markdown, no explanation."""
                 "/add-term &lt;adlam&gt; = &lt;english&gt; — add to ADLaM dictionary\n\n"
                 "<b>AI</b>\n"
                 "/ask &lt;question&gt; — ask Gemini anything\n\n"
+                "<b>Spend</b>\n"
+                "/usage — today's token usage + estimated $ cost\n\n"
                 "<b>Harvest</b>\n"
                 "/harvest — scrape ADLaM sources now → corpus (auto-runs daily)",
                 parse_mode="html"
@@ -704,6 +760,9 @@ Return ONLY valid JSON. No markdown, no explanation."""
             await event.respond("Fetching stats…")
             stats = get_corpus_stats()
             await event.respond(stats, parse_mode="html")
+
+        elif text in ("/usage", "usage", "/spend", "spend"):
+            await event.respond(get_usage_stats(), parse_mode="html")
 
         elif text in ("/pending", "pending"):
             if not db:
