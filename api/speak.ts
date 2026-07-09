@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
-import { verifyIdToken } from '../lib/firebaseAdmin';
+import { guardApi } from '../lib/apiRateGuard';
 
 const HF_TOKEN = process.env.HUGGINGFACE_API_KEY || '';
 const HF_MODEL = 'facebook/mms-tts-fuv';
@@ -37,9 +37,7 @@ async function toRomanized(adlamText: string): Promise<string> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const token = (req.headers.authorization ?? '').split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  try { await verifyIdToken(token); } catch { return res.status(401).json({ error: 'Invalid token' }); }
+  if (!(await guardApi(req, res, 'speak'))) return;
 
   const { text, languageCode } = req.body ?? {};
   if (!text) return res.status(400).json({ error: 'text required' });

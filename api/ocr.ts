@@ -1,6 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { verifyIdToken } from '../lib/firebaseAdmin.js';
+import { guardApi } from '../lib/apiRateGuard.js';
+
+// SSRF guard: `fileUrl` is fetched server-side, so it must be a Firebase
+// Storage URL and nothing else. Without this an authed user could point it at
+// http://169.254.169.254/... (cloud metadata) or internal services and read the
+// response back through the OCR transcription.
+function isAllowedStorageUrl(u: string): boolean {
+  let parsed: URL;
+  try { parsed = new URL(u); } catch { return false; }
+  if (parsed.protocol !== 'https:') return false;
+  const host = parsed.hostname.toLowerCase();
+  return host === 'firebasestorage.googleapis.com'
+    || host === 'storage.googleapis.com'
+    || host.endsWith('.firebasestorage.app');
+}
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 // OCR uses a stronger vision model — flash hallucinates on ADLaM.
@@ -57,13 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
   }
 
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-  try {
-    await verifyIdToken(auth.slice(7));
-  } catch {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+  if (!(await guardApi(req, res, 'ocr'))) return;
 
   const { fileUrl, imageBase64, mimeType = 'application/pdf' } = req.body as {
     fileUrl?: string;
@@ -75,10 +83,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let base64: string;
 
     if (fileUrl) {
-      // Server-side fetch from Firebase Storage — no Vercel inbound body limit
-      const fetchRes = await fetch(fileUrl);
+      // Server-side fetch from Firebase Storage — no Vercel inbound body limit.
+      // Reject anything that isn't a Storage URL (SSRF guard).
+      if (typeof fileUrl !== 'string' || !isAllowedStorageUrl(fileUrl)) {
+        return res.status(400).json({ error: 'fileUrl must be a Firebase Storage URL' });
+      }
+      const fetchRes = await fetch(fileUrl, { redirect: 'error' });
       if (!fetchRes.ok) {
         throw new Error(`Could not fetch file from Storage (${fetchRes.status} ${fetchRes.statusText})`);
+      }
+      // Bail before buffering if the server already told us it's oversized.
+      const declared = Number(fetchRes.headers.get('content-length') || 0);
+      if (declared > 18 * 1024 * 1024) {
+        throw new Error('File too large for inline OCR (max ~18MB). Split into smaller files.');
       }
       const buffer = Buffer.from(await fetchRes.arrayBuffer());
       const sizeMB = buffer.length / (1024 * 1024);

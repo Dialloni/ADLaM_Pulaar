@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyIdToken } from '../lib/firebaseAdmin';
+import { guardApi } from '../lib/apiRateGuard';
 import { translateText } from '../lib/llm';
 
 // Translates short UI text (e.g. a community template's prompt) into a target
@@ -7,9 +7,7 @@ import { translateText } from '../lib/llm';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const token = (req.headers.authorization ?? '').split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  try { await verifyIdToken(token); } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
+  if (!(await guardApi(req, res, 'translate'))) return;
 
   const { text, targetLanguage } = req.body ?? {};
   if (!text || typeof text !== 'string' || !targetLanguage || typeof targetLanguage !== 'string') {
