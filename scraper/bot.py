@@ -18,6 +18,7 @@ Keep running in background: nohup python bot.py &
 
 import asyncio
 import base64
+import io
 import json
 import os
 import re
@@ -621,9 +622,10 @@ BOT_DAILY_LIMIT = int(os.environ.get("BOT_DAILY_LIMIT", "40"))
 
 PUBLIC_HELP = (
     "𞤘𞤢𞤲𞤣𞤮 AI\n\n"
-    "• Send a voice note → I transcribe it (Pulaar → ADLaM script).\n"
+    "• Send a voice note → I transcribe it (Pulaar → ADLaM) and reply, in text + voice.\n"
     "• Write in ADLaM → I reply in ADLaM.\n"
-    "• Write in English/French → I reply in that language.\n\n"
+    "• Write in English/French → I reply in that language.\n"
+    "• /speak <text> → I read it aloud (Pulaar/ADLaM).\n\n"
     "In a group, @mention me or use a command.\n"
     "⚠ ADLaM answers are auto-generated and may have errors — corrections welcome, "
     "they make me better."
@@ -669,6 +671,54 @@ def _public_answer(text: str) -> str:
         return gemini_model.generate_content(prompt).text.strip()[:4000]
     except Exception as e:
         return f"⚠ {e}"
+
+# ── VOICE-OUT (read ADLaM aloud via the HF MMS voice API) ──────────────────────
+VOICE_API_URL = os.environ.get("VOICE_API_URL", "").strip().strip('"').rstrip("/")
+VOICE_SHARED_SECRET = os.environ.get("VOICE_SHARED_SECRET", "").strip().strip('"')
+
+def _romanize_adlam(text: str) -> str:
+    """ADLaM → romanized Latin Pulaar — the MMS voice model only reads Latin."""
+    if not gemini_model:
+        return text
+    try:
+        out = gemini_model.generate_content(
+            "Convert this ADLaM-script Pulaar to romanized (Latin) Pulaar — phonetic, "
+            "lowercase. Return ONLY the romanized text.\n\n" + text
+        ).text.strip()
+        return out or text
+    except Exception:
+        return text
+
+def _tts_audio(text: str):
+    """Speak Pulaar/ADLaM text via scraper/voice_api.py /tts. WAV bytes or None
+    (caller then degrades to text-only). ADLaM is romanized first."""
+    if not VOICE_API_URL or not text.strip():
+        return None
+    latin = _romanize_adlam(text) if _adlam_ratio(text) >= 0.3 else text
+    try:
+        body = json.dumps({"text": latin[:500], "rate": 0.8}).encode()
+        headers = {"Content-Type": "application/json"}
+        if VOICE_SHARED_SECRET:
+            headers["x-voice-secret"] = VOICE_SHARED_SECRET
+        req = urllib.request.Request(f"{VOICE_API_URL}/tts", data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.read()
+    except Exception as e:
+        print(f"[tts] failed: {e}")
+        return None
+
+async def _send_voice(event, text: str):
+    """Best-effort spoken reply. Strips the ⚠ disclaimer line so it isn't read aloud."""
+    clean = "\n".join(l for l in text.split("\n") if not l.strip().startswith("⚠")).strip()
+    audio = _tts_audio(clean)
+    if not audio:
+        return
+    bio = io.BytesIO(audio)
+    bio.name = "gando.wav"
+    try:
+        await event.respond(file=bio)
+    except Exception as e:
+        print(f"[tts] send failed: {e}")
 
 async def main():
     # Bot uses bot_token auth — no user session needed (StringSession("") = fresh bot session)
@@ -1171,6 +1221,28 @@ Return ONLY valid JSON. No markdown, no explanation."""
         if low in ("/start", "/help", "start", "help"):
             await event.respond(PUBLIC_HELP)
             return
+
+        # /speak <text> (or reply /speak) → read the text aloud
+        if low.startswith("/speak") or low.startswith("speak"):
+            parts = text.split(maxsplit=1)
+            payload = parts[1].strip() if len(parts) > 1 else ""
+            if not payload and event.message.is_reply:
+                rep = await event.message.get_reply_message()
+                payload = ((rep.text or "").strip() if rep else "")
+            if not payload:
+                await event.respond("Send: /speak <ADLaM or Pulaar text>  (or reply /speak to a message).")
+                return
+            if not _bot_rate_ok(event.sender_id):
+                await event.respond("You've hit today's free limit. Try again tomorrow. 🙏")
+                return
+            audio = _tts_audio(payload)
+            if audio:
+                bio = io.BytesIO(audio); bio.name = "gando.wav"
+                await event.respond(file=bio)
+            else:
+                await event.respond("Voice unavailable right now (Pulaar/ADLaM only).")
+            return
+
         if not is_voice and (not text or text.startswith("/")):
             return  # empty or unknown command — ignore silently in public
         # Protect the shared AI key.
@@ -1192,7 +1264,11 @@ Return ONLY valid JSON. No markdown, no explanation."""
                     await event.respond("Couldn't make out any speech — try again, closer to the mic.")
                     return
                 await event.respond(f"📝 {tr}")
-                await event.respond(_public_answer(tr))
+                ans = _public_answer(tr)
+                await event.respond(ans)
+                # Voice-in → voice-out: read the ADLaM answer aloud.
+                if _adlam_ratio(ans) >= 0.3:
+                    await _send_voice(event, ans)
             else:
                 await event.respond(_public_answer(text))
         except Exception as e:
