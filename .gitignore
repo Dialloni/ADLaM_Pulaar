@@ -46,3 +46,25 @@ scripts/eval/results/
 # Lockfile is platform-specific (Mac) and breaks Linux CI native bindings
 # (@tailwindcss/oxide). Let npm install resolve per-platform on deploy.
 package-lock.json
+
+# Ruflo / claude-flow local tooling state — machine-specific, never commit
+.claude-flow/
+.swarm/
+.agents/
+.claude/
+.mcp.json
+agentdb.rvf
+agentdb.rvf.lock
+ruvector.db
+skills-lock.json
+CLAUDE.md.pre-ruflo
+
+# Python bytecode
+__pycache__/
+
+# macOS custom folder icon
+Icon?
+
+# Local reference assets (ADLaM book PDFs, fonts)
+Adlam_book/
+Noto_Sans_Adlam_Unjoined/
