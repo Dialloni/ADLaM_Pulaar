@@ -614,6 +614,62 @@ async def harvest_scheduler(client):
 
 # ── BOT ───────────────────────────────────────────────────────────────────────
 
+# ── PUBLIC BOT (community: DMs + group @mentions) ──────────────────────────────
+# Anyone can use the language features; admin commands stay locked to CHAT_ID.
+# Per-user daily cap protects the shared AI key (same reason the web routes meter).
+BOT_DAILY_LIMIT = int(os.environ.get("BOT_DAILY_LIMIT", "40"))
+
+PUBLIC_HELP = (
+    "𞤘𞤢𞤲𞤣𞤮 AI\n\n"
+    "• Send a voice note → I transcribe it (Pulaar → ADLaM script).\n"
+    "• Write in ADLaM → I reply in ADLaM.\n"
+    "• Write in English/French → I reply in that language.\n\n"
+    "In a group, @mention me or use a command.\n"
+    "⚠ ADLaM answers are auto-generated and may have errors — corrections welcome, "
+    "they make me better."
+)
+
+def _bot_rate_ok(uid: int) -> bool:
+    """Per-Telegram-user daily cap so the shared AI key can't be drained. Fail-open."""
+    if not db:
+        return True
+    day = datetime.utcnow().strftime("%Y-%m-%d")
+    ref = db.collection("bot_usage").document(f"{day}_{uid}")
+    try:
+        snap = ref.get()
+        n = ((snap.to_dict() or {}).get("count", 0) if snap.exists else 0) + 1
+        ref.set({"count": n, "uid": str(uid), "day": day,
+                 "updated_at": firestore.SERVER_TIMESTAMP}, merge=True)
+        return n <= BOT_DAILY_LIMIT
+    except Exception:
+        return True
+
+def _public_answer(text: str) -> str:
+    """Reply in the SAME script/language the user used (ADLaM ↔ EN/FR)."""
+    if not gemini_model:
+        return "AI not configured."
+    if _adlam_ratio(text) >= 0.3:
+        prompt = (
+            "You are a helpful assistant for Pulaar (Fulani) speakers. The user wrote "
+            "in ADLaM script. Reply ONLY in ADLaM script (Unicode U+1E900–U+1E95F), "
+            "in Pulaar, right-to-left. Be concise and correct.\n\n"
+            f"User: {text}"
+        )
+        try:
+            out = gemini_model.generate_content(prompt).text.strip()
+        except Exception as e:
+            return f"⚠ {e}"
+        return (out + "\n\n⚠ auto-ADLaM — may contain errors")[:4000]
+    prompt = (
+        "You are a helpful assistant. Reply in the SAME language the user used "
+        "(English or French). Be concise.\n\n"
+        f"User: {text}"
+    )
+    try:
+        return gemini_model.generate_content(prompt).text.strip()[:4000]
+    except Exception as e:
+        return f"⚠ {e}"
+
 async def main():
     # Bot uses bot_token auth — no user session needed (StringSession("") = fresh bot session)
     client = TelegramClient(StringSession(""), API_ID, API_HASH)
@@ -1100,6 +1156,47 @@ Return ONLY valid JSON. No markdown, no explanation."""
 
         else:
             await event.respond("Unknown command. Send /help to see available commands.")
+
+    @client.on(events.NewMessage(incoming=True))
+    async def public_handler(event):
+        # Admin chat is fully handled above — skip here to avoid double replies.
+        if event.chat_id == CHAT_ID:
+            return
+        text = (event.message.text or "").strip()
+        is_voice = bool(event.message.voice or event.message.audio)
+        # In groups, only respond when directed at the bot (@mention or command).
+        if not event.is_private and not (event.message.mentioned or text.startswith("/")):
+            return
+        low = text.lower()
+        if low in ("/start", "/help", "start", "help"):
+            await event.respond(PUBLIC_HELP)
+            return
+        if not is_voice and (not text or text.startswith("/")):
+            return  # empty or unknown command — ignore silently in public
+        # Protect the shared AI key.
+        if not _bot_rate_ok(event.sender_id):
+            await event.respond("You've hit today's free limit. Try again tomorrow. 🙏")
+            return
+        try:
+            if is_voice:
+                await event.respond("🎤 …")
+                audio_bytes = await event.message.download_media(bytes)
+                tr = gemini_model.generate_content([
+                    genai_types.Part.from_bytes(data=audio_bytes, mime_type="audio/ogg"),
+                    "Transcribe this audio EXACTLY as spoken. If the speaker speaks "
+                    "Pulaar/Fulani, output the transcription in ADLaM script (Unicode "
+                    "U+1E900–U+1E95F), right-to-left. Otherwise transcribe in the "
+                    "spoken language. Return ONLY the transcription, no commentary."
+                ]).text.strip()
+                if not tr:
+                    await event.respond("Couldn't make out any speech — try again, closer to the mic.")
+                    return
+                await event.respond(f"📝 {tr}")
+                await event.respond(_public_answer(tr))
+            else:
+                await event.respond(_public_answer(text))
+        except Exception as e:
+            await event.respond(f"⚠ Error: {e}")
 
     asyncio.create_task(harvest_scheduler(client))
     print(f"✓ Harvest scheduler armed — hours {HARVEST_HOURS} {HARVEST_TZ}; web {HARVEST_URLS}; groups {HARVEST_GROUPS or 'none'}")
