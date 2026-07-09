@@ -647,8 +647,8 @@ def _bot_rate_ok(uid: int) -> bool:
     except Exception:
         return True
 
-def _public_answer(text: str) -> str:
-    """Reply in the SAME script/language the user used (ADLaM ↔ EN/FR)."""
+def _generate_reply(text: str) -> str:
+    """Raw reply in the user's script/language (ADLaM ↔ EN/FR). No formatting."""
     if not gemini_model:
         return "AI not configured."
     if _adlam_ratio(text) >= 0.3:
@@ -658,20 +658,31 @@ def _public_answer(text: str) -> str:
             "in Pulaar, right-to-left. Be concise and correct.\n\n"
             f"User: {text}"
         )
-        try:
-            out = gemini_model.generate_content(prompt).text.strip()
-        except Exception as e:
-            return f"⚠ {e}"
-        return (out + "\n\n⚠ auto-ADLaM — may contain errors")[:4000]
-    prompt = (
-        "You are a helpful assistant. Reply in the SAME language the user used "
-        "(English or French). Be concise.\n\n"
-        f"User: {text}"
-    )
+    else:
+        prompt = (
+            "You are a helpful assistant. Reply in the SAME language the user used "
+            "(English or French). Be concise.\n\n"
+            f"User: {text}"
+        )
     try:
         return gemini_model.generate_content(prompt).text.strip()[:4000]
     except Exception as e:
         return f"⚠ {e}"
+
+def _format_reply(raw: str) -> str:
+    """For ADLaM replies, add the Latin transliteration + disclaimer below so the
+    reader can tell what it says. Non-ADLaM replies pass through unchanged."""
+    if _adlam_ratio(raw) < 0.3:
+        return raw
+    parts = [raw]
+    translit = _romanize_adlam(raw)
+    if translit and translit.strip() and translit.strip().lower() != raw.strip().lower():
+        parts.append("🔤 " + translit.strip())
+    parts.append("⚠ auto-ADLaM — may contain errors")
+    return "\n\n".join(parts)[:4000]
+
+def _public_answer(text: str) -> str:
+    return _format_reply(_generate_reply(text))
 
 # ── VOICE-OUT (read ADLaM aloud via the HF MMS voice API) ──────────────────────
 VOICE_API_URL = os.environ.get("VOICE_API_URL", "").strip().strip('"').rstrip("/")
@@ -1294,11 +1305,11 @@ Return ONLY valid JSON. No markdown, no explanation."""
                     await event.respond("Couldn't make out any speech — try again, closer to the mic.")
                     return
                 await event.respond(f"📝 {tr}")
-                ans = _public_answer(tr)
-                await event.respond(ans)
-                # Voice-in → voice-out: read the ADLaM answer aloud.
-                if _adlam_ratio(ans) >= 0.3:
-                    await _send_voice(event, ans)
+                raw = _generate_reply(tr)
+                await event.respond(_format_reply(raw))
+                # Voice-in → voice-out: speak the clean ADLaM (not the translit line).
+                if _adlam_ratio(raw) >= 0.3:
+                    await _send_voice(event, raw)
             else:
                 await event.respond(_public_answer(text))
         except Exception as e:
