@@ -151,6 +151,33 @@ def _estimate_usd(by_model: dict, total: int) -> float:
         usd += (float(toks) / 1e6) * rate
     return usd
 
+def _get_spend_limit() -> float:
+    """Live daily $ ceiling from config/runtime (set via /setlimit), else env, else 5."""
+    if db:
+        try:
+            c = db.collection("config").document("runtime").get()
+            if c.exists:
+                v = (c.to_dict() or {}).get("spendAlertUsd")
+                if isinstance(v, (int, float)) and v > 0:
+                    return float(v)
+        except Exception:
+            pass
+    env = os.environ.get("SPEND_ALERT_USD", "5").replace('"', '').replace("'", "")
+    try:
+        return float(env)
+    except ValueError:
+        return 5.0
+
+def set_spend_limit(val: float) -> str:
+    """Write the daily $ ceiling to config/runtime and re-arm today's alert."""
+    if not db:
+        return "Firebase not connected."
+    db.collection("config").document("runtime").set({"spendAlertUsd": val}, merge=True)
+    # Clear today's fired flag so the new limit can trigger a fresh alert.
+    day = datetime.utcnow().strftime("%Y-%m-%d")
+    db.collection("usage_tokens").document(day).set({"spendAlertSent": False}, merge=True)
+    return f"✅ Daily spend limit set to <b>${val:.2f}</b>.\nAlert re-armed for today."
+
 def get_usage_stats():
     """Today's AI spend from usage_tokens/<day> (written by lib/tokenUsage.ts)."""
     if not db:
@@ -167,7 +194,7 @@ def get_usage_stats():
     by_model = d.get("byModel", {}) or {}
     by_kind  = d.get("byKind", {}) or {}
     usd = _estimate_usd(by_model, total)
-    limit = os.environ.get("SPEND_ALERT_USD", "5").replace('"', '').replace("'", "")
+    limit = f"{_get_spend_limit():.2f}"
     model_lines = "\n".join(
         f"  • {m}: {int(t):,} tok" for m, t in sorted(by_model.items(), key=lambda x: -x[1])
     ) or "  (none)"
@@ -719,6 +746,7 @@ Return ONLY valid JSON. No markdown, no explanation."""
                 "Commands:\n"
                 "/status — corpus stats\n"
                 "/usage — today's AI spend 💸\n"
+                "/setlimit <$> — set daily spend alert limit\n"
                 "/pending — pending review count\n"
                 "/next — preview next pending entry\n"
                 "/approve <id> — verify entry\n"
@@ -750,7 +778,8 @@ Return ONLY valid JSON. No markdown, no explanation."""
                 "<b>AI</b>\n"
                 "/ask &lt;question&gt; — ask Gemini anything\n\n"
                 "<b>Spend</b>\n"
-                "/usage — today's token usage + estimated $ cost\n\n"
+                "/usage — today's token usage + estimated $ cost\n"
+                "/setlimit &lt;$&gt; — change the daily spend alert limit (e.g. /setlimit 3)\n\n"
                 "<b>Harvest</b>\n"
                 "/harvest — scrape ADLaM sources now → corpus (auto-runs daily)",
                 parse_mode="html"
@@ -763,6 +792,21 @@ Return ONLY valid JSON. No markdown, no explanation."""
 
         elif text in ("/usage", "usage", "/spend", "spend"):
             await event.respond(get_usage_stats(), parse_mode="html")
+
+        elif text.startswith("/setlimit") or text.startswith("setlimit"):
+            parts = raw_msg.split()
+            if len(parts) < 2:
+                await event.respond(f"Current limit: <b>${_get_spend_limit():.2f}</b>/day\nUsage: /setlimit &lt;dollars&gt;  e.g. /setlimit 3", parse_mode="html")
+                return
+            try:
+                val = float(parts[1].replace("$", "").strip())
+            except ValueError:
+                await event.respond("❌ Not a number. Try /setlimit 3")
+                return
+            if val <= 0 or val > 10000:
+                await event.respond("❌ Pick a value between 0 and 10000.")
+                return
+            await event.respond(set_spend_limit(val), parse_mode="html")
 
         elif text in ("/pending", "pending"):
             if not db:
