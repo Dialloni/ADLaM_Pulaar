@@ -713,7 +713,11 @@ def _tts_audio(text: str):
         if VOICE_SHARED_SECRET:
             headers["x-voice-secret"] = VOICE_SHARED_SECRET
         req = urllib.request.Request(f"{VOICE_API_URL}/tts", data=body, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=60) as r:
+        # 150s, not 60: the HF Space sleeps when idle and the first call after a
+        # cold start pays container boot + lazy TTS model load (~150MB). Warm
+        # calls return in ~5s; a 60s cap silently degraded the first /speak to
+        # text-only, which is exactly the one people try.
+        with urllib.request.urlopen(req, timeout=150) as r:
             return r.read()
     except Exception as e:
         print(f"[tts] failed: {e}")
