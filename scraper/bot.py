@@ -22,6 +22,7 @@ import io
 import json
 import os
 import re
+from collections import defaultdict, deque
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -647,22 +648,79 @@ def _bot_rate_ok(uid: int) -> bool:
     except Exception:
         return True
 
-def _generate_reply(text: str) -> str:
+# Set once at startup so the reply-target check below costs no extra API calls.
+BOT_UID = 0
+
+
+async def _is_reply_to_bot(event) -> bool:
+    """True when the message replies to one of the bot's own messages, so a group
+    thread continues without re-@mentioning on every turn."""
+    if not event.message.is_reply or not BOT_UID:
+        return False
+    try:
+        rep = await event.message.get_reply_message()
+        return bool(rep and rep.sender_id == BOT_UID)
+    except Exception:
+        return False
+
+
+async def _capture_group_voice(event) -> None:
+    """Group voice note nobody addressed to the bot: transcribe it into the corpus
+    review queue and say nothing. This is the class-recording flywheel — a 3-hour
+    lesson should feed the corpus without the bot talking over it."""
+    if not db or not gemini_model:
+        return
+    if not _bot_rate_ok(event.sender_id):  # same cap guards the shared key
+        return
+    try:
+        audio_bytes = await event.message.download_media(bytes)
+        tr = gemini_model.generate_content([
+            genai_types.Part.from_bytes(data=audio_bytes, mime_type="audio/ogg"),
+            "Transcribe this audio EXACTLY as spoken. If the speaker speaks "
+            "Pulaar/Fulani, output the transcription in ADLaM script (Unicode "
+            "U+1E900–U+1E95F), right-to-left. Otherwise transcribe in the "
+            "spoken language. Return ONLY the transcription, no commentary."
+        ]).text.strip()
+        if not tr:
+            return
+        db.collection("corpus_submissions").add({
+            "raw_text": tr,
+            "source": "telegram_group_voice",
+            "adlam_ratio": _adlam_ratio(tr),
+            "word_count": len(tr.split()),
+            "status": "pending",
+            "submitted_at": firestore.SERVER_TIMESTAMP,
+        })
+    except Exception as e:
+        print(f"[capture] group voice failed: {e}")
+
+# Last few turns per chat so follow-up questions ("and the plural?") have
+# something to refer to. In-memory only: a redeploy forgets, which is fine —
+# this is conversational context, not a record.
+_HISTORY: dict = defaultdict(lambda: deque(maxlen=6))
+
+
+def _generate_reply(text: str, history=None) -> str:
     """Raw reply in the user's script/language (ADLaM ↔ EN/FR). No formatting."""
     if not gemini_model:
         return "AI not configured."
+    prior = ""
+    if history:
+        prior = "Earlier in this conversation:\n" + "\n".join(
+            f"{who}: {msg}" for who, msg in history
+        ) + "\n\n"
     if _adlam_ratio(text) >= 0.3:
         prompt = (
             "You are a helpful assistant for Pulaar (Fulani) speakers. The user wrote "
             "in ADLaM script. Reply ONLY in ADLaM script (Unicode U+1E900–U+1E95F), "
             "in Pulaar, right-to-left. Be concise and correct.\n\n"
-            f"User: {text}"
+            f"{prior}User: {text}"
         )
     else:
         prompt = (
             "You are a helpful assistant. Reply in the SAME language the user used "
             "(English or French). Be concise.\n\n"
-            f"User: {text}"
+            f"{prior}User: {text}"
         )
     try:
         return gemini_model.generate_content(prompt).text.strip()[:4000]
@@ -681,8 +739,13 @@ def _format_reply(raw: str) -> str:
     parts.append("⚠ auto-ADLaM — may contain errors")
     return "\n\n".join(parts)[:4000]
 
-def _public_answer(text: str) -> str:
-    return _format_reply(_generate_reply(text))
+def _public_answer(text: str, chat_id=None) -> str:
+    hist = _HISTORY[chat_id] if chat_id is not None else None
+    raw = _generate_reply(text, hist)
+    if chat_id is not None and not raw.startswith("⚠"):
+        _HISTORY[chat_id].append(("User", text))
+        _HISTORY[chat_id].append(("You", raw))
+    return _format_reply(raw)
 
 # ── VOICE-OUT (read ADLaM aloud via the HF MMS voice API) ──────────────────────
 VOICE_API_URL = os.environ.get("VOICE_API_URL", "").strip().strip('"').rstrip("/")
@@ -740,7 +803,11 @@ async def main():
     # Bot uses bot_token auth — no user session needed (StringSession("") = fresh bot session)
     client = TelegramClient(StringSession(""), API_ID, API_HASH)
     await client.start(bot_token=BOT_TOKEN)
+    global BOT_UID
+    BOT_UID = (await client.get_me()).id
     print(f"✓ Gando bot running. Listening for commands from chat {CHAT_ID}...")
+    print(f"  voice-out: {'ON — ' + VOICE_API_URL if VOICE_API_URL else 'OFF (VOICE_API_URL unset)'}"
+          f" | secret: {'set' if VOICE_SHARED_SECRET else 'MISSING'}")
 
     # Register the tappable command menu: public commands for everyone, the full
     # admin set only in the admin chat. Best-effort — never crash startup on this.
@@ -1259,10 +1326,26 @@ Return ONLY valid JSON. No markdown, no explanation."""
             return
         text = (event.message.text or "").strip()
         is_voice = bool(event.message.voice or event.message.audio)
-        # In groups, only respond when directed at the bot (@mention or command).
-        if not event.is_private and not (event.message.mentioned or text.startswith("/")):
+        # In groups, only *reply* when directed at the bot: @mention, command, or
+        # a reply to something the bot said (so a thread continues naturally).
+        if not event.is_private and not (
+            event.message.mentioned
+            or text.startswith("/")
+            or await _is_reply_to_bot(event)
+        ):
+            # Not addressed. Voice notes are still captured for the corpus, in
+            # silence; plain group chatter is ignored as before.
+            if is_voice:
+                await _capture_group_voice(event)
             return
+        # In groups Telegram appends the bot username to commands (/help ->
+        # /help@Gando_ai_bot), which silently missed the exact matches below and
+        # fell through to the "unknown command" return. Strip it off the command
+        # token only; the payload after the first space is untouched.
         low = text.lower()
+        if low.startswith("/"):
+            cmd, sep, rest = low.partition(" ")
+            low = cmd.split("@", 1)[0] + sep + rest
         if low in ("/start", "/help", "start", "help"):
             await event.respond(PUBLIC_HELP)
             return
@@ -1309,13 +1392,16 @@ Return ONLY valid JSON. No markdown, no explanation."""
                     await event.respond("Couldn't make out any speech — try again, closer to the mic.")
                     return
                 await event.respond(f"📝 {tr}")
-                raw = _generate_reply(tr)
+                raw = _generate_reply(tr, _HISTORY[event.chat_id])
+                if not raw.startswith("⚠"):
+                    _HISTORY[event.chat_id].append(("User", tr))
+                    _HISTORY[event.chat_id].append(("You", raw))
                 await event.respond(_format_reply(raw))
                 # Voice-in → voice-out: speak the clean ADLaM (not the translit line).
                 if _adlam_ratio(raw) >= 0.3:
                     await _send_voice(event, raw)
             else:
-                await event.respond(_public_answer(text))
+                await event.respond(_public_answer(text, event.chat_id))
         except Exception as e:
             await event.respond(f"⚠ Error: {e}")
 
