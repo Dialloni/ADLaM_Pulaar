@@ -7,11 +7,17 @@ import { adminDb } from './firebaseAdmin';
 // cannot read gando localStorage/cookies (BYOK keys, auth) of visitors who
 // also use the app. Trade-off: the published page's own localStorage is
 // unavailable too (in-app persistence doesn't survive on the public URL).
-// NOTE: no `allow-popups-to-escape-sandbox`. With it, a published app could open
-// a popup on our real origin (address bar shows the genuine domain) and phish a
-// visitor's login/API key. Without it, popups stay inside the sandbox.
+// `allow-popups-to-escape-sandbox` is required for external links to work at
+// all: without it a popup inherits the page's opaque origin, and any target that
+// sends COOP or X-Frame-Options — WhatsApp via wa.me, Google Maps, most login
+// pages — fails with ERR_BLOCKED_BY_RESPONSE, so WhatsApp order buttons and map
+// links are dead ends for visitors. It does not widen the phishing surface it
+// was once thought to: a published app can already open another published page
+// on our real domain with a plain target="_blank" anchor. What still must never
+// appear here is `allow-same-origin`, which is what would let user code read
+// gando localStorage/cookies (BYOK keys, auth) of visitors who also use the app.
 export const PUBLISH_CSP =
-  'sandbox allow-scripts allow-forms allow-modals allow-popups';
+  'sandbox allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox';
 
 // Small attribution badge injected at serve time — links back to the Gando
 // origin the page is hosted on (domain-agnostic).

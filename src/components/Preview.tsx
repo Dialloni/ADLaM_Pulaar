@@ -111,6 +111,15 @@ export function injectReporter(html: string): string {
   return html + RESIZE_REPORTER;
 }
 
+/* NO allow-same-origin, ever: user code + our origin = stolen BYOK keys.
+   allow-popups-to-escape-sandbox is a different thing and is required — a popup
+   otherwise inherits the frame's opaque origin, and sites that send COOP or
+   X-Frame-Options (WhatsApp via wa.me, maps, most login pages) then die with
+   ERR_BLOCKED_BY_RESPONSE in the new tab. Escaping only gives the POPUP a normal
+   origin; the framed app still cannot script it (opaque opener ≠ that origin),
+   so no key-theft path is opened. */
+const SANDBOX = 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox';
+
 /* Safari (WebKit) is unreliable at wheel/trackpad-scrolling content INSIDE a
    sandboxed iframe — same engine quirk that forced the mobile parent-scroll
    workaround. Desktop Safari gets the same treatment. */
@@ -173,7 +182,7 @@ const MobilePreview: React.FC<PreviewProps> = ({ code, projectId, onFixError, er
           srcDoc={srcDoc}
           title="Gando AI Preview"
           style={{ width: '100%', height, border: 'none', display: 'block' }}
-          sandbox="allow-scripts allow-forms allow-modals allow-popups"
+          sandbox={SANDBOX}
         />
         <ErrorChip errors={errors} onFix={onFixError} clear={clear} errorLabel={errorLabel} fixLabel={fixLabel} />
       </div>
@@ -265,7 +274,7 @@ export const Preview: React.FC<PreviewProps> = ({ code: rawCode, projectId, onFi
             srcDoc={injectReporter(codeA)}
             title="Gando AI Preview A"
             style={frameStyle('a')}
-            sandbox="allow-scripts allow-forms allow-modals allow-popups"
+            sandbox={SANDBOX}
             onLoad={() => onLoad('a')}
           />
           <iframe
@@ -273,7 +282,7 @@ export const Preview: React.FC<PreviewProps> = ({ code: rawCode, projectId, onFi
             srcDoc={injectReporter(codeB)}
             title="Gando AI Preview B"
             style={frameStyle('b')}
-            sandbox="allow-scripts allow-forms allow-modals allow-popups"
+            sandbox={SANDBOX}
             onLoad={() => onLoad('b')}
           />
           <ErrorChip errors={errors} onFix={onFixError} clear={clear} errorLabel={errorLabel} fixLabel={fixLabel} />
