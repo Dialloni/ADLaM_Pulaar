@@ -42,7 +42,7 @@ const LazyFallback = () => (
 );
 import { cn } from './lib/utils';
 import { TRANSLATIONS, LanguageCode, type UIStrings } from './translations';
-import { LANGS } from './lib/langs';
+import { LANGS, modelLang } from './lib/langs';
 import { latinToAdlam } from './lib/adlam';
 import { pickGreeting, greetEmoji } from './lib/greeting';
 import { P, S, T, MANROPE } from './lib/brand';
@@ -473,7 +473,7 @@ export default function App() {
         const res = await fetch('/api/translate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ text: clean.slice(0, 2000), targetLanguage: selectedLang.name }),
+          body: JSON.stringify({ text: clean.slice(0, 2000), targetLanguage: modelLang(selectedLang.code) }),
         });
         const data = await res.json();
         const tr = res.ok ? cleanPrompt(data.translation || '') : '';
@@ -584,7 +584,7 @@ export default function App() {
       await addDoc(collection(db, 'projects', ref.id, 'messages'), { projectId: ref.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
     } catch { /* non-fatal — user message is best-effort */ }
 
-    const result = await generateProject(prompt, selectedLang.name, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
+    const result = await generateProject(prompt, modelLang(selectedLang.code), appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
     if (result.usage) setLastUsage(result.usage);
 
     // Aborted before any code arrived — remove the empty placeholder, return to dashboard.
@@ -609,7 +609,10 @@ export default function App() {
     if (!currentProject) return;
     try {
       await addDoc(collection(db, 'projects', currentProject.id, 'messages'), { projectId: currentProject.id, role: 'user', content: prompt, timestamp: serverTimestamp() });
-      const result = await editProject(prompt, currentProject.code, messages, currentProject.language, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
+      // Edits keep the app in the language it was BUILT in (not the current picker).
+      // Old docs predate languageCode — fall back to the stored display name.
+      const editLang = currentProject.languageCode ? modelLang(currentProject.languageCode) : currentProject.language;
+      const result = await editProject(prompt, currentProject.code, messages, editLang, appendStep, handleStreamCode, provider, resolveByok(provider, byokKeys), signal, pendingImagesRef.current);
       if (result.usage) setLastUsage(result.usage);
       // Always save what was built — partial or complete.
       const savedCode = result.code || currentProject.code;
@@ -849,7 +852,7 @@ export default function App() {
         fullPrompt,
         history,
         currentProject?.code,
-        selectedLang.name,
+        modelLang(selectedLang.code),
         (full) => setChatMessages(prev => {
           const copy = [...prev];
           copy[copy.length - 1] = { ...aiMsg, content: full };
