@@ -72,6 +72,9 @@ const RESIZE_REPORTER = `
   window.addEventListener('load',schedule);window.addEventListener('resize',schedule);
   if(window.ResizeObserver&&document.body){try{new ResizeObserver(schedule).observe(document.body);}catch(e){}}
   setTimeout(schedule,200);setTimeout(schedule,700);setTimeout(schedule,1500);
+  /* same reason as the rel=noopener patch below, for the scripted path:
+     window.open() hands the opened page an opener handle regardless of markup */
+  try{var _open=window.open;window.open=function(u,n,f){var ff=(f||'');if(ff.indexOf('noopener')===-1)ff=(ff?ff+',':'')+'noopener';return _open.call(window,u,n,ff);};}catch(e){}
   /* self-healing: report runtime errors to the parent so the editor can offer a one-tap fix */
   var seen=[];
   function report(msg){try{msg=String(msg||'Unknown error').slice(0,500);if(seen.indexOf(msg)!==-1||seen.length>=5)return;seen.push(msg);parent.postMessage({__gandoError:msg},'*');}catch(e){}}
@@ -86,7 +89,13 @@ const RESIZE_REPORTER = `
     var t=e.target;while(t&&t.tagName!=='A')t=t.parentElement;
     if(!t)return;
     var h=t.getAttribute('href');
-    if(!h||h.charAt(0)!=='#')return;
+    /* Popups escape the sandbox (they must, or COOP/XFO sites like WhatsApp
+       refuse to load). An escaped popup keeps a window.opener handle on this
+       frame and could navigate it to a look-alike page inside the editor, so
+       force noopener on every outbound link — the model is told to set it, but
+       "told to" is not a control. */
+    if(h&&h.charAt(0)!=='#'){var r=(t.getAttribute('rel')||'');if(r.indexOf('noopener')===-1){t.setAttribute('rel',(r+' noopener noreferrer').trim());}return;}
+    if(!h)return;
     e.preventDefault();
     if(h.length>1&&location.hash!==h){location.hash=h;}
     else if(h.length>1){try{window.dispatchEvent(new Event('hashchange'));}catch(err){}}
