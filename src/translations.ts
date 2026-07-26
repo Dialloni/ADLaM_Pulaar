@@ -70,6 +70,7 @@ export interface UIStrings {
   shareLiveLabel: string;
   shareConfirm: string;
   communityTitle: string;
+  officialLabel: string;
   remixLabel: string;
   confirmDelete: string;
   recentProjects: string;
@@ -310,6 +311,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     shareLiveLabel: "𞤫 𞤲𞤣𞤫𞤪 𞤺𞤢𞤤𞤭𞤪𞤫",
     shareConfirm: "𞤪𞤫𞤲𞥆𞤣𞤮? 𞤘𞤢𞤤𞤫𞤪𞤭 𞤲𞤣𞤫𞤪 𞤫 𞤯𞤮𞥅 𞤨𞤮𞤪𞤮𞤶𞤫 𞤲𞤫𞤤𞤣𞤵𞤣𞤫 𞤴𞤭𞤯𞤭 𞤀𞤯𞤢",
     communityTitle: "𞤋𞤱𞤣𞤫 𞤫 𞤪𞤫𞤲𞥆𞤣𞤮",
+    officialLabel: "Built in Gando",   // TODO(i18n): English placeholder — never invent ADLaM
     remixLabel: "𞤏𞤢𞤴𞤤𞤵𞤣𞤫",
     confirmDelete: "𞤯𞤮𞥅? 𞤨𞤮𞤪𞤮𞤶𞤫 𞤥𞤮𞤥𞤼𞤵𞤣𞤫 𞤴𞤭𞤯𞤭 𞤢 𞤤𞤢𞥄𞤩𞤭 𞤀𞤯𞤢",
     recentProjects: "𞤇𞤫𞤲𞥆𞤵𞤯𞤭 𞤆𞤮𞤪𞤮𞤶𞤫𞥅𞤶𞤭",
@@ -544,6 +546,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     shareLiveLabel: "Dans la galerie",
     shareConfirm: "Partager ce projet dans la galerie communautaire ? Un admin le vérifie avant publication, et d'autres utilisateurs peuvent le prévisualiser et le remixer.",
     communityTitle: "De la communauté",
+    officialLabel: "Créé dans Gando",
     remixLabel: "Remixer",
     confirmDelete: "Êtes-vous sûr de vouloir supprimer ce projet ?",
     recentProjects: "Projets Récents",
@@ -786,6 +789,7 @@ export const TRANSLATIONS: Record<LanguageCode, UIStrings> = {
     shareLiveLabel: "In gallery",
     shareConfirm: "Share this project to the community gallery? An admin reviews it before it goes public, and other users may preview and remix it.",
     communityTitle: "From the community",
+    officialLabel: "Built in Gando",
     remixLabel: "Remix",
     confirmDelete: "Are you sure you want to delete this project?",
     recentProjects: "Recent Projects",

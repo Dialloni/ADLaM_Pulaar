@@ -2052,7 +2052,7 @@ export default function App() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cc.language}</span>
-                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{cc.official ? tl.officialLabel : t.communityTitle}</span>
+                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{cc.official ? t.officialLabel : t.communityTitle}</span>
                       </div>
                       <h2 className={cn('font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 26, lineHeight: 1.15 }}>{cc.name}</h2>
@@ -2234,7 +2234,7 @@ export default function App() {
                         </div>
                         <div className="p-4">
                           <div className="flex items-center gap-2 mb-2">
-                            <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${S}18`, color: S, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tl.officialLabel}</span>
+                            <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${S}18`, color: S, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{t.officialLabel}</span>
                             <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{ot.language}</span>
                           </div>
                           <h3 className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')}
