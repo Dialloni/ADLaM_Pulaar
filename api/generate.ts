@@ -1,8 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { verifyIdToken, isAdminEmail } from '../lib/firebaseAdmin';
 import { runStream } from '../lib/llm';
 import { recordTokens } from '../lib/tokenUsage';
-import { checkRateLimit, RATE_LIMIT_MESSAGE } from '../lib/rateLimit';
+import { guardApi } from '../lib/apiRateGuard';
 
 // Streams a new app generation as Server-Sent Events:
 //   {type:"code", chunk}   — incremental HTML (forward to the live preview)
@@ -11,21 +10,14 @@ import { checkRateLimit, RATE_LIMIT_MESSAGE } from '../lib/rateLimit';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const token = (req.headers.authorization ?? '').split('Bearer ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  let uid: string; let email: string | undefined;
-  try { const d = await verifyIdToken(token); uid = d.uid; email = d.email; } catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
-
   const { prompt, preferredLanguage, provider, byok, images } = req.body ?? {};
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt is required' });
   }
 
-  // BYOK runs on the user's own key/quota; admins are exempt — only meter requests we pay for.
-  if (!byok?.apiKey && !(await isAdminEmail(email))) {
-    const { ok } = await checkRateLimit(uid, 'generate');
-    if (!ok) return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
-  }
+  // Auth + wallet kill switch + daily quota, shared with server.ts meter().
+  const uid = await guardApi(req, res, 'generate', !!byok?.apiKey);
+  if (!uid) return;
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
