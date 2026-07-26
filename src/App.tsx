@@ -293,6 +293,7 @@ export default function App() {
     setChatWidth(cw => { try { localStorage.setItem('gando_chat_width', String(cw)); } catch { /* ignore */ } return cw; });
   };
   const [communityTemplates, setCommunityTemplates] = useState<Project[]>([]);
+  const [officialTemplates, setOfficialTemplates] = useState<Project[]>([]);
   const [selectedCommunity, setSelectedCommunity] = useState<Project | null>(null);
   const [promptTr, setPromptTr] = useState<{ text: string; loading: boolean }>({ text: '', loading: false });
   const trCacheRef = useRef<Map<string, string>>(new Map());
@@ -452,12 +453,22 @@ export default function App() {
       () => {});
   }, [user]);
 
-  /* community templates listener (admin-approved, public) */
+  /* community templates listener (user submissions, admin-approved) */
   useEffect(() => {
     if (!user) { setCommunityTemplates([]); return; }
     const q = query(collection(db, 'projects'), where('featured', '==', true));
     return onSnapshot(q,
       snap => setCommunityTemplates(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project))),
+      () => {});
+  }, [user]);
+
+  /* Discover shelf: first-party apps built in Gando and featured by an admin.
+     Separate flag from `featured` so the two shelves never mix. */
+  useEffect(() => {
+    if (!user) { setOfficialTemplates([]); return; }
+    const q = query(collection(db, 'projects'), where('official', '==', true));
+    return onSnapshot(q,
+      snap => setOfficialTemplates(snap.docs.map(d => ({ id: d.id, ...d.data() } as Project))),
       () => {});
   }, [user]);
 
@@ -1068,12 +1079,40 @@ export default function App() {
     catch { /* clipboard denied — user can select the text */ }
   };
 
+  /* Admin-only label: the button features instantly instead of queueing, so it
+     must not read "Share". English/French only — same as the admin portal; an
+     ADLaM string here would have to be invented. */
+  const featureLabel = selectedLang.code === 'fr' ? 'Mettre en avant' : 'Feature';
+
   const shareProject = async (p: Project) => {
     if (p.shareStatus === 'pending' || p.featured) return;
+    // Admins ARE the approvers — queueing their own app for themselves is a
+    // pointless round trip. One click puts it on the Discover shelf, NOT the
+    // Community one: Discover is first-party work built in Gando, Community is
+    // what users submit. Hence `official`, not `featured`.
+    if (isAdmin) {
+      setSharingId(p.id);
+      try {
+        await updateDoc(doc(db, 'projects', p.id), { official: true, shareStatus: 'approved', sharedAt: serverTimestamp() });
+      } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${p.id}`); }
+      finally { setSharingId(null); }
+      return;
+    }
     if (!confirm(t.shareConfirm)) return;
     setSharingId(p.id);
     try {
       await updateDoc(doc(db, 'projects', p.id), { shareStatus: 'pending', sharedAt: serverTimestamp() });
+    } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${p.id}`); }
+    finally { setSharingId(null); }
+  };
+
+  /* Undo for the one-click above — pulls an app back off whichever shelf it is
+     on, without a trip to the admin portal. Admin-only. */
+  const unfeatureProject = async (p: Project) => {
+    if (!isAdmin || !(p.featured || p.official)) return;
+    setSharingId(p.id);
+    try {
+      await updateDoc(doc(db, 'projects', p.id), { featured: false, official: false, shareStatus: 'rejected' });
     } catch (err) { handleFirestoreError(err, OperationType.WRITE, `projects/${p.id}`); }
     finally { setSharingId(null); }
   };
@@ -1626,10 +1665,13 @@ export default function App() {
                       )}
                     </button>
                   </div>
-                  {currentProject.featured ? (
-                    <span className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
+                  {currentProject.featured || currentProject.official ? (
+                    <button onClick={() => isAdmin && unfeatureProject(currentProject)} disabled={!isAdmin || sharingId === currentProject.id}
+                      title={isAdmin ? 'Remove from the template gallery' : undefined}
+                      className={cn('flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')}
+                      style={{ background: '#22c55e1a', color: '#4ade80', cursor: isAdmin ? 'pointer' : 'default' }}>
                       <Heart className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t.shareLiveLabel}</span>
-                    </span>
+                    </button>
                   ) : currentProject.shareStatus === 'pending' ? (
                     <span className={cn('hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold', isAdlam && 'font-adlam')} style={{ background: '#eab3081a', color: '#fbbf24' }}>
                       {t.sharePendingLabel}
@@ -1638,7 +1680,7 @@ export default function App() {
                     <button onClick={() => shareProject(currentProject)} disabled={sharingId === currentProject.id}
                       className={cn('flex items-center gap-2 px-2.5 md:px-3 py-2 rounded-xl text-xs font-bold border transition-all', isAdlam && 'font-adlam')}
                       style={{ color: T, borderColor: `${T}33`, background: `${T}0c` }}>
-                      <Share2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{sharingId === currentProject.id ? '…' : t.shareLabel}</span>
+                      <Share2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{sharingId === currentProject.id ? '…' : isAdmin ? featureLabel : t.shareLabel}</span>
                     </button>
                   )}
                   <button onClick={handleDownload}
@@ -1926,7 +1968,7 @@ export default function App() {
                             })()}
                           </div>
                           <div className="flex items-center gap-2">
-                            {p.featured ? (
+                            {p.featured || p.official ? (
                               <span className={cn('flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest', isAdlam && 'font-adlam')} style={{ background: '#22c55e1a', color: '#4ade80' }}>
                                 <Heart className="w-2.5 h-2.5" /> {t.shareLiveLabel}
                               </span>
@@ -1936,11 +1978,11 @@ export default function App() {
                               </span>
                             ) : null}
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {!p.featured && p.shareStatus !== 'pending' && (
+                              {!p.featured && !p.official && p.shareStatus !== 'pending' && (
                                 <button onClick={() => shareProject(p)} disabled={sharingId === p.id}
                                   className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border transition-all', isAdlam && 'font-adlam')}
                                   style={{ color: T, borderColor: `${T}33` }}>
-                                  <Share2 className="w-3 h-3" /> {sharingId === p.id ? '…' : t.shareLabel}
+                                  <Share2 className="w-3 h-3" /> {sharingId === p.id ? '…' : isAdmin ? featureLabel : t.shareLabel}
                                 </button>
                               )}
                               <button onClick={() => deleteProject(p.id)}
@@ -2010,7 +2052,7 @@ export default function App() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <span style={{ padding: '3px 10px', borderRadius: 9999, background: `${T}18`, color: T, fontSize: 10, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{cc.language}</span>
-                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{t.communityTitle}</span>
+                        <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{cc.official ? tl.officialLabel : t.communityTitle}</span>
                       </div>
                       <h2 className={cn('font-black text-white tracking-tighter mb-3', isAdlam && 'font-adlam')}
                         style={{ fontFamily: isAdlam ? undefined : MANROPE, fontSize: 26, lineHeight: 1.15 }}>{cc.name}</h2>
@@ -2172,6 +2214,35 @@ export default function App() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+                    {/* First-party apps built in Gando come first; the borrowed
+                        static set fills the rest of the shelf until there are
+                        enough real ones to drop src/data/templates.ts. */}
+                    {officialTemplates.map(ot => (
+                      <motion.div key={ot.id}
+                        whileHover={{ y: -4 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        onClick={() => setSelectedCommunity(ot)}
+                        className="group relative rounded-2xl overflow-hidden cursor-pointer border border-white/8 hover:border-white/20 transition-all"
+                        style={{ background: 'var(--card-bg)' }}>
+                        <div className="relative overflow-hidden" style={{ height: 180, background: 'var(--app-bg)' }}>
+                          <iframe srcDoc={ot.code} title={ot.name} className="border-none pointer-events-none"
+                            sandbox="allow-scripts"
+                            style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }} />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', padding: '7px 16px', borderRadius: 8, fontSize: 12, fontFamily: 'Inter, var(--adlam-ui), sans-serif', fontWeight: 600 }}>{tl.preview}</span>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span style={{ padding: '2px 8px', borderRadius: 9999, background: `${S}18`, color: S, fontSize: 9, fontWeight: 700, fontFamily: 'Inter, var(--adlam-ui), sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{tl.officialLabel}</span>
+                            <span className={cn(isAdlam && 'font-adlam')} style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{ot.language}</span>
+                          </div>
+                          <h3 className={cn('font-black text-white text-sm mb-1 truncate', isAdlam && 'font-adlam')}
+                            style={{ fontFamily: isAdlam ? undefined : MANROPE }}>{ot.name}</h3>
+                          <p className="text-zinc-500 text-xs line-clamp-2" style={{ fontFamily: 'Inter, var(--adlam-ui), sans-serif' }}>{cleanPrompt(ot.description) || ot.name}</p>
+                        </div>
+                      </motion.div>
+                    ))}
                     {TEMPLATES_META.map(tmpl => {
                       const tr = tl.templates[tmpl.id] || TEMPLATE_I18N.en.templates[tmpl.id];
                       return (

@@ -10,7 +10,8 @@ export interface Project {
   updatedAt: any;
   status?: 'live' | 'building' | 'draft';
   shareStatus?: 'pending' | 'approved' | 'rejected';
-  featured?: boolean;
+  featured?: boolean;    // user submission approved into the Community shelf
+  official?: boolean;    // first-party Gando app on the Discover templates shelf
   sharedAt?: any;
   published?: boolean;   // publicly served at /p/<slug || id>
   publishedAt?: any;

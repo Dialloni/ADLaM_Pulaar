@@ -1,9 +1,10 @@
 /* Starter-template catalog + its 3-language copy. Pure data — no imports. */
-export const TEMPLATE_I18N: Record<string, { pageTitle: string; pageSubtitle: string; viewAll: string; preview: string; useTemplate: string; credit: string; templates: Record<string, { name: string; description: string; starterPrompt: string }> }> = {
+export const TEMPLATE_I18N: Record<string, { pageTitle: string; pageSubtitle: string; viewAll: string; preview: string; useTemplate: string; credit: string; officialLabel: string; templates: Record<string, { name: string; description: string; starterPrompt: string }> }> = {
   en: {
     pageTitle: 'Discover templates', pageSubtitle: 'Start your next project with a template',
     viewAll: 'View all', preview: 'Preview →', useTemplate: 'Use template',
     credit: 'Custom templates by Gando AI · HTML5 UP templates CC Attribution 3.0',
+    officialLabel: 'Built in Gando',
     templates: {
       alpha: {
         name: 'Conakry Market',
@@ -56,6 +57,7 @@ export const TEMPLATE_I18N: Record<string, { pageTitle: string; pageSubtitle: st
     pageTitle: 'Découvrir les modèles', pageSubtitle: 'Commencez votre prochain projet avec un modèle',
     viewAll: 'Voir tout', preview: 'Aperçu →', useTemplate: 'Utiliser ce modèle',
     credit: 'Modèles Gando AI · Templates HTML5 UP Licence CC Attribution 3.0',
+    officialLabel: 'Créé dans Gando',
     templates: {
       alpha: {
         name: 'Marché Conakry',
@@ -108,6 +110,7 @@ export const TEMPLATE_I18N: Record<string, { pageTitle: string; pageSubtitle: st
     pageTitle: '𞤁𞤫𞤬𞤪𞤭𞤲𞤣𞤫 𞤃𞤮𞤣𞤫𞤤𞤭', pageSubtitle: '𞤄𞤫𞤴𞤲𞤭 𞤥𞤮𞤣𞤫𞤤 𞤸𞤢𞤲𞤯𞤫 𞤶𞤮𞤤𞤤𞤭𞤪𞤣𞤫',
     viewAll: '𞤄𞤭𞤲𞥋𞤣𞤫 𞤸𞤫𞤬𞤯𞤫', preview: '𞤌𞤺𞤭𞤲𞤭𞤪𞤫 →', useTemplate: '𞤁𞤫𞤬𞤪𞤭𞤲𞤣𞤫 𞤃𞤮𞤣𞤫𞤤',
     credit: '𞤃𞤮𞤣𞤫𞤤𞤭 𞤱𞤮𞤲𞤭 Gando AI · HTML5 UP CC Attribution 3.0',
+    officialLabel: 'Built in Gando',  // TODO(i18n): awaiting ADLaM — see docs/i18n/remaining.json
     templates: {
       alpha: {
         name: '𞤐𞤢𞥄𞤺𞤢 𞤑𞤮𞤲𞤢𞤳𞤪𞤭',
