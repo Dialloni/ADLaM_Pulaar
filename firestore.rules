@@ -3,8 +3,10 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Admin = bootstrap email or a doc in /admins. Mirrors AuthContext.tsx.
+    // The email guard matters: a token without an email claim makes the
+    // comparison error out instead of returning false.
     function isAdmin() {
-      return request.auth != null && (
+      return request.auth != null && 'email' in request.auth.token && (
         request.auth.token.email == 'gandoadlam25@gmail.com'
         || exists(/databases/$(database)/documents/admins/$(request.auth.token.email))
       );
@@ -20,13 +22,30 @@ service cloud.firestore {
     // Owners access their own; anyone logged in can read FEATURED (community
     // gallery); admins can read/update any (moderation).
     match /projects/{projectId} {
+      // `featured` = Community shelf (user submissions), `official` = Discover
+      // shelf (first-party apps built in Gando). Both are gallery-visible.
       allow read: if request.auth != null && (
         request.auth.uid == resource.data.userId
-        || resource.data.featured == true
+        || resource.data.get('featured', false) == true
+        || resource.data.get('official', false) == true
         || isAdmin()
       );
 
-      allow update, delete: if request.auth != null && (
+      // `featured` is the gallery flag — only admins may change it. Without this
+      // clause an owner could set it on their own project from devtools and put
+      // arbitrary content in everyone's gallery, bypassing the review queue.
+      // Every other field stays owner-writable (code, name, publish, slug).
+      // Owner clause FIRST so it short-circuits: isAdmin() costs an exists()
+      // read on /admins, and evaluating it on every ordinary save would bill a
+      // document read per write (and error on tokens with no email claim).
+      allow update: if request.auth != null && (
+        (request.auth.uid == resource.data.userId
+         && request.resource.data.get('featured', false) == resource.data.get('featured', false)
+         && request.resource.data.get('official', false) == resource.data.get('official', false))
+        || isAdmin()
+      );
+
+      allow delete: if request.auth != null && (
         request.auth.uid == resource.data.userId
         || isAdmin()
       );
