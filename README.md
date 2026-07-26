@@ -90,7 +90,8 @@ flowchart LR
     TG --> Queue
     PDF --> Queue
     Paste --> Queue
-    Shares -->|approve| Templates["Community templates"]
+    Shares -->|approve| Templates["Community shelf"]
+    Gando["🏗 Apps built in Gando<br/>(admin one-click)"] --> Discover["Discover shelf"]
     Queue --> Admin
     Admin --> Dict
     Admin --> JSONL
@@ -107,7 +108,8 @@ flowchart LR
 ### Build experience
 
 - 🌍 **African-language generation** — describe your app in Fulani (ADLaM), French, English, and more
-- 🌐 **Publish to a live URL** — one click puts your app at `/p/your-name` (custom link names, old links never break); served with a CSP sandbox so user code can't touch visitors' data
+- 🎛 **The language picker decides the output** — write the prompt in French or English and still get a 100% ADLaM app; the picker beats the prompt's own language, so nobody has to type ADLaM to build in it
+- 🌐 **Publish to a live URL** — one click puts your app at `/p/your-name` (custom link names, old links never break); served with a CSP sandbox so user code can't touch visitors' data. Link names are bound to the project you own and impersonation names (`gando`, `login`, `support`, …) are reserved, so nobody can park a phishing page on a URL that looks like ours
 - 📬 **Working forms + owner Inbox** — contact/order forms on published apps actually deliver; submissions land in an Inbox tab on the project (spam honeypot + daily caps built in)
 - 📷 **Your photos in your app** — attached images are downscaled in-browser, uploaded to Storage, and embedded in the generated site (up to 6 per message)
 - 🧭 **Real multi-page navigation** — generated apps use in-file hash routing: up to ~5 "pages", browser Back/Forward work, no dead links
@@ -147,6 +149,7 @@ flowchart LR
 - 💾 Firestore persistence — projects, chats, prefs; landing prompt survives sign-in redirects
 - ⚡ **Code-split bundle** — admin tools, code editor, and pdf.js load on demand; stable vendor chunks
 - 🟢 System status page — live server / AI / DB health
+- 🗂 **Two template shelves** — *Discover* holds first-party apps built in Gando (admin one-click), *Community* holds user submissions that passed review; both start from working code, not a prompt
 
 ### ADLaM Corpus Pipeline (Admin — English & French UI)
 
@@ -362,7 +365,7 @@ npx tsx scripts/check-translit.ts      # transliterator rule assertions
 - [ ] Glossary + few-shot injection from the verified dictionary (Guinea-dialect steering)
 - [ ] Diff-based edits (search/replace blocks — sub-minute edits)
 - [ ] Plan-first generation UI (step checkmarks while building)
-- [ ] Flagship template rebuild — Gando-built apps replace placeholder templates via the community pipeline
+- [ ] Flagship template rebuild — pipeline is live (*Discover* shelf); borrowed HTML5 UP templates come out once enough Gando-built apps are on it, plus a public read path so the logged-out gallery can show them
 - [ ] Whisper/MMS fine-tune for Pulaar speech (1k–3k clips)
 - [ ] Custom ADLaM tokenizer extension + LoRA fine-tune (summer 2026) → **Gando 2.0**
 
@@ -391,6 +394,9 @@ npx tsx scripts/check-translit.ts      # transliterator rule assertions
 - [x] **Review-queue controls** — restore/delete rejected items (two-step confirm), edit/unverify approved items, accurate server-side counts
 - [x] RLHF thumbs feedback, stop-mid-build, light/dark by time of day
 - [x] Code-split bundle (‑28% first load), Safari first-party auth proxy
+- [x] **Picker-driven output language** — prompt language and app language decoupled (French in → ADLaM out)
+- [x] **Discover / Community shelves** — `official` vs `featured`, admin one-click featuring with undo
+- [x] **External links work from sandboxed apps** — WhatsApp/maps/login targets no longer die on `ERR_BLOCKED_BY_RESPONSE`, with popups denied an opener handle on the preview
 
 ---
 
