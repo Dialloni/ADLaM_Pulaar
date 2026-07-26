@@ -10,6 +10,20 @@ export function isValidSlug(s: string): boolean {
   return SLUG_RE.test(s);
 }
 
+// Names a published page could use to pass itself off as Gando — /p/<slug> is
+// served from our own domain, so "gando-login" plus a fake sign-in form is a
+// phishing kit. Firestore rules enforce this list too; this copy only exists so
+// the publish modal can say "taken" instead of surfacing a permission error.
+const RESERVED_SLUGS = new Set([
+  'gando', 'gando-ai', 'gandoai', 'admin', 'login', 'signin', 'sign-in',
+  'account', 'auth', 'support', 'help', 'billing', 'payment', 'pay',
+  'security', 'verify', 'password', 'reset', 'official', 'api', 'www',
+]);
+
+export function isReservedSlug(s: string): boolean {
+  return RESERVED_SLUGS.has(s.toLowerCase());
+}
+
 /** Latin project name → slug suggestion; ADLaM/short names → neutral app-<id> stub. */
 export function suggestSlug(name: string, projectId: string): string {
   const latin = name
@@ -35,6 +49,7 @@ export async function claimSlug(
   oldSlug?: string,
 ): Promise<void> {
   if (!isValidSlug(slug)) throw new Error('invalid');
+  if (isReservedSlug(slug)) throw new Error('taken');
   await runTransaction(db, async (tx) => {
     const ref = doc(db, 'slugs', slug);
     const snap = await tx.get(ref);

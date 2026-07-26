@@ -83,10 +83,30 @@ service cloud.firestore {
     // Doc ID = the slug (/p/<slug>). Claimed client-side in a transaction;
     // create only if free, delete only by the claimer. Never updated in place.
     // Public serving reads via the Admin SDK (bypasses these rules).
+    // Names that would let a published page impersonate Gando itself. A page at
+    // /p/<slug> is served from our real domain, so a convincing slug plus a fake
+    // sign-in page is a credential-phishing kit.
+    function isReservedSlug(slug) {
+      return slug in [
+        'gando', 'gando-ai', 'gandoai', 'admin', 'login', 'signin', 'sign-in',
+        'account', 'auth', 'support', 'help', 'billing', 'payment', 'pay',
+        'security', 'verify', 'password', 'reset', 'official', 'api', 'www'
+      ];
+    }
+
     match /slugs/{slug} {
       allow read: if request.auth != null;
+      // The claim must point at a project the caller actually owns. Without the
+      // ownership check any signed-in user could park a slug on someone else's
+      // app, or squat unlimited names for projects that do not exist — and since
+      // slugs are never updated and only the claimer may delete, the rightful
+      // owner could never take the name back.
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.userId
+        && request.resource.data.projectId is string
+        && exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId))
+        && get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.userId == request.auth.uid
+        && !isReservedSlug(slug)
         && slug.matches('[a-z0-9][a-z0-9-]{1,38}[a-z0-9]');
       allow delete: if request.auth != null
         && request.auth.uid == resource.data.userId;
