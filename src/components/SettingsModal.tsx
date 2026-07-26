@@ -74,6 +74,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  // Avatar URL failed to load → show the initials tile instead of a broken-image icon.
+  const [photoBroken, setPhotoBroken] = useState(false);
   const pickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -98,6 +100,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setTab('general'); setConfirmDelete(false); setDeleteErr(null);
     }
   }, [open, displayName, prefs.preferredName]);
+
+  // A freshly uploaded avatar deserves a new load attempt.
+  useEffect(() => { setPhotoBroken(false); }, [photoURL]);
 
   if (!open) return null;
 
@@ -158,8 +163,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <input ref={avatarInputRef} type="file" accept="image/*" onChange={pickAvatar} style={{ display: 'none' }} />
                   <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} title={t.avatarSubtitle}
                     style={{ position: 'relative', width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: uploadingAvatar ? 'default' : 'pointer', padding: 0, overflow: 'hidden' }}>
-                    {photoURL
-                      ? <img src={photoURL} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
+                    {photoURL && !photoBroken
+                      ? <img src={photoURL} alt="" referrerPolicy="no-referrer" onError={() => setPhotoBroken(true)}
+                          style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
                       : <div style={{ width: 44, height: 44, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0a0a0a', fontWeight: 800, background: 'var(--gradient-brand)' }}>{(displayName || email || 'U')[0].toUpperCase()}</div>}
                     <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: 10, fontWeight: 700, opacity: uploadingAvatar ? 1 : 0, transition: 'opacity 150ms' }}>
                       {uploadingAvatar ? '…' : ''}

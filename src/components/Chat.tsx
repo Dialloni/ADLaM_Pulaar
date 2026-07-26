@@ -386,6 +386,10 @@ const ChatImpl: React.FC<ChatProps> = ({
   // Voice input (shared hook — Gemini-powered for African-language support).
   const { isListening, isTranscribing, toggleListening } = useVoiceInput(input, setInput, selectedLanguage);
 
+  // Avatar URL failed to load → show the initials tile instead of a broken-image icon.
+  const [photoBroken, setPhotoBroken] = useState(false);
+  useEffect(() => { setPhotoBroken(false); }, [userPhoto]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isGenerating, generationStatus]);
@@ -697,8 +701,9 @@ const ChatImpl: React.FC<ChatProps> = ({
                     )}>
                       {/* Avatar */}
                       {m.role === 'user' ? (
-                        userPhoto ? (
-                          <img src={userPhoto} alt={userName || 'You'} className="w-10 h-10 rounded-2xl object-cover flex-shrink-0 mt-0.5 shadow-xl border border-white/10" />
+                        userPhoto && !photoBroken ? (
+                          <img src={userPhoto} alt={userName || 'You'} className="w-10 h-10 rounded-2xl object-cover flex-shrink-0 mt-0.5 shadow-xl border border-white/10"
+                            referrerPolicy="no-referrer" onError={() => setPhotoBroken(true)} />
                         ) : (
                           <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xl border text-white border-white/10"
                             style={{ background: `linear-gradient(135deg, #3b82f6, #fd8b00)` }}>

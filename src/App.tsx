@@ -301,6 +301,10 @@ export default function App() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  // Google avatar URLs 403 for some accounts (and Storage URLs can rot) — a failed
+  // <img> renders the browser's broken-image icon, so fall back to the initials tile.
+  const [avatarBroken, setAvatarBroken] = useState(false);
+  useEffect(() => { setAvatarBroken(false); }, [user?.photoURL]);
   const [projectSearch, setProjectSearch] = useState('');
   const [projectFilter, setProjectFilter] = useState<'all' | 'live' | 'building' | 'draft'>('all');
   const [headerSearch, setHeaderSearch] = useState('');
@@ -1414,8 +1418,9 @@ export default function App() {
           <div className="p-3 user-menu-container" style={{ position: 'relative' }}>
             <div className={cn('flex items-center rounded-xl cursor-pointer hover:bg-white/5 transition-all', sidebarCollapsed ? 'justify-center p-2' : 'gap-2.5 px-3 py-2.5')}
               onClick={() => setUserMenuOpen(o => !o)}>
-              {user.photoURL
+              {user.photoURL && !avatarBroken
                 ? <img src={user.photoURL} alt="" className="rounded-full object-cover flex-shrink-0"
+                    referrerPolicy="no-referrer" onError={() => setAvatarBroken(true)}
                     style={{ width: 28, height: 28, minWidth: 28, minHeight: 28, aspectRatio: '1 / 1' }} />
                 : <div className="rounded-full flex items-center justify-center text-xs font-black text-black flex-shrink-0"
                     style={{ width: 28, height: 28, minWidth: 28, minHeight: 28, aspectRatio: '1 / 1', background: `linear-gradient(135deg,${P},${S})` }}>
